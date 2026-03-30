@@ -79,6 +79,20 @@ final class TrackStore {
         Self.dayKey(for: Date(), calendar: calendar)
     }
 
+    /// Oldest → newest calendar day keys ending today (for habit grids).
+    func recentDayKeys(count: Int) -> [String] {
+        let n = max(1, count)
+        let todayStart = calendar.startOfDay(for: Date())
+        return (0..<n).compactMap { i -> String? in
+            guard let d = calendar.date(byAdding: .day, value: -(n - 1) + i, to: todayStart) else { return nil }
+            return Self.dayKey(for: d, calendar: calendar)
+        }
+    }
+
+    func isFutureDayKey(_ key: String) -> Bool {
+        key > todayDayKey
+    }
+
     // MARK: Todos
 
     func addTodo(title: String) {
@@ -109,12 +123,22 @@ final class TrackStore {
     // MARK: Habits
 
     func toggleHabitToday(id: UUID) {
-        let key = todayDayKey
+        toggleHabit(id: id, onDayKey: todayDayKey)
+    }
+
+    func toggleHabit(id: UUID, onDayKey dayKey: String) {
+        guard !isFutureDayKey(dayKey) else { return }
         guard let i = habits.firstIndex(where: { $0.id == id }) else { return }
         var next = habits
-        next[i].toggleDay(key)
+        next[i].toggleDay(dayKey)
         habits = next
         saveHabits()
+    }
+
+    /// Every habit completed on that day (needs at least one habit).
+    func allHabitsCompleted(on dayKey: String) -> Bool {
+        guard !habits.isEmpty else { return false }
+        return habits.allSatisfy { $0.isCompleted(on: dayKey) }
     }
 
     func addHabit(title: String, detail: String) {
