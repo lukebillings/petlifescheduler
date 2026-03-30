@@ -19,6 +19,8 @@
 		845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 004BEB5D563AD507764446BB /* Assets.xcassets */; };
 		8B6CCB39FC709E4925634AB7 /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53A28B04A9761BC0077C9AF4 /* PetsView.swift */; };
 		8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5C7586D9735ADDB5C9842C /* HomeView.swift */; };
+		D10000000000000000000002 /* TrackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000001 /* TrackModels.swift */; };
+		D10000000000000000000004 /* TrackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000003 /* TrackView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +37,8 @@
 		9B8E3578A31F2A95A734CC4A /* PetsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsViewModel.swift; sourceTree = "<group>"; };
 		ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D10000000000000000000001 /* TrackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackModels.swift; sourceTree = "<group>"; };
+		D10000000000000000000003 /* TrackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -44,8 +48,17 @@
 				F0C471B52A56DBE9A768AC24 /* Home */,
 				AC407893160D80816D7BCA76 /* Pets */,
 				26AFE47F673F4D6494877740 /* Schedule */,
+				D10000000000000000000005 /* Track */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		D10000000000000000000005 /* Track */ = {
+			isa = PBXGroup;
+			children = (
+				D10000000000000000000003 /* TrackView.swift */,
+			);
+			path = Track;
 			sourceTree = "<group>";
 		};
 		26AFE47F673F4D6494877740 /* Schedule */ = {
@@ -108,6 +121,7 @@
 				B9D7E82A1C3B4D5E6F708192 /* HomeDashboardModels.swift */,
 				E2F3A4B5C6D7081920A3B4C5D /* ScheduleEvent.swift */,
 				A2B3C4D5E6F7081920A3B4C5 /* PetProfile.swift */,
+				D10000000000000000000001 /* TrackModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -212,6 +226,8 @@
 				434D782485F3563D3710D4C1 /* ScheduleView.swift in Sources */,
 				3DAC0E74E7E768C6D45D5F62 /* ScheduleViewModel.swift in Sources */,
 				D1E2F3A4B5C6D7081920A3B4C /* ScheduleEvent.swift in Sources */,
+				D10000000000000000000002 /* TrackModels.swift in Sources */,
+				D10000000000000000000004 /* TrackView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

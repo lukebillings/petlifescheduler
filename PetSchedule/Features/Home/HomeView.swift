@@ -29,11 +29,15 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity, alignment: .topLeading)
 
                         compactSection(title: "To-dos", systemImage: "checklist") {
-                            VStack(alignment: .leading, spacing: 0) {
-                                ForEach(Array(viewModel.todos.enumerated()), id: \.element.id) { index, todo in
-                                    compactTodoRow(todo)
-                                    if index < viewModel.todos.count - 1 {
-                                        Divider().padding(.leading, 28)
+                            if viewModel.todos.isEmpty {
+                                HomeEmptyHint("Add tasks in Track.")
+                            } else {
+                                VStack(alignment: .leading, spacing: 0) {
+                                    ForEach(Array(viewModel.todos.enumerated()), id: \.element.id) { index, todo in
+                                        compactTodoRow(todo)
+                                        if index < viewModel.todos.count - 1 {
+                                            Divider().padding(.leading, 28)
+                                        }
                                     }
                                 }
                             }
@@ -43,11 +47,15 @@ struct HomeView: View {
 
                     HStack(alignment: .top, spacing: 10) {
                         compactSection(title: "Habits", systemImage: "repeat.circle") {
-                            VStack(alignment: .leading, spacing: 0) {
-                                ForEach(Array(viewModel.habits.enumerated()), id: \.element.id) { index, habit in
-                                    compactHabitRow(habit)
-                                    if index < viewModel.habits.count - 1 {
-                                        Divider().padding(.leading, 28)
+                            if viewModel.habits.isEmpty {
+                                HomeEmptyHint("Habits live in Track.")
+                            } else {
+                                VStack(alignment: .leading, spacing: 0) {
+                                    ForEach(Array(viewModel.habits.enumerated()), id: \.element.id) { index, habit in
+                                        compactHabitRow(habit)
+                                        if index < viewModel.habits.count - 1 {
+                                            Divider().padding(.leading, 28)
+                                        }
                                     }
                                 }
                             }
@@ -55,9 +63,13 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity, alignment: .topLeading)
 
                         compactSection(title: "States", systemImage: "heart.text.square") {
-                            VStack(alignment: .leading, spacing: 6) {
-                                ForEach(viewModel.petStates) { state in
-                                    compactStateRow(state)
+                            if viewModel.petStates.isEmpty {
+                                HomeEmptyHint("Log energy & mood in Track.")
+                            } else {
+                                VStack(alignment: .leading, spacing: 6) {
+                                    ForEach(viewModel.petStates) { state in
+                                        compactStateRow(state)
+                                    }
                                 }
                             }
                         }
@@ -65,9 +77,13 @@ struct HomeView: View {
                     }
 
                     compactSection(title: "Age year", systemImage: "hourglass.bottomhalf.filled") {
-                        HStack(alignment: .top, spacing: 10) {
-                            ForEach(viewModel.dogs) { dog in
-                                compactDogAgeCell(dog)
+                        if viewModel.dogs.isEmpty {
+                            HomeEmptyHint("Add a pet with birthday in Pets.")
+                        } else {
+                            HStack(alignment: .top, spacing: 10) {
+                                ForEach(viewModel.dogs) { dog in
+                                    compactDogAgeCell(dog)
+                                }
                             }
                         }
                     }
@@ -265,5 +281,5 @@ private struct HomeBackgroundView: View {
 }
 
 #Preview("Home") {
-    HomeView(viewModel: HomeViewModel())
+    HomeView(viewModel: HomeViewModel(trackStore: TrackStore()))
 }

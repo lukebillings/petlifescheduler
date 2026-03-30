@@ -4,11 +4,10 @@ import Foundation
 final class HomeViewModel {
     private let calendar = Calendar.current
 
+    /// Shared to-dos, habits, and wellness logs.
+    var trackStore: TrackStore
+
     var calendarItems: [HomeCalendarItem] = []
-    var todos: [HomeTodo] = []
-    var habits: [HomeHabit] = []
-    var petStates: [PetStateItem] = []
-    var dogs: [HomeDog] = []
 
     var todayCalendarItems: [HomeCalendarItem] {
         calendarItems
@@ -16,18 +15,59 @@ final class HomeViewModel {
             .sorted { $0.startTime < $1.startTime }
     }
 
-    init() {
-        loadSampleData()
+    var todos: [HomeTodo] {
+        trackStore.todos
+            .sorted { a, b in
+                if a.isDone != b.isDone { return !a.isDone && b.isDone }
+                return a.createdAt > b.createdAt
+            }
+            .map { HomeTodo(id: $0.id, title: $0.title, isDone: $0.isDone) }
+    }
+
+    var habits: [HomeHabit] {
+        let key = trackStore.todayDayKey
+        return trackStore.habits.map { h in
+            HomeHabit(
+                id: h.id,
+                title: h.title,
+                completedToday: h.isCompleted(on: key),
+                targetSummary: h.detail.isEmpty ? "Daily" : h.detail
+            )
+        }
+    }
+
+    var petStates: [PetStateItem] {
+        trackStore.wellnessLogs.prefix(4).map { log in
+            PetStateItem(
+                id: log.id,
+                petName: log.petName.isEmpty ? "State" : log.petName,
+                label: "Energy · mood",
+                value: "\(log.energy) · \(log.happiness)",
+                symbolName: "heart.fill"
+            )
+        }
+    }
+
+    /// Pets with a saved date of birth (for age-year ring).
+    var dogs: [HomeDog] {
+        PetProfileStorage.load().compactMap { profile -> HomeDog? in
+            guard let dob = profile.dateOfBirth else { return nil }
+            let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            return HomeDog(id: profile.id, name: name.isEmpty ? "Pet" : name, birthday: dob)
+        }
+    }
+
+    init(trackStore: TrackStore) {
+        self.trackStore = trackStore
+        loadSampleCalendarOnly()
     }
 
     func toggleTodo(id: UUID) {
-        guard let i = todos.firstIndex(where: { $0.id == id }) else { return }
-        todos[i].isDone.toggle()
+        trackStore.toggleTodo(id: id)
     }
 
     func toggleHabit(id: UUID) {
-        guard let i = habits.firstIndex(where: { $0.id == id }) else { return }
-        habits[i].completedToday.toggle()
+        trackStore.toggleHabitToday(id: id)
     }
 
     func ageYearProgress(for dog: HomeDog) -> Double {
@@ -38,7 +78,7 @@ final class HomeViewModel {
         DogAgeYear.chronologicalYears(birthday: dog.birthday)
     }
 
-    private func loadSampleData() {
+    private func loadSampleCalendarOnly() {
         let today = Date()
         func timeToday(hour: Int, minute: Int) -> Date {
             calendar.date(bySettingHour: hour, minute: minute, second: 0, of: today) ?? today
@@ -49,31 +89,6 @@ final class HomeViewModel {
             HomeCalendarItem(id: UUID(), title: "Meal — breakfast", startTime: timeToday(hour: 7, minute: 30), symbolName: "leaf.fill"),
             HomeCalendarItem(id: UUID(), title: "Grooming / brush", startTime: timeToday(hour: 17, minute: 0), symbolName: "sparkles"),
             HomeCalendarItem(id: UUID(), title: "Training session", startTime: timeToday(hour: 12, minute: 15), symbolName: "graduationcap.fill"),
-        ]
-
-        todos = [
-            HomeTodo(id: UUID(), title: "Refill water fountain", isDone: false),
-            HomeTodo(id: UUID(), title: "Order flea & tick refill", isDone: false),
-            HomeTodo(id: UUID(), title: "Book nail trim", isDone: true),
-        ]
-
-        habits = [
-            HomeHabit(id: UUID(), title: "Dental chew", completedToday: true, targetSummary: "1× daily"),
-            HomeHabit(id: UUID(), title: "Play / enrichment", completedToday: false, targetSummary: "20 min"),
-            HomeHabit(id: UUID(), title: "Log weight", completedToday: false, targetSummary: "Weekly Mon"),
-        ]
-
-        petStates = [
-            PetStateItem(id: UUID(), petName: "Maple", label: "Energy", value: "Medium", symbolName: "bolt.fill"),
-            PetStateItem(id: UUID(), petName: "Maple", label: "Appetite", value: "Normal", symbolName: "fork.knife"),
-            PetStateItem(id: UUID(), petName: "Cedar", label: "Mood", value: "Playful", symbolName: "face.smiling"),
-        ]
-
-        let mapleBD = calendar.date(from: DateComponents(year: 2021, month: 6, day: 15)) ?? today
-        let cedarBD = calendar.date(from: DateComponents(year: 2019, month: 2, day: 3)) ?? today
-        dogs = [
-            HomeDog(id: UUID(), name: "Maple", birthday: mapleBD),
-            HomeDog(id: UUID(), name: "Cedar", birthday: cedarBD),
         ]
     }
 }
