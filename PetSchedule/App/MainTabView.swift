@@ -3,7 +3,7 @@ import SwiftUI
 struct MainTabView: View {
     @State private var selectedTab: AppTab = .home
     @State private var homeViewModel = HomeViewModel()
-    @State private var scheduleViewModel = SchedulePlaceholderViewModel()
+    @State private var scheduleViewModel = ScheduleViewModel()
     @State private var petsViewModel = PetsPlaceholderViewModel()
 
     var body: some View {
@@ -12,7 +12,7 @@ struct MainTabView: View {
                 .tabItem { Label(AppTab.home.title, systemImage: AppTab.home.symbolName) }
                 .tag(AppTab.home)
 
-            SchedulePlaceholderView(viewModel: scheduleViewModel)
+            ScheduleView(viewModel: scheduleViewModel)
                 .tabItem { Label(AppTab.schedule.title, systemImage: AppTab.schedule.symbolName) }
                 .tag(AppTab.schedule)
 

@@ -10,8 +10,9 @@
 		A7E8F91C3B4D2A506E8F9012 /* HomeDashboardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9D7E82A1C3B4D5E6F708192 /* HomeDashboardModels.swift */; };
 		0AA98343B7E5928EA46A6DBF /* PetsPlaceholderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B8E3578A31F2A95A734CC4A /* PetsPlaceholderViewModel.swift */; };
 		19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */; };
-		3DAC0E74E7E768C6D45D5F62 /* SchedulePlaceholderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73208C9D5DCF2444ADDA84FB /* SchedulePlaceholderViewModel.swift */; };
-		434D782485F3563D3710D4C1 /* SchedulePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD6F766BCE742D17C531795 /* SchedulePlaceholderView.swift */; };
+		3DAC0E74E7E768C6D45D5F62 /* ScheduleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73208C9D5DCF2444ADDA84FB /* ScheduleViewModel.swift */; };
+		D1E2F3A4B5C6D7081920A3B4C /* ScheduleEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2F3A4B5C6D7081920A3B4C5D /* ScheduleEvent.swift */; };
+		434D782485F3563D3710D4C1 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD6F766BCE742D17C531795 /* ScheduleView.swift */; };
 		627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65728BE60D7A10B782998709 /* PetScheduleApp.swift */; };
 		6CC169553932DCAEB86310CA /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9B8A27E5B067987B5C88DC /* MainTabView.swift */; };
 		845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 004BEB5D563AD507764446BB /* Assets.xcassets */; };
@@ -21,13 +22,14 @@
 
 /* Begin PBXFileReference section */
 		004BEB5D563AD507764446BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		2AD6F766BCE742D17C531795 /* SchedulePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulePlaceholderView.swift; sourceTree = "<group>"; };
+		2AD6F766BCE742D17C531795 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
 		4A5C7586D9735ADDB5C9842C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		4A9B8A27E5B067987B5C88DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		53A28B04A9761BC0077C9AF4 /* PetsPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsPlaceholderView.swift; sourceTree = "<group>"; };
 		65728BE60D7A10B782998709 /* PetScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleApp.swift; sourceTree = "<group>"; };
 		B9D7E82A1C3B4D5E6F708192 /* HomeDashboardModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDashboardModels.swift; sourceTree = "<group>"; };
-		73208C9D5DCF2444ADDA84FB /* SchedulePlaceholderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulePlaceholderViewModel.swift; sourceTree = "<group>"; };
+		E2F3A4B5C6D7081920A3B4C5D /* ScheduleEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleEvent.swift; sourceTree = "<group>"; };
+		73208C9D5DCF2444ADDA84FB /* ScheduleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViewModel.swift; sourceTree = "<group>"; };
 		9B8E3578A31F2A95A734CC4A /* PetsPlaceholderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsPlaceholderViewModel.swift; sourceTree = "<group>"; };
 		ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -47,8 +49,8 @@
 		26AFE47F673F4D6494877740 /* Schedule */ = {
 			isa = PBXGroup;
 			children = (
-				2AD6F766BCE742D17C531795 /* SchedulePlaceholderView.swift */,
-				73208C9D5DCF2444ADDA84FB /* SchedulePlaceholderViewModel.swift */,
+				2AD6F766BCE742D17C531795 /* ScheduleView.swift */,
+				73208C9D5DCF2444ADDA84FB /* ScheduleViewModel.swift */,
 			);
 			path = Schedule;
 			sourceTree = "<group>";
@@ -102,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				B9D7E82A1C3B4D5E6F708192 /* HomeDashboardModels.swift */,
+				E2F3A4B5C6D7081920A3B4C5D /* ScheduleEvent.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -202,8 +205,9 @@
 				627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */,
 				8B6CCB39FC709E4925634AB7 /* PetsPlaceholderView.swift in Sources */,
 				0AA98343B7E5928EA46A6DBF /* PetsPlaceholderViewModel.swift in Sources */,
-				434D782485F3563D3710D4C1 /* SchedulePlaceholderView.swift in Sources */,
-				3DAC0E74E7E768C6D45D5F62 /* SchedulePlaceholderViewModel.swift in Sources */,
+				434D782485F3563D3710D4C1 /* ScheduleView.swift in Sources */,
+				3DAC0E74E7E768C6D45D5F62 /* ScheduleViewModel.swift in Sources */,
+				D1E2F3A4B5C6D7081920A3B4C /* ScheduleEvent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
