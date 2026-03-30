@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ScheduleView: View {
     @Bindable var viewModel: ScheduleViewModel
+    var petsViewModel: PetsViewModel
+
+    @State private var showAddEvent = false
 
     var body: some View {
         NavigationStack {
@@ -34,6 +37,20 @@ struct ScheduleView: View {
             .background(scheduleBackground)
             .navigationTitle("Schedule")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Add", systemImage: "plus") {
+                        showAddEvent = true
+                    }
+                }
+            }
+            .sheet(isPresented: $showAddEvent) {
+                AddScheduleEventSheet(
+                    scheduleViewModel: viewModel,
+                    petsViewModel: petsViewModel,
+                    onDismiss: { showAddEvent = false }
+                )
+            }
         }
         .preferredColorScheme(.light)
     }
@@ -138,12 +155,22 @@ private struct ScheduleTodayPanel: View {
                 ContentUnavailableView(
                     "Nothing scheduled",
                     systemImage: "calendar",
-                    description: Text("No events today.")
+                    description: Text("Tap + to add an event and choose a pet or All pets.")
                 )
             } else {
                 List {
                     ForEach(viewModel.eventsToday) { event in
                         ScheduleEventRow(event: event)
+                            .contextMenu {
+                                Button("Delete", role: .destructive) {
+                                    viewModel.deleteEvent(id: event.id)
+                                }
+                            }
+                    }
+                    .onDelete { indexSet in
+                        for index in indexSet {
+                            viewModel.deleteEvent(id: viewModel.eventsToday[index].id)
+                        }
                     }
                 }
                 .listStyle(.plain)
@@ -163,7 +190,9 @@ private struct ScheduleWeekPanel: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
                 ForEach(days, id: \.self) { day in
-                    ScheduleDayBucket(day: day, events: viewModel.events(on: day))
+                    ScheduleDayBucket(day: day, events: viewModel.events(on: day)) { id in
+                        viewModel.deleteEvent(id: id)
+                    }
                 }
             }
             .padding(.horizontal, 16)
@@ -175,6 +204,7 @@ private struct ScheduleWeekPanel: View {
 private struct ScheduleDayBucket: View {
     let day: Date
     let events: [ScheduleEvent]
+    var onDeleteEvent: (UUID) -> Void
 
     private var header: String {
         let f = DateFormatter()
@@ -197,6 +227,11 @@ private struct ScheduleDayBucket: View {
                 VStack(spacing: 0) {
                     ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
                         ScheduleEventRow(event: event, compact: true)
+                            .contextMenu {
+                                Button("Delete", role: .destructive) {
+                                    onDeleteEvent(event.id)
+                                }
+                            }
                         if index < events.count - 1 {
                             Divider().padding(.leading, 36)
                         }
@@ -301,6 +336,9 @@ private struct ScheduleEventRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(event.title)
                     .font(compact ? .caption.weight(.medium) : .body.weight(.medium))
+                Text(event.petLabel)
+                    .font(compact ? .caption2 : .caption)
+                    .foregroundStyle(.tertiary)
                 Text(event.timeString())
                     .font(compact ? .caption2 : .caption)
                     .foregroundStyle(.secondary)
@@ -311,6 +349,106 @@ private struct ScheduleEventRow: View {
     }
 }
 
+// MARK: - Add event
+
+private enum ScheduleGlyph: String, CaseIterable, Identifiable {
+    case walk = "figure.walk"
+    case meal = "leaf.fill"
+    case vet = "cross.case.fill"
+    case meds = "pills.fill"
+    case training = "graduationcap.fill"
+    case groom = "sparkles"
+    case play = "hare.fill"
+    case weigh = "scalemass.fill"
+    case other = "calendar"
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .walk: "Walk"
+        case .meal: "Meal"
+        case .vet: "Vet"
+        case .meds: "Medicine"
+        case .training: "Training"
+        case .groom: "Grooming"
+        case .play: "Play / social"
+        case .weigh: "Weigh-in"
+        case .other: "Other"
+        }
+    }
+}
+
+private struct AddScheduleEventSheet: View {
+    var scheduleViewModel: ScheduleViewModel
+    var petsViewModel: PetsViewModel
+    var onDismiss: () -> Void
+
+    @State private var titleText = ""
+    @State private var startTime = Date()
+    @State private var glyph: ScheduleGlyph = .walk
+    @State private var selectedPetId: UUID?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("Pet", selection: $selectedPetId) {
+                        Text("All pets").tag(nil as UUID?)
+                        ForEach(petsViewModel.pets) { pet in
+                            Text(petDisplayName(pet)).tag(Optional(pet.id))
+                        }
+                    }
+                    if petsViewModel.pets.isEmpty {
+                        Text("Add pets under the Pets tab to assign this event to a specific animal.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Animal")
+                }
+
+                Section {
+                    TextField("Title", text: $titleText)
+                    DatePicker("Date & time", selection: $startTime)
+                    Picker("Type", selection: $glyph) {
+                        ForEach(ScheduleGlyph.allCases) { g in
+                            Label(g.label, systemImage: g.rawValue).tag(g)
+                        }
+                    }
+                } header: {
+                    Text("Event")
+                }
+            }
+            .navigationTitle("New event")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onDismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Add") {
+                        let pet = petsViewModel.pets.first { $0.id == selectedPetId }
+                        scheduleViewModel.addEvent(
+                            title: titleText,
+                            startTime: startTime,
+                            symbolName: glyph.rawValue,
+                            pet: pet
+                        )
+                        onDismiss()
+                    }
+                    .disabled(titleText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+    }
+
+    private func petDisplayName(_ pet: PetProfile) -> String {
+        let n = pet.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return n.isEmpty ? "Unnamed pet" : n
+    }
+}
+
 #Preview("Schedule") {
-    ScheduleView(viewModel: ScheduleViewModel())
+    ScheduleView(viewModel: ScheduleViewModel(), petsViewModel: PetsViewModel())
 }

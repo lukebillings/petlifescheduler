@@ -19,6 +19,7 @@ enum ScheduleScope: String, CaseIterable, Identifiable {
 @Observable
 final class ScheduleViewModel {
     private let calendar = Calendar.current
+    private let storageKey = "PetSchedule.schedule.events.v1"
 
     var scope: ScheduleScope = .today
     /// Week or month views move this anchor; Today always uses calendar start of current day for filtering.
@@ -26,7 +27,7 @@ final class ScheduleViewModel {
     var events: [ScheduleEvent] = []
 
     init() {
-        loadSampleEvents()
+        loadEvents()
     }
 
     var todayStart: Date {
@@ -104,25 +105,50 @@ final class ScheduleViewModel {
         anchorDate = .now
     }
 
-    private func loadSampleEvents() {
-        let today = Date()
-        let dayStart = calendar.startOfDay(for: today)
-
-        func at(dayOffset: Int, hour: Int, minute: Int) -> Date {
-            let d = calendar.date(byAdding: .day, value: dayOffset, to: dayStart) ?? today
-            return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: d) ?? d
+    func addEvent(
+        title: String,
+        startTime: Date,
+        symbolName: String,
+        pet: PetProfile?
+    ) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let pid = pet?.id
+        let pname: String
+        if let pet {
+            let n = pet.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            pname = n.isEmpty ? "Pet" : n
+        } else {
+            pname = ""
         }
+        let new = ScheduleEvent(
+            id: UUID(),
+            title: trimmed,
+            startTime: startTime,
+            symbolName: symbolName,
+            petId: pid,
+            petName: pname
+        )
+        events = (events + [new]).sorted { $0.startTime < $1.startTime }
+        saveEvents()
+    }
 
-        events = [
-            ScheduleEvent(id: UUID(), title: "Breakfast", startTime: at(dayOffset: 0, hour: 7, minute: 30), symbolName: "leaf.fill"),
-            ScheduleEvent(id: UUID(), title: "Morning walk", startTime: at(dayOffset: 0, hour: 8, minute: 0), symbolName: "figure.walk"),
-            ScheduleEvent(id: UUID(), title: "Training", startTime: at(dayOffset: 0, hour: 12, minute: 15), symbolName: "graduationcap.fill"),
-            ScheduleEvent(id: UUID(), title: "Evening walk", startTime: at(dayOffset: 0, hour: 18, minute: 30), symbolName: "figure.walk"),
-            ScheduleEvent(id: UUID(), title: "Grooming", startTime: at(dayOffset: 1, hour: 17, minute: 0), symbolName: "sparkles"),
-            ScheduleEvent(id: UUID(), title: "Vet check-in", startTime: at(dayOffset: 2, hour: 10, minute: 0), symbolName: "cross.case.fill"),
-            ScheduleEvent(id: UUID(), title: "Playdate", startTime: at(dayOffset: 3, hour: 15, minute: 0), symbolName: "hare.fill"),
-            ScheduleEvent(id: UUID(), title: "Medication", startTime: at(dayOffset: -1, hour: 8, minute: 0), symbolName: "pills.fill"),
-            ScheduleEvent(id: UUID(), title: "Weigh-in", startTime: at(dayOffset: 5, hour: 9, minute: 30), symbolName: "scalemass.fill"),
-        ]
+    func deleteEvent(id: UUID) {
+        events = events.filter { $0.id != id }
+        saveEvents()
+    }
+
+    private func loadEvents() {
+        guard let data = UserDefaults.standard.data(forKey: storageKey),
+              let decoded = try? JSONDecoder().decode([ScheduleEvent].self, from: data) else {
+            events = []
+            return
+        }
+        events = decoded.sorted { $0.startTime < $1.startTime }
+    }
+
+    private func saveEvents() {
+        guard let data = try? JSONEncoder().encode(events) else { return }
+        UserDefaults.standard.set(data, forKey: storageKey)
     }
 }

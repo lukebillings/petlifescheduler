@@ -24,7 +24,7 @@ struct MainTabView: View {
                 .tabItem { Label(AppTab.home.title, systemImage: AppTab.home.symbolName) }
                 .tag(AppTab.home)
 
-            ScheduleView(viewModel: scheduleViewModel)
+            ScheduleView(viewModel: scheduleViewModel, petsViewModel: petsViewModel)
                 .tabItem { Label(AppTab.schedule.title, systemImage: AppTab.schedule.symbolName) }
                 .tag(AppTab.schedule)
 
