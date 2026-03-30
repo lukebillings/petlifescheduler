@@ -4,7 +4,7 @@ struct MainTabView: View {
     @State private var selectedTab: AppTab = .home
     @State private var homeViewModel = HomeViewModel()
     @State private var scheduleViewModel = ScheduleViewModel()
-    @State private var petsViewModel = PetsPlaceholderViewModel()
+    @State private var petsViewModel = PetsViewModel()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -16,7 +16,7 @@ struct MainTabView: View {
                 .tabItem { Label(AppTab.schedule.title, systemImage: AppTab.schedule.symbolName) }
                 .tag(AppTab.schedule)
 
-            PetsPlaceholderView(viewModel: petsViewModel)
+            PetsView(viewModel: petsViewModel)
                 .tabItem { Label(AppTab.pets.title, systemImage: AppTab.pets.symbolName) }
                 .tag(AppTab.pets)
         }
