@@ -134,6 +134,18 @@ private struct PetDetailView: View {
                             detailLine("Weight", formatKg(pet.weightKg))
                         }
 
+                        detailSection("Insurance") {
+                            detailMultiline(pet.insuranceDetails)
+                        }
+
+                        detailSection("Vet") {
+                            detailMultiline(pet.vetDetails)
+                        }
+
+                        detailSection("Groomers") {
+                            detailMultiline(pet.groomerDetails)
+                        }
+
                         detailSection("Notes") {
                             Text(pet.notes.isEmpty ? "—" : pet.notes)
                                 .font(.body)
@@ -214,6 +226,14 @@ private struct PetDetailView: View {
                 .font(.subheadline.weight(.medium))
             Spacer(minLength: 0)
         }
+    }
+
+    private func detailMultiline(_ text: String?) -> some View {
+        let trimmed = text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return Text(trimmed.isEmpty ? "—" : trimmed)
+            .font(.body)
+            .foregroundStyle(trimmed.isEmpty ? .secondary : .primary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func formatCm(_ value: Double?) -> String {
@@ -380,6 +400,33 @@ private struct PetProfileEditorView: View {
             }
 
             Section {
+                TextField("Insurance", text: optionalStringBinding(\.insuranceDetails), axis: .vertical)
+                    .lineLimit(3 ... 12)
+            } header: {
+                Text("Insurance")
+            } footer: {
+                Text("Provider, policy number, renewal date, claims contact.")
+            }
+
+            Section {
+                TextField("Vet", text: optionalStringBinding(\.vetDetails), axis: .vertical)
+                    .lineLimit(3 ... 12)
+            } header: {
+                Text("Vet")
+            } footer: {
+                Text("Clinic, veterinarian, phone, address.")
+            }
+
+            Section {
+                TextField("Groomers", text: optionalStringBinding(\.groomerDetails), axis: .vertical)
+                    .lineLimit(3 ... 12)
+            } header: {
+                Text("Groomers")
+            } footer: {
+                Text("Salon or mobile groomer, contact, notes.")
+            }
+
+            Section {
                 TextField("Notes", text: $draft.notes, axis: .vertical)
                     .lineLimit(3 ... 8)
             } header: {
@@ -413,6 +460,16 @@ private struct PetProfileEditorView: View {
     private func applyMeasurementsFromText() {
         draft.heightCm = Self.parseDouble(heightText)
         draft.weightKg = Self.parseDouble(weightText)
+    }
+
+    private func optionalStringBinding(_ keyPath: WritableKeyPath<PetProfile, String?>) -> Binding<String> {
+        Binding(
+            get: { draft[keyPath: keyPath] ?? "" },
+            set: { newValue in
+                let t = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+                draft[keyPath: keyPath] = t.isEmpty ? nil : t
+            }
+        )
     }
 
     private static func formatOptionalDouble(_ value: Double?) -> String {

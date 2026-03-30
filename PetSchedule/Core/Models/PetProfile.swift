@@ -14,6 +14,12 @@ struct PetProfile: Identifiable, Codable, Equatable {
     var weightKg: Double?
     var breed: String
     var notes: String
+    /// Provider, policy number, renewal dates, etc.
+    var insuranceDetails: String?
+    /// Clinic name, vet name, phone, address, hours.
+    var vetDetails: String?
+    /// Groomer / salon name, contact, usual services.
+    var groomerDetails: String?
 
     init(
         id: UUID = UUID(),
@@ -24,7 +30,10 @@ struct PetProfile: Identifiable, Codable, Equatable {
         heightCm: Double? = nil,
         weightKg: Double? = nil,
         breed: String = "",
-        notes: String = ""
+        notes: String = "",
+        insuranceDetails: String? = nil,
+        vetDetails: String? = nil,
+        groomerDetails: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -35,6 +44,9 @@ struct PetProfile: Identifiable, Codable, Equatable {
         self.weightKg = weightKg
         self.breed = breed
         self.notes = notes
+        self.insuranceDetails = insuranceDetails
+        self.vetDetails = vetDetails
+        self.groomerDetails = groomerDetails
     }
 }
 
