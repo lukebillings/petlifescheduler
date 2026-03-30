@@ -1,0 +1,407 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0AA98343B7E5928EA46A6DBF /* PetsPlaceholderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B8E3578A31F2A95A734CC4A /* PetsPlaceholderViewModel.swift */; };
+		19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */; };
+		1C6DD7A79367693AB3638D1E /* LiquidGlassIconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EED4C28BA52228A22589416 /* LiquidGlassIconButton.swift */; };
+		3DAC0E74E7E768C6D45D5F62 /* SchedulePlaceholderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73208C9D5DCF2444ADDA84FB /* SchedulePlaceholderViewModel.swift */; };
+		434D782485F3563D3710D4C1 /* SchedulePlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD6F766BCE742D17C531795 /* SchedulePlaceholderView.swift */; };
+		627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65728BE60D7A10B782998709 /* PetScheduleApp.swift */; };
+		6CC169553932DCAEB86310CA /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9B8A27E5B067987B5C88DC /* MainTabView.swift */; };
+		845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 004BEB5D563AD507764446BB /* Assets.xcassets */; };
+		8B6CCB39FC709E4925634AB7 /* PetsPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53A28B04A9761BC0077C9AF4 /* PetsPlaceholderView.swift */; };
+		8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5C7586D9735ADDB5C9842C /* HomeView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		004BEB5D563AD507764446BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2AD6F766BCE742D17C531795 /* SchedulePlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulePlaceholderView.swift; sourceTree = "<group>"; };
+		4A5C7586D9735ADDB5C9842C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		4A9B8A27E5B067987B5C88DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		53A28B04A9761BC0077C9AF4 /* PetsPlaceholderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsPlaceholderView.swift; sourceTree = "<group>"; };
+		65728BE60D7A10B782998709 /* PetScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleApp.swift; sourceTree = "<group>"; };
+		6EED4C28BA52228A22589416 /* LiquidGlassIconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiquidGlassIconButton.swift; sourceTree = "<group>"; };
+		73208C9D5DCF2444ADDA84FB /* SchedulePlaceholderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulePlaceholderViewModel.swift; sourceTree = "<group>"; };
+		9B8E3578A31F2A95A734CC4A /* PetsPlaceholderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsPlaceholderViewModel.swift; sourceTree = "<group>"; };
+		ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0308B8A05C78834394D5131C /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				F0C471B52A56DBE9A768AC24 /* Home */,
+				AC407893160D80816D7BCA76 /* Pets */,
+				26AFE47F673F4D6494877740 /* Schedule */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		26AFE47F673F4D6494877740 /* Schedule */ = {
+			isa = PBXGroup;
+			children = (
+				2AD6F766BCE742D17C531795 /* SchedulePlaceholderView.swift */,
+				73208C9D5DCF2444ADDA84FB /* SchedulePlaceholderViewModel.swift */,
+			);
+			path = Schedule;
+			sourceTree = "<group>";
+		};
+		2D74B71F20FFB495BE5C5E86 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FC2894989A3CB71EAFB3E03A /* PetSchedule.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		30402B1410501881816343F2 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				6EED4C28BA52228A22589416 /* LiquidGlassIconButton.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		47825ECA808711CF71706F2A /* PetSchedule */ = {
+			isa = PBXGroup;
+			children = (
+				65728BE60D7A10B782998709 /* PetScheduleApp.swift */,
+				677075B854D94DE831ED2864 /* App */,
+				E85428E8472573B49803931E /* Core */,
+				0308B8A05C78834394D5131C /* Features */,
+				F1D3613CB6688AAF07B6877A /* Resources */,
+			);
+			path = PetSchedule;
+			sourceTree = "<group>";
+		};
+		677075B854D94DE831ED2864 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				4A9B8A27E5B067987B5C88DC /* MainTabView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		8540F915B73F12C9DB2CCCA7 = {
+			isa = PBXGroup;
+			children = (
+				47825ECA808711CF71706F2A /* PetSchedule */,
+				2D74B71F20FFB495BE5C5E86 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AC407893160D80816D7BCA76 /* Pets */ = {
+			isa = PBXGroup;
+			children = (
+				53A28B04A9761BC0077C9AF4 /* PetsPlaceholderView.swift */,
+				9B8E3578A31F2A95A734CC4A /* PetsPlaceholderViewModel.swift */,
+			);
+			path = Pets;
+			sourceTree = "<group>";
+		};
+		E85428E8472573B49803931E /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				30402B1410501881816343F2 /* Components */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		F0C471B52A56DBE9A768AC24 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				4A5C7586D9735ADDB5C9842C /* HomeView.swift */,
+				ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		F1D3613CB6688AAF07B6877A /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				004BEB5D563AD507764446BB /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		44F6DA2C68AEB125D3167B79 /* PetSchedule */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0EDFF62B5F5CFB15C8C18BFD /* Build configuration list for PBXNativeTarget "PetSchedule" */;
+			buildPhases = (
+				ED50AF7A1675914A8CF3A8BF /* Sources */,
+				C0085798E0CAB7E4A85DB2BC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PetSchedule;
+			packageProductDependencies = (
+			);
+			productName = PetSchedule;
+			productReference = FC2894989A3CB71EAFB3E03A /* PetSchedule.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5EB89DE4DC41388DEAC4BDF8 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = 61C35A43BB6ED4A8FF7E83CE /* Build configuration list for PBXProject "PetSchedule" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 8540F915B73F12C9DB2CCCA7;
+			minimizedProjectReferenceProxies = 1;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				44F6DA2C68AEB125D3167B79 /* PetSchedule */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C0085798E0CAB7E4A85DB2BC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		ED50AF7A1675914A8CF3A8BF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */,
+				19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */,
+				1C6DD7A79367693AB3638D1E /* LiquidGlassIconButton.swift in Sources */,
+				6CC169553932DCAEB86310CA /* MainTabView.swift in Sources */,
+				627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */,
+				8B6CCB39FC709E4925634AB7 /* PetsPlaceholderView.swift in Sources */,
+				0AA98343B7E5928EA46A6DBF /* PetsPlaceholderViewModel.swift in Sources */,
+				434D782485F3563D3710D4C1 /* SchedulePlaceholderView.swift in Sources */,
+				3DAC0E74E7E768C6D45D5F62 /* SchedulePlaceholderViewModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1AA09E554EA62C4740C7CF45 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 66VA8628J7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PetSchedule;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lukebillings.PetSchedule;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		42FC6D32401AA93995C1CD52 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		476C2EB7D5914FCCD5F71989 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		8FF1F4979FEB30A0FA7931B1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 66VA8628J7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PetSchedule;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lukebillings.PetSchedule;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0EDFF62B5F5CFB15C8C18BFD /* Build configuration list for PBXNativeTarget "PetSchedule" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1AA09E554EA62C4740C7CF45 /* Debug */,
+				8FF1F4979FEB30A0FA7931B1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		61C35A43BB6ED4A8FF7E83CE /* Build configuration list for PBXProject "PetSchedule" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				42FC6D32401AA93995C1CD52 /* Debug */,
+				476C2EB7D5914FCCD5F71989 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5EB89DE4DC41388DEAC4BDF8 /* Project object */;
+}
