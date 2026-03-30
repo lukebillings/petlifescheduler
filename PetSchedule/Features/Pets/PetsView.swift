@@ -109,6 +109,7 @@ private struct PetDetailView: View {
 
     @State private var showEdit = false
     @State private var showDeleteConfirm = false
+    @State private var exportShareItems: ExportSharePayload?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -152,6 +153,14 @@ private struct PetDetailView: View {
                                 .foregroundStyle(pet.notes.isEmpty ? .secondary : .primary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
+
+                        Button {
+                            exportShareItems = Self.makeCSVSharePayload(for: pet)
+                        } label: {
+                            Label("Export pet data to CSV", systemImage: "square.and.arrow.up")
+                                .frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.bordered)
                     }
                     .padding()
                 }
@@ -180,6 +189,12 @@ private struct PetDetailView: View {
                     NavigationStack {
                         PetProfileEditorView(mode: .edit(pet), viewModel: viewModel)
                     }
+                }
+                .sheet(item: $exportShareItems) { payload in
+                    ActivityView(activityItems: [payload.fileURL])
+                        .onDisappear {
+                            try? FileManager.default.removeItem(at: payload.fileURL)
+                        }
                 }
             } else {
                 ContentUnavailableView("Pet removed", systemImage: "pawprint")
@@ -257,6 +272,36 @@ private struct PetDetailView: View {
         )
         .ignoresSafeArea()
     }
+
+    private static func makeCSVSharePayload(for pet: PetProfile) -> ExportSharePayload? {
+        let csv = pet.csvExportDocument()
+        guard let data = csv.data(using: .utf8) else { return nil }
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent(pet.suggestedCSVFileName(), isDirectory: false)
+        do {
+            try data.write(to: url, options: .atomic)
+            return ExportSharePayload(fileURL: url)
+        } catch {
+            return nil
+        }
+    }
+}
+
+// MARK: - CSV share sheet
+
+private struct ExportSharePayload: Identifiable {
+    let id = UUID()
+    let fileURL: URL
+}
+
+private struct ActivityView: UIViewControllerRepresentable {
+    var activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 // MARK: - Photo

@@ -6,13 +6,24 @@ final class HomeViewModel {
 
     /// Shared to-dos, habits, and wellness logs.
     var trackStore: TrackStore
+    var scheduleViewModel: ScheduleViewModel
 
-    var calendarItems: [HomeCalendarItem] = []
-
-    var todayCalendarItems: [HomeCalendarItem] {
-        calendarItems
-            .filter { calendar.isDateInToday($0.startTime) }
+    /// Today’s schedule entries for this pet (and any “all pets” events with no specific pet).
+    func todayCalendarItems(forPet profile: PetProfile) -> [HomeCalendarItem] {
+        scheduleViewModel.eventsToday
+            .filter { event in
+                guard let pid = event.petId else { return true }
+                return pid == profile.id
+            }
             .sorted { $0.startTime < $1.startTime }
+            .map {
+                HomeCalendarItem(
+                    id: $0.id,
+                    title: $0.title,
+                    startTime: $0.startTime,
+                    symbolName: $0.symbolName
+                )
+            }
     }
 
     var todos: [HomeTodo] {
@@ -36,18 +47,6 @@ final class HomeViewModel {
         }
     }
 
-    var petStates: [PetStateItem] {
-        trackStore.wellnessLogs.prefix(4).map { log in
-            PetStateItem(
-                id: log.id,
-                petName: log.petName.isEmpty ? "State" : log.petName,
-                label: "Energy · mood",
-                value: "\(log.energy) · \(log.happiness)",
-                symbolName: "heart.fill"
-            )
-        }
-    }
-
     /// Pets with a saved date of birth (for age-year ring).
     var dogs: [HomeDog] {
         PetProfileStorage.load().compactMap { profile -> HomeDog? in
@@ -57,9 +56,57 @@ final class HomeViewModel {
         }
     }
 
-    init(trackStore: TrackStore) {
+    /// All saved pet profiles (for home cards), sorted by name.
+    var homePets: [PetProfile] {
+        PetProfileStorage.load().sorted { a, b in
+            a.name.localizedCaseInsensitiveCompare(b.name) == .orderedAscending
+        }
+    }
+
+    /// Wellness rows for a specific pet (matched by name).
+    func wellnessStateItems(forPet profile: PetProfile) -> [PetStateItem] {
+        let target = Self.normalizedPetKey(profile.name)
+        return trackStore.wellnessLogs
+            .filter { log in
+                let n = Self.normalizedPetKey(log.petName)
+                return !n.isEmpty && n == target
+            }
+            .prefix(6)
+            .map { log in
+                let pn = log.petName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let fallback = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let labelName = pn.isEmpty ? (fallback.isEmpty ? "Pet" : fallback) : pn
+                return PetStateItem(
+                    id: log.id,
+                    petName: labelName,
+                    label: "Energy · mood",
+                    value: Self.wellnessLogValueSummary(log),
+                    symbolName: "heart.fill"
+                )
+            }
+    }
+
+    private static func wellnessLogValueSummary(_ log: WellnessStateLog) -> String {
+        var parts: [String] = ["\(log.energy) · \(log.happiness)"]
+        if let w = log.weightKg { parts.append(String(format: "%.1f kg", w)) }
+        if let h = log.heightCm { parts.append(String(format: "%.1f cm", h)) }
+        return parts.joined(separator: " · ")
+    }
+
+    func homeDog(for profile: PetProfile) -> HomeDog? {
+        guard let dob = profile.dateOfBirth else { return nil }
+        let name = profile.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return HomeDog(id: profile.id, name: name.isEmpty ? "Pet" : name, birthday: dob)
+    }
+
+    private static func normalizedPetKey(_ name: String) -> String {
+        let t = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return t.isEmpty ? "" : t
+    }
+
+    init(trackStore: TrackStore, scheduleViewModel: ScheduleViewModel) {
         self.trackStore = trackStore
-        loadSampleCalendarOnly()
+        self.scheduleViewModel = scheduleViewModel
     }
 
     func toggleTodo(id: UUID) {
@@ -78,17 +125,20 @@ final class HomeViewModel {
         DogAgeYear.chronologicalYears(birthday: dog.birthday)
     }
 
-    private func loadSampleCalendarOnly() {
-        let today = Date()
-        func timeToday(hour: Int, minute: Int) -> Date {
-            calendar.date(bySettingHour: hour, minute: minute, second: 0, of: today) ?? today
+    /// Age ring: full years as "Ny", else months, else days (two lines when not years).
+    func ageRingDisplay(for dog: HomeDog) -> (primary: String, secondary: String, accessibility: String) {
+        let years = chronologicalAge(for: dog)
+        if years >= 1 {
+            return ("\(years)y", "", "\(years) years old")
         }
-
-        calendarItems = [
-            HomeCalendarItem(id: UUID(), title: "Morning walk", startTime: timeToday(hour: 8, minute: 0), symbolName: "figure.walk"),
-            HomeCalendarItem(id: UUID(), title: "Meal — breakfast", startTime: timeToday(hour: 7, minute: 30), symbolName: "leaf.fill"),
-            HomeCalendarItem(id: UUID(), title: "Grooming / brush", startTime: timeToday(hour: 17, minute: 0), symbolName: "sparkles"),
-            HomeCalendarItem(id: UUID(), title: "Training session", startTime: timeToday(hour: 12, minute: 15), symbolName: "graduationcap.fill"),
-        ]
+        let m = calendar.dateComponents([.month], from: dog.birthday, to: Date()).month ?? 0
+        if m >= 1 {
+            let unit = m == 1 ? "mo" : "mos"
+            return (String(m), unit, "\(m) \(unit) old")
+        }
+        let d = max(0, calendar.dateComponents([.day], from: dog.birthday, to: Date()).day ?? 0)
+        let dd = max(d, 1)
+        return (String(dd), "d", dd == 1 ? "1 day old" : "\(dd) days old")
     }
+
 }

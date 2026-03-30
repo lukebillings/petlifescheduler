@@ -42,11 +42,35 @@ struct WellnessStateLog: Identifiable, Codable, Equatable {
     var petName: String
     var energy: String
     var happiness: String
+    /// Optional snapshot when logging state (kilograms).
+    var weightKg: Double?
+    /// Optional snapshot when logging state (centimeters).
+    var heightCm: Double?
 }
 
 enum WellnessOptions {
     static let energyLevels = ["Low", "Medium", "High"]
     static let happinessLevels = ["Unhappy", "Ok", "Happy", "Very happy"]
+
+    /// Index for line charts (0 … count-1). Unknown strings map to the middle bucket.
+    static func energyIndex(_ energy: String) -> Double {
+        if let i = energyLevels.firstIndex(of: energy) { return Double(i) }
+        return Double(energyLevels.count / 2)
+    }
+
+    static func happinessIndex(_ happiness: String) -> Double {
+        if let i = happinessLevels.firstIndex(of: happiness) { return Double(i) }
+        return Double(happinessLevels.count / 2)
+    }
+}
+
+/// Visual state for a day cell in the habit month calendar.
+enum HabitCalendarDayState: Equatable {
+    case future
+    case noHabits
+    case allComplete
+    case partial
+    case missed
 }
 
 // MARK: - Store
@@ -141,6 +165,37 @@ final class TrackStore {
         return habits.allSatisfy { $0.isCompleted(on: dayKey) }
     }
 
+    func habitCalendarDayState(for date: Date) -> HabitCalendarDayState {
+        let key = Self.dayKey(for: date, calendar: calendar)
+        if isFutureDayKey(key) { return .future }
+        if habits.isEmpty { return .noHabits }
+        if allHabitsCompleted(on: key) { return .allComplete }
+        if habits.contains(where: { $0.isCompleted(on: key) }) { return .partial }
+        return .missed
+    }
+
+    /// Leading `nil` padding + each day in the month (like a wall calendar).
+    static func monthGridCells(forMonthContaining date: Date, calendar: Calendar = .current) -> [Date?] {
+        guard
+            let interval = calendar.dateInterval(of: .month, for: date),
+            let daysInMonth = calendar.range(of: .day, in: .month, for: date)?.count
+        else { return [] }
+        let monthStart = interval.start
+        let weekdayOfFirst = calendar.component(.weekday, from: monthStart)
+        let firstWeekday = calendar.firstWeekday
+        let leading = (weekdayOfFirst - firstWeekday + 7) % 7
+        var cells: [Date?] = Array(repeating: nil, count: leading)
+        for day in 1...daysInMonth {
+            var dc = calendar.dateComponents([.year, .month], from: monthStart)
+            dc.day = day
+            cells.append(calendar.date(from: dc))
+        }
+        while cells.count % 7 != 0 {
+            cells.append(nil)
+        }
+        return cells
+    }
+
     func addHabit(title: String, detail: String) {
         let t = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !t.isEmpty else { return }
@@ -164,7 +219,13 @@ final class TrackStore {
 
     // MARK: Wellness
 
-    func addWellnessLog(petName: String, energy: String, happiness: String) {
+    func addWellnessLog(
+        petName: String,
+        energy: String,
+        happiness: String,
+        weightKg: Double? = nil,
+        heightCm: Double? = nil
+    ) {
         var next = wellnessLogs
         next.insert(
             WellnessStateLog(
@@ -172,7 +233,9 @@ final class TrackStore {
                 recordedAt: Date(),
                 petName: petName.trimmingCharacters(in: .whitespacesAndNewlines),
                 energy: energy,
-                happiness: happiness
+                happiness: happiness,
+                weightKg: weightKg,
+                heightCm: heightCm
             ),
             at: 0
         )

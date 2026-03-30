@@ -7,20 +7,20 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A7E8F91C3B4D2A506E8F9012 /* HomeDashboardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9D7E82A1C3B4D5E6F708192 /* HomeDashboardModels.swift */; };
-		F1A2B3C4D5E6F7081920A3B4 /* PetProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F7081920A3B4C5 /* PetProfile.swift */; };
 		0AA98343B7E5928EA46A6DBF /* PetsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B8E3578A31F2A95A734CC4A /* PetsViewModel.swift */; };
 		19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */; };
 		3DAC0E74E7E768C6D45D5F62 /* ScheduleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73208C9D5DCF2444ADDA84FB /* ScheduleViewModel.swift */; };
-		D1E2F3A4B5C6D7081920A3B4C /* ScheduleEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2F3A4B5C6D7081920A3B4C5D /* ScheduleEvent.swift */; };
 		434D782485F3563D3710D4C1 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD6F766BCE742D17C531795 /* ScheduleView.swift */; };
 		627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65728BE60D7A10B782998709 /* PetScheduleApp.swift */; };
 		6CC169553932DCAEB86310CA /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9B8A27E5B067987B5C88DC /* MainTabView.swift */; };
 		845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 004BEB5D563AD507764446BB /* Assets.xcassets */; };
 		8B6CCB39FC709E4925634AB7 /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53A28B04A9761BC0077C9AF4 /* PetsView.swift */; };
 		8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5C7586D9735ADDB5C9842C /* HomeView.swift */; };
+		A7E8F91C3B4D2A506E8F9012 /* HomeDashboardModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9D7E82A1C3B4D5E6F708192 /* HomeDashboardModels.swift */; };
 		D10000000000000000000002 /* TrackModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000001 /* TrackModels.swift */; };
 		D10000000000000000000004 /* TrackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D10000000000000000000003 /* TrackView.swift */; };
+		D1E2F3A4B5C6D7081920A3B4C /* ScheduleEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2F3A4B5C6D7081920A3B4C5D /* ScheduleEvent.swift */; };
+		F1A2B3C4D5E6F7081920A3B4 /* PetProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B3C4D5E6F7081920A3B4C5 /* PetProfile.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,15 +30,15 @@
 		4A9B8A27E5B067987B5C88DC /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		53A28B04A9761BC0077C9AF4 /* PetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsView.swift; sourceTree = "<group>"; };
 		65728BE60D7A10B782998709 /* PetScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleApp.swift; sourceTree = "<group>"; };
-		B9D7E82A1C3B4D5E6F708192 /* HomeDashboardModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDashboardModels.swift; sourceTree = "<group>"; };
-		E2F3A4B5C6D7081920A3B4C5D /* ScheduleEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleEvent.swift; sourceTree = "<group>"; };
-		A2B3C4D5E6F7081920A3B4C5 /* PetProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetProfile.swift; sourceTree = "<group>"; };
 		73208C9D5DCF2444ADDA84FB /* ScheduleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViewModel.swift; sourceTree = "<group>"; };
 		9B8E3578A31F2A95A734CC4A /* PetsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsViewModel.swift; sourceTree = "<group>"; };
+		A2B3C4D5E6F7081920A3B4C5 /* PetProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetProfile.swift; sourceTree = "<group>"; };
 		ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
-		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B9D7E82A1C3B4D5E6F708192 /* HomeDashboardModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeDashboardModels.swift; sourceTree = "<group>"; };
 		D10000000000000000000001 /* TrackModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackModels.swift; sourceTree = "<group>"; };
 		D10000000000000000000003 /* TrackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackView.swift; sourceTree = "<group>"; };
+		E2F3A4B5C6D7081920A3B4C5D /* ScheduleEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleEvent.swift; sourceTree = "<group>"; };
+		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -51,14 +51,6 @@
 				D10000000000000000000005 /* Track */,
 			);
 			path = Features;
-			sourceTree = "<group>";
-		};
-		D10000000000000000000005 /* Track */ = {
-			isa = PBXGroup;
-			children = (
-				D10000000000000000000003 /* TrackView.swift */,
-			);
-			path = Track;
 			sourceTree = "<group>";
 		};
 		26AFE47F673F4D6494877740 /* Schedule */ = {
@@ -126,6 +118,14 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		D10000000000000000000005 /* Track */ = {
+			isa = PBXGroup;
+			children = (
+				D10000000000000000000003 /* TrackView.swift */,
+			);
+			path = Track;
+			sourceTree = "<group>";
+		};
 		E85428E8472573B49803931E /* Core */ = {
 			isa = PBXGroup;
 			children = (
@@ -179,7 +179,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 2630;
 			};
 			buildConfigurationList = 61C35A43BB6ED4A8FF7E83CE /* Build configuration list for PBXProject "PetSchedule" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -241,7 +241,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 66VA8628J7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PetSchedule;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pet Schedule needs photo access to add pictures to pet profiles.";
@@ -296,8 +295,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 66VA8628J7;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -318,6 +319,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -359,8 +361,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 66VA8628J7;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -374,6 +378,7 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
@@ -387,7 +392,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 66VA8628J7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PetSchedule;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Pet Schedule needs photo access to add pictures to pet profiles.";

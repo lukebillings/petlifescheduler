@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct TrackView: View {
     @Bindable var trackStore: TrackStore
@@ -34,11 +35,9 @@ struct TrackView: View {
                 }
 
                 Section {
-                    if !trackStore.habits.isEmpty {
-                        HabitCheckeredBoard(trackStore: trackStore)
-                            .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 4, trailing: 12))
-                            .listRowSeparator(.hidden)
-                    }
+                    HabitMonthCalendarView(trackStore: trackStore)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 12, bottom: 4, trailing: 12))
+                        .listRowSeparator(.hidden)
                     ForEach(trackStore.habits) { habit in
                         habitRow(habit)
                     }
@@ -58,32 +57,36 @@ struct TrackView: View {
                 } header: {
                     Label("Habits", systemImage: "repeat.circle")
                 } footer: {
-                    Text("Checkerboard: green = habit done that day, red = not done. Top row shows green only when every habit is done. Tap any square (except future days) to fix.")
+                    Text("Full month: tap a day to see habits below the grid. Dot colors — green: all done, orange: some done, red: none, gray: future. Use arrows to change month.")
                 }
 
                 Section {
                     Button {
                         showLogWellness = true
                     } label: {
-                        Label("Log energy & mood", systemImage: "heart.text.square.fill")
+                        Label("Log state", systemImage: "heart.text.square.fill")
                     }
                     if trackStore.wellnessLogs.isEmpty {
-                        Text("Log how your pet is feeling—energy and happiness.")
+                        Text("Log energy, mood, and optional weight (kg) and height (cm) over time.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     } else {
-                        ForEach(trackStore.wellnessLogs) { log in
-                            wellnessRow(log)
-                        }
-                        .onDelete { idx in
-                            let ids = idx.map { trackStore.wellnessLogs[$0].id }
-                            for id in ids {
-                                trackStore.deleteWellnessLog(id: id)
-                            }
+                        ForEach(wellnessByPet, id: \.bucketKey) { bucket in
+                            WellnessPetStateCharts(
+                                displayName: bucket.displayName,
+                                logsOldestFirst: bucket.logs,
+                                onDeleteLog: { trackStore.deleteWellnessLog(id: $0) }
+                            )
+                            .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
+                            .listRowSeparator(.hidden)
                         }
                     }
                 } header: {
                     Label("States", systemImage: "heart.text.square")
+                } footer: {
+                    if !trackStore.wellnessLogs.isEmpty {
+                        Text("Charts group logs by pet. Weight and height charts appear when you log those fields. Open Log history on a card to delete entries.")
+                    }
                 }
             }
             .navigationTitle("Track")
@@ -156,6 +159,31 @@ struct TrackView: View {
         }
     }
 
+    /// One row per pet (or “unspecified”), logs chronological for chart X-axis.
+    private var wellnessByPet: [(bucketKey: String, displayName: String, logs: [WellnessStateLog])] {
+        var map: [String: (displayName: String, logs: [WellnessStateLog])] = [:]
+        for log in trackStore.wellnessLogs {
+            let trimmed = log.petName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let key = trimmed.isEmpty ? "_" : trimmed.lowercased()
+            let display = trimmed.isEmpty ? "Pet (unspecified)" : trimmed
+            if var existing = map[key] {
+                existing.logs.append(log)
+                map[key] = existing
+            } else {
+                map[key] = (display, [log])
+            }
+        }
+        return map
+            .map { key, value in
+                (bucketKey: key, displayName: value.displayName, logs: value.logs.sorted { $0.recordedAt < $1.recordedAt })
+            }
+            .sorted { a, b in
+                if a.bucketKey == "_" { return false }
+                if b.bucketKey == "_" { return true }
+                return a.displayName.localizedCaseInsensitiveCompare(b.displayName) == .orderedAscending
+            }
+    }
+
     private func todoRow(_ todo: OneOffTodo) -> some View {
         Button {
             trackStore.toggleTodo(id: todo.id)
@@ -198,220 +226,489 @@ struct TrackView: View {
         .buttonStyle(.plain)
     }
 
-    private func wellnessRow(_ log: WellnessStateLog) -> some View {
+}
+
+// MARK: - Wellness charts (per pet)
+
+private struct WellnessPetStateCharts: View {
+    var displayName: String
+    /// Oldest → newest for readable left-to-right charts.
+    var logsOldestFirst: [WellnessStateLog]
+    var onDeleteLog: (UUID) -> Void
+
+    @State private var showLogHistory = false
+
+    private var historyNewestFirst: [WellnessStateLog] {
+        logsOldestFirst.sorted { $0.recordedAt > $1.recordedAt }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(displayName)
+                .font(.headline.weight(.semibold))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Label("Energy", systemImage: "bolt.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                wellnessLineChart(
+                    logs: logsOldestFirst,
+                    yField: "Energy",
+                    value: { WellnessOptions.energyIndex($0.energy) },
+                    yDomain: 0 ... Double(WellnessOptions.energyLevels.count - 1),
+                    yLabels: WellnessOptions.energyLevels,
+                    lineColor: .orange
+                )
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Label("Mood", systemImage: "face.smiling")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                wellnessLineChart(
+                    logs: logsOldestFirst,
+                    yField: "Mood",
+                    value: { WellnessOptions.happinessIndex($0.happiness) },
+                    yDomain: 0 ... Double(WellnessOptions.happinessLevels.count - 1),
+                    yLabels: WellnessOptions.happinessLevels,
+                    lineColor: .purple
+                )
+            }
+
+            if logsOldestFirst.contains(where: { $0.weightKg != nil }) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Weight", systemImage: "scalemass.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    measurementLineChart(
+                        logs: logsOldestFirst.filter { $0.weightKg != nil },
+                        yField: "kg",
+                        keyPath: \.weightKg,
+                        lineColor: .teal
+                    )
+                }
+            }
+
+            if logsOldestFirst.contains(where: { $0.heightCm != nil }) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Height", systemImage: "ruler.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    measurementLineChart(
+                        logs: logsOldestFirst.filter { $0.heightCm != nil },
+                        yField: "cm",
+                        keyPath: \.heightCm,
+                        lineColor: .indigo
+                    )
+                }
+            }
+
+            Button {
+                showLogHistory.toggle()
+            } label: {
+                HStack {
+                    Text("Log history")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(showLogHistory ? 90 : 0))
+                }
+            }
+            .buttonStyle(.plain)
+
+            if showLogHistory {
+                ForEach(historyNewestFirst) { log in
+                    wellnessHistoryRow(log)
+                        .contextMenu {
+                            Button("Delete", role: .destructive) {
+                                onDeleteLog(log.id)
+                            }
+                        }
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.72))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.85), lineWidth: 1)
+        )
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func wellnessLineChart(
+        logs: [WellnessStateLog],
+        yField: String,
+        value: @escaping (WellnessStateLog) -> Double,
+        yDomain: ClosedRange<Double>,
+        yLabels: [String],
+        lineColor: Color
+    ) -> some View {
+        Chart {
+            ForEach(logs) { log in
+                LineMark(
+                    x: .value("Time", log.recordedAt),
+                    y: .value(yField, value(log))
+                )
+                .interpolationMethod(.monotone)
+                PointMark(
+                    x: .value("Time", log.recordedAt),
+                    y: .value(yField, value(log))
+                )
+            }
+        }
+        .foregroundStyle(lineColor)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: min(logs.count, 5))) { _ in
+                AxisGridLine()
+                AxisValueLabel(format: .dateTime.month(.abbreviated).day().hour().minute())
+            }
+        }
+        .chartYScale(domain: yDomain)
+        .chartYAxis {
+            AxisMarks(values: (0 ..< yLabels.count).map(Double.init)) { v in
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel {
+                    if let i = v.as(Int.self), yLabels.indices.contains(i) {
+                        Text(yLabels[i])
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+        .frame(height: 140)
+    }
+
+    private func measurementLineChart(
+        logs: [WellnessStateLog],
+        yField: String,
+        keyPath: KeyPath<WellnessStateLog, Double?>,
+        lineColor: Color
+    ) -> some View {
+        Chart {
+            ForEach(logs) { log in
+                if let y = log[keyPath: keyPath] {
+                    LineMark(
+                        x: .value("Time", log.recordedAt),
+                        y: .value(yField, y)
+                    )
+                    .interpolationMethod(.monotone)
+                    PointMark(
+                        x: .value("Time", log.recordedAt),
+                        y: .value(yField, y)
+                    )
+                }
+            }
+        }
+        .foregroundStyle(lineColor)
+        .chartXAxis {
+            AxisMarks(values: .automatic(desiredCount: min(logs.count, 5))) { _ in
+                AxisGridLine()
+                AxisValueLabel(format: .dateTime.month(.abbreviated).day().hour().minute())
+            }
+        }
+        .chartYAxis {
+            AxisMarks(preset: .extended, position: .leading)
+        }
+        .frame(height: 140)
+    }
+
+    private func wellnessHistoryRow(_ log: WellnessStateLog) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(log.petName.isEmpty ? "Pet" : log.petName)
-                    .font(.subheadline.weight(.semibold))
+                Text(log.recordedAt.formatted(date: .abbreviated, time: .shortened))
+                    .font(.caption.weight(.medium))
                 Spacer()
-                Text(log.recordedAt, style: .time)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
+            .foregroundStyle(.secondary)
             HStack(spacing: 12) {
                 Label(log.energy, systemImage: "bolt.fill")
                     .font(.caption)
                 Label(log.happiness, systemImage: "face.smiling")
                     .font(.caption)
             }
-            .foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-// MARK: - Habit checkerboard
-
-private struct HabitCheckeredBoard: View {
-    var trackStore: TrackStore
-
-    private let columnCount = 14
-    private let cell: CGFloat = 22
-    private let labelWidth: CGFloat = 78
-    private let gap: CGFloat = 3
-
-    private var dayKeys: [String] { trackStore.recentDayKeys(count: columnCount) }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Last \(columnCount) days · \(todayHint)")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-            ScrollView(.horizontal, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: gap + 2) {
-                    headerRow
-                    allHabitsRow
-                    ForEach(trackStore.habits) { habit in
-                        habitGridRow(habit)
+            if log.weightKg != nil || log.heightCm != nil {
+                HStack(spacing: 12) {
+                    if let w = log.weightKg {
+                        Label(String(format: "%.1f kg", w), systemImage: "scalemass.fill")
+                            .font(.caption)
+                    }
+                    if let h = log.heightCm {
+                        Label(String(format: "%.1f cm", h), systemImage: "ruler.fill")
+                            .font(.caption)
                     }
                 }
+                .foregroundStyle(.secondary)
             }
-            legendRow
         }
         .padding(.vertical, 6)
     }
+}
 
-    private var todayHint: String {
-        let df = DateFormatter()
-        df.dateStyle = .medium
-        return "today \(df.string(from: Date()))"
-    }
+// MARK: - Habit month calendar
 
-    private var headerRow: some View {
-        habitBoardRow(spacing: gap) {
-            Color.clear
-                .frame(width: labelWidth, height: cell + 8)
-            ForEach(Array(dayKeys.enumerated()), id: \.element) { _, key in
-                VStack(spacing: 1) {
-                    Text(weekdayLetter(key))
-                        .font(.system(size: 8, weight: .bold))
-                    Text(dayNumber(key))
-                        .font(.system(size: 10, weight: .semibold))
+private struct HabitMonthCalendarView: View {
+    var trackStore: TrackStore
+
+    private var cal: Calendar { .current }
+
+    @State private var anchorMonth: Date = HabitMonthCalendarView.startOfMonth(for: Date())
+    @State private var selectedDate: Date = Calendar.current.startOfDay(for: Date())
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            monthChrome
+            // Eager VStack/HStack grid avoids LazyVGrid-in-List layout feedback loops (UICollectionView).
+            VStack(spacing: 6) {
+                HStack(spacing: 6) {
+                    ForEach(Array(weekdaySymbols().enumerated()), id: \.offset) { _, sym in
+                        Text(sym)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
-                .foregroundStyle(.secondary)
-                .opacity(trackStore.isFutureDayKey(key) ? 0.45 : 1)
-                .frame(width: cell, height: cell + 10)
+                ForEach(Array(cellRows.enumerated()), id: \.offset) { _, row in
+                    HStack(spacing: 6) {
+                        ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
+                            dayCell(date: cell)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
             }
+            selectedDayAgenda
+            legendRow
+        }
+        .padding(.vertical, 6)
+        .fixedSize(horizontal: false, vertical: true)
+        .onAppear { alignSelectionToMonth() }
+        .onChange(of: anchorMonth) { _, _ in alignSelectionToMonth() }
+    }
+
+    private var cells: [Date?] {
+        TrackStore.monthGridCells(forMonthContaining: anchorMonth, calendar: cal)
+    }
+
+    private var cellRows: [[Date?]] {
+        stride(from: 0, to: cells.count, by: 7).map { start in
+            Array(cells[start..<min(start + 7, cells.count)])
         }
     }
 
-    private var allHabitsRow: some View {
-        habitBoardRow(spacing: gap) {
+    private var monthChrome: some View {
+        let df = DateFormatter()
+        df.dateFormat = "LLLL yyyy"
+        return HStack {
+            Button { stepMonth(-1) } label: {
+                Image(systemName: "chevron.left.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            Spacer()
+            Text(df.string(from: anchorMonth))
+                .font(.subheadline.weight(.semibold))
+            Spacer()
+            Button { stepMonth(1) } label: {
+                Image(systemName: "chevron.right.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func stepMonth(_ delta: Int) {
+        let start = Self.startOfMonth(for: anchorMonth)
+        anchorMonth = cal.date(byAdding: .month, value: delta, to: start) ?? start
+    }
+
+    private func alignSelectionToMonth() {
+        guard let interval = cal.dateInterval(of: .month, for: anchorMonth) else { return }
+        if cal.isDate(selectedDate, equalTo: interval.start, toGranularity: .month) {
+            return
+        }
+        let today = Date()
+        if cal.isDate(today, equalTo: interval.start, toGranularity: .month) {
+            selectedDate = cal.startOfDay(for: today)
+        } else {
+            selectedDate = interval.start
+        }
+    }
+
+    private func weekdaySymbols() -> [String] {
+        let syms = cal.shortStandaloneWeekdaySymbols
+        let first = cal.firstWeekday - 1
+        return (0..<7).map { syms[(first + $0) % syms.count] }
+    }
+
+    @ViewBuilder
+    private func dayCell(date: Date?) -> some View {
+        if let date {
+            let state = trackStore.habitCalendarDayState(for: date)
+            let selected = cal.isDate(date, inSameDayAs: selectedDate)
+            let today = cal.isDateInToday(date)
+            let dayNum = cal.component(.day, from: date)
+
+            let fill: Color = {
+                if selected { return Color.accentColor.opacity(0.26) }
+                if today { return Color.accentColor.opacity(0.12) }
+                return Color.white.opacity(0.45)
+            }()
+
+            Button {
+                selectedDate = cal.startOfDay(for: date)
+            } label: {
+                VStack(spacing: 4) {
+                    Text("\(dayNum)")
+                        .font(.subheadline.weight(today || selected ? .bold : .regular))
+                        .foregroundStyle(selected || today ? Color.accentColor : .primary)
+                    Circle()
+                        .fill(indicatorColor(state))
+                        .frame(width: 6, height: 6)
+                }
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(fill)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(selected ? Color.accentColor.opacity(0.55) : Color.clear, lineWidth: 2)
+                )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(accessibilityDayLabel(date: date, state: state))
+        } else {
+            Color.clear
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+    }
+
+    private func indicatorColor(_ state: HabitCalendarDayState) -> Color {
+        switch state {
+        case .future: return Color.gray.opacity(0.45)
+        case .noHabits: return Color.secondary.opacity(0.22)
+        case .allComplete: return Color.green.opacity(0.85)
+        case .partial: return Color.orange.opacity(0.9)
+        case .missed: return Color.red.opacity(0.55)
+        }
+    }
+
+    private func accessibilityDayLabel(date: Date, state: HabitCalendarDayState) -> String {
+        let header = monthDayHeader(for: date)
+        switch state {
+        case .future: return "\(header), future"
+        case .noHabits: return "\(header), no habits"
+        case .allComplete: return "\(header), all habits done"
+        case .partial: return "\(header), some habits done"
+        case .missed: return "\(header), no habits done"
+        }
+    }
+
+    private var selectedDayAgenda: some View {
+        let key = TrackStore.dayKey(for: selectedDate, calendar: cal)
+        let future = trackStore.isFutureDayKey(key)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            Text(monthDayHeader(for: selectedDate))
+                .font(.headline.weight(.semibold))
+
+            if trackStore.habits.isEmpty {
+                Text("Add a habit below to see it in this calendar.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else if future {
+                Text("Future day — you can check off habits when that day arrives.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                allHabitsSummaryRow(dayKey: key)
+                ForEach(trackStore.habits) { habit in
+                    habitAgendaRow(habit: habit, dayKey: key)
+                }
+            }
+        }
+        .padding(.top, 4)
+    }
+
+    private func allHabitsSummaryRow(dayKey: String) -> some View {
+        let all = trackStore.allHabitsCompleted(on: dayKey)
+        return HStack(spacing: 10) {
+            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                .fill(all ? Color.green.opacity(0.75) : Color.red.opacity(0.45))
+                .frame(width: 12, height: 12)
             Text("All habits")
-                .font(.caption.weight(.bold))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .frame(width: labelWidth, alignment: .leading)
-            ForEach(Array(dayKeys.enumerated()), id: \.element) { index, key in
-                summaryCell(dayKey: key, columnIndex: index)
-            }
+                .font(.subheadline.weight(.semibold))
+            Spacer()
+            Text(all ? "Complete" : "Incomplete")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
+        .padding(.vertical, 4)
     }
 
-    private func habitGridRow(_ habit: HabitTrack) -> some View {
-        habitBoardRow(spacing: gap) {
-            Text(habit.title)
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-                .frame(width: labelWidth, alignment: .leading)
-            ForEach(Array(dayKeys.enumerated()), id: \.element) { index, key in
-                habitCell(habit: habit, dayKey: key, columnIndex: index)
-            }
-        }
-    }
-
-    private func habitBoardRow<Content: View>(
-        spacing: CGFloat,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        HStack(alignment: .center, spacing: spacing) {
-            content()
-        }
-    }
-
-    private func summaryCell(dayKey: String, columnIndex: Int) -> some View {
-        let future = trackStore.isFutureDayKey(dayKey)
-        let allDone = trackStore.allHabitsCompleted(on: dayKey)
-        return RoundedRectangle(cornerRadius: 4, style: .continuous)
-            .fill(summaryFill(allDone: allDone, future: future))
-            .overlay(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .strokeBorder(checkerStroke(columnIndex), lineWidth: 1)
-            )
-            .frame(width: cell, height: cell)
-            .accessibilityLabel(accessibilitySummary(dayKey: dayKey, allDone: allDone, future: future))
-    }
-
-    private func habitCell(habit: HabitTrack, dayKey: String, columnIndex: Int) -> some View {
-        let future = trackStore.isFutureDayKey(dayKey)
+    private func habitAgendaRow(habit: HabitTrack, dayKey: String) -> some View {
         let done = habit.isCompleted(on: dayKey)
         return Button {
             trackStore.toggleHabit(id: habit.id, onDayKey: dayKey)
         } label: {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(habitFill(done: done, future: future, columnIndex: columnIndex))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .strokeBorder(checkerStroke(columnIndex), lineWidth: 1)
-                )
-                .frame(width: cell, height: cell)
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                    .font(.body)
+                    .foregroundStyle(done ? Color.green : Color.secondary.opacity(0.45))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(habit.title)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                    if !habit.detail.isEmpty {
+                        Text(habit.detail)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
         }
         .buttonStyle(.plain)
-        .disabled(future)
-        .accessibilityLabel("\(habit.title), \(formattedDay(dayKey)), \(future ? "future day" : done ? "done" : "not done")")
     }
 
-    private func summaryFill(allDone: Bool, future: Bool) -> Color {
-        if future { return Color.gray.opacity(0.2) }
-        return allDone ? Color.green.opacity(0.82) : Color.red.opacity(0.5)
-    }
-
-    private func habitFill(done: Bool, future: Bool, columnIndex: Int) -> Color {
-        if future { return Color.gray.opacity(0.2) }
-        let deep = columnIndex % 2 == 0
-        if done {
-            return Color.green.opacity(deep ? 0.78 : 0.62)
-        }
-        return Color.red.opacity(deep ? 0.52 : 0.38)
-    }
-
-    private func checkerStroke(_ columnIndex: Int) -> Color {
-        Color.primary.opacity(columnIndex % 2 == 0 ? 0.1 : 0.05)
+    private func monthDayHeader(for date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, MMM d"
+        return f.string(from: date)
     }
 
     private var legendRow: some View {
-        HStack(spacing: 12) {
-            legendItem(color: Color.green.opacity(0.75), label: "Done")
-            legendItem(color: Color.red.opacity(0.45), label: "Missed")
-            legendItem(color: Color.gray.opacity(0.22), label: "Future")
-            legendItem(color: Color.green.opacity(0.82), label: "All habits")
+        HStack(spacing: 10) {
+            legendDot(color: Color.green.opacity(0.85), label: "All")
+            legendDot(color: Color.orange.opacity(0.9), label: "Some")
+            legendDot(color: Color.red.opacity(0.55), label: "None")
+            legendDot(color: Color.gray.opacity(0.45), label: "Future")
         }
         .font(.caption2)
         .foregroundStyle(.secondary)
     }
 
-    private func legendItem(color: Color, label: String) -> some View {
+    private func legendDot(color: Color, label: String) -> some View {
         HStack(spacing: 4) {
-            RoundedRectangle(cornerRadius: 2)
+            Circle()
                 .fill(color)
-                .frame(width: 11, height: 11)
+                .frame(width: 8, height: 8)
             Text(label)
         }
     }
 
-    private func weekdayLetter(_ dayKey: String) -> String {
-        guard let date = dateFromDayKey(dayKey) else { return "" }
-        let df = DateFormatter()
-        df.locale = .current
-        df.dateFormat = "EEEEE"
-        return df.string(from: date)
-    }
-
-    private func dayNumber(_ dayKey: String) -> String {
-        guard let d = dayKey.split(separator: "-").last else { return "" }
-        return String(d)
-    }
-
-    private func dateFromDayKey(_ dayKey: String) -> Date? {
-        let p = dayKey.split(separator: "-").compactMap { Int($0) }
-        guard p.count == 3 else { return nil }
-        var dc = DateComponents()
-        dc.year = p[0]
-        dc.month = p[1]
-        dc.day = p[2]
-        return Calendar.current.date(from: dc)
-    }
-
-    private func formattedDay(_ dayKey: String) -> String {
-        guard let d = dateFromDayKey(dayKey) else { return dayKey }
-        let df = DateFormatter()
-        df.dateStyle = .medium
-        return df.string(from: d)
-    }
-
-    private func accessibilitySummary(dayKey: String, allDone: Bool, future: Bool) -> String {
-        if future { return "All habits, \(formattedDay(dayKey)), future day" }
-        return "All habits, \(formattedDay(dayKey)), \(allDone ? "every habit completed" : "not all completed")"
+    private static func startOfMonth(for date: Date) -> Date {
+        Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: date)) ?? date
     }
 }
 
@@ -425,6 +722,8 @@ private struct LogWellnessSheet: View {
     @State private var petName: String = ""
     @State private var energy: String = WellnessOptions.energyLevels[1]
     @State private var happiness: String = WellnessOptions.happinessLevels[2]
+    @State private var weightText: String = ""
+    @State private var heightText: String = ""
 
     var body: some View {
         NavigationStack {
@@ -454,6 +753,17 @@ private struct LogWellnessSheet: View {
                 } header: {
                     Text("How are they?")
                 }
+
+                Section {
+                    TextField("Weight (kg)", text: $weightText)
+                        .keyboardType(.decimalPad)
+                    TextField("Height (cm)", text: $heightText)
+                        .keyboardType(.decimalPad)
+                } header: {
+                    Text("Size (optional)")
+                } footer: {
+                    Text("Add a snapshot to plot weight and height over time in States.")
+                }
             }
             .navigationTitle("Log state")
             .navigationBarTitleDisplayMode(.inline)
@@ -463,7 +773,13 @@ private struct LogWellnessSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        trackStore.addWellnessLog(petName: petName, energy: energy, happiness: happiness)
+                        trackStore.addWellnessLog(
+                            petName: petName,
+                            energy: energy,
+                            happiness: happiness,
+                            weightKg: Self.parseDouble(weightText),
+                            heightCm: Self.parseDouble(heightText)
+                        )
                         onDismiss()
                     }
                 }
@@ -474,6 +790,12 @@ private struct LogWellnessSheet: View {
 
     private var namedPets: [String] {
         petsViewModel.pets.map(\.name).filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+    }
+
+    private static func parseDouble(_ text: String) -> Double? {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if t.isEmpty { return nil }
+        return Double(t.replacingOccurrences(of: ",", with: "."))
     }
 }
 

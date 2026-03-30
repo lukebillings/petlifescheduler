@@ -256,26 +256,111 @@ private struct ScheduleDayBucket: View {
 private struct ScheduleMonthPanel: View {
     var viewModel: ScheduleViewModel
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 4), count: 7)
+    @State private var selectedDate: Date = Date()
 
     var body: some View {
         let headers = weekdaySymbols()
         let cells = viewModel.monthGridDays()
+        let dayEvents = viewModel.events(on: selectedDate)
+        let rows = stride(from: 0, to: cells.count, by: 7).map { start in
+            Array(cells[start..<min(start + 7, cells.count)])
+        }
+
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 6) {
-                ForEach(Array(headers.enumerated()), id: \.offset) { _, sym in
-                    Text(sym)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
+            // Non-lazy grid avoids self-sizing loops with nested collection-style layouts.
+            VStack(spacing: 6) {
+                HStack(spacing: 6) {
+                    ForEach(Array(headers.enumerated()), id: \.offset) { _, sym in
+                        Text(sym)
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
-                ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-                    ScheduleMonthDayCell(date: cell, viewModel: viewModel)
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                    HStack(spacing: 6) {
+                        ForEach(Array(row.enumerated()), id: \.offset) { _, cell in
+                            ScheduleMonthDayCell(
+                                date: cell,
+                                viewModel: viewModel,
+                                selectedDate: selectedDate,
+                                onSelect: { selectedDate = $0 }
+                            )
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.bottom, 16)
+
+            monthDayAgenda(selectedDate: selectedDate, events: dayEvents)
+                .padding(.horizontal, 12)
+                .padding(.top, 16)
+                .padding(.bottom, 20)
         }
+        .onAppear {
+            alignSelectedDateToDisplayedMonth()
+        }
+        .onChange(of: viewModel.anchorDate) { _, _ in
+            alignSelectedDateToDisplayedMonth()
+        }
+    }
+
+    private func alignSelectedDateToDisplayedMonth() {
+        let cal = Calendar.current
+        guard let interval = viewModel.monthInterval else { return }
+        if cal.isDate(selectedDate, equalTo: interval.start, toGranularity: .month) {
+            return
+        }
+        let today = Date()
+        if cal.isDate(today, equalTo: interval.start, toGranularity: .month) {
+            selectedDate = today
+        } else {
+            selectedDate = interval.start
+        }
+    }
+
+    @ViewBuilder
+    private func monthDayAgenda(selectedDate: Date, events: [ScheduleEvent]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(monthDayHeader(for: selectedDate))
+                .font(.headline.weight(.semibold))
+            if events.isEmpty {
+                Text("Nothing scheduled this day.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(events.enumerated()), id: \.element.id) { index, event in
+                        ScheduleEventRow(event: event, compact: true)
+                            .contextMenu {
+                                Button("Delete", role: .destructive) {
+                                    viewModel.deleteEvent(id: event.id)
+                                }
+                            }
+                        if index < events.count - 1 {
+                            Divider().padding(.leading, 36)
+                        }
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(.white.opacity(0.78))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.9), lineWidth: 1)
+                )
+            }
+        }
+    }
+
+    private func monthDayHeader(for date: Date) -> String {
+        let f = DateFormatter()
+        f.dateFormat = "EEEE, MMM d"
+        return f.string(from: date)
     }
 
     private func weekdaySymbols() -> [String] {
@@ -289,30 +374,50 @@ private struct ScheduleMonthPanel: View {
 private struct ScheduleMonthDayCell: View {
     let date: Date?
     var viewModel: ScheduleViewModel
+    var selectedDate: Date
+    var onSelect: (Date) -> Void
 
     var body: some View {
         Group {
             if let date {
-                let day = Calendar.current.component(.day, from: date)
-                let today = Calendar.current.isDateInToday(date)
+                let cal = Calendar.current
+                let day = cal.component(.day, from: date)
+                let today = cal.isDateInToday(date)
                 let has = viewModel.hasEvents(on: date)
-                VStack(spacing: 4) {
-                    Text("\(day)")
-                        .font(.subheadline.weight(today ? .bold : .regular))
-                        .foregroundStyle(today ? Color.accentColor : .primary)
-                    if has {
-                        Circle()
-                            .fill(Color.accentColor)
-                            .frame(width: 5, height: 5)
-                    } else {
-                        Color.clear.frame(width: 5, height: 5)
+                let selected = cal.isDate(date, inSameDayAs: selectedDate)
+
+                let fill: Color = {
+                    if selected { return Color.accentColor.opacity(0.26) }
+                    if today { return Color.accentColor.opacity(0.12) }
+                    return Color.white.opacity(0.45)
+                }()
+
+                Button {
+                    onSelect(date)
+                } label: {
+                    VStack(spacing: 4) {
+                        Text("\(day)")
+                            .font(.subheadline.weight(today || selected ? .bold : .regular))
+                            .foregroundStyle(selected || today ? Color.accentColor : .primary)
+                        if has {
+                            Circle()
+                                .fill(Color.accentColor)
+                                .frame(width: 5, height: 5)
+                        } else {
+                            Color.clear.frame(width: 5, height: 5)
+                        }
                     }
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(fill)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(selected ? Color.accentColor.opacity(0.55) : Color.clear, lineWidth: 2)
+                    )
                 }
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .background(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .fill(today ? Color.accentColor.opacity(0.12) : Color.white.opacity(0.45))
-                )
+                .buttonStyle(.plain)
             } else {
                 Color.clear
                     .frame(maxWidth: .infinity, minHeight: 44)
