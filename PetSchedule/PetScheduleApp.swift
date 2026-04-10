@@ -2,10 +2,11 @@ import SwiftUI
 
 @main
 struct PetScheduleApp: App {
+    @State private var homeViewModel = HomeViewModel()
+
     var body: some Scene {
         WindowGroup {
-            MainTabView()
-                .preferredColorScheme(.light)
+            HomeView(viewModel: homeViewModel)
         }
     }
 }
