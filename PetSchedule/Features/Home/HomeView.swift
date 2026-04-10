@@ -4,11 +4,15 @@ struct HomeView: View {
     @Bindable var viewModel: HomeViewModel
 
     var body: some View {
-        NavigationStack {
-            Color(.systemBackground)
-                .ignoresSafeArea()
-                .navigationTitle("Home")
+        TabView {
+            Tab("Schedule", systemImage: "calendar") {
+                ScheduleView(viewModel: viewModel)
+            }
+            Tab("Settings", systemImage: "gearshape.fill") {
+                SettingsView()
+            }
         }
+        .tint(.appPink)
     }
 }
 
