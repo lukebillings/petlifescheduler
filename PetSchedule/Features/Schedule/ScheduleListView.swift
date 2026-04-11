@@ -17,13 +17,6 @@ struct ScheduleListView: View {
                     .background(.blue, in: Capsule())
 
                 Spacer()
-
-                Button {
-                } label: {
-                    Label("Filter", systemImage: "line.3.horizontal.decrease.circle")
-                        .font(.caption.bold())
-                        .foregroundStyle(.orange)
-                }
             }
 
             GlassEffectContainer(spacing: 12) {
@@ -41,6 +34,6 @@ struct ScheduleListView: View {
 }
 
 #Preview {
-    ScheduleListView(viewModel: HomeViewModel())
+    ScheduleListView(viewModel: HomeViewModel.preview)
         .padding(.top)
 }

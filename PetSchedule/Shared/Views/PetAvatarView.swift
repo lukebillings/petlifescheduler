@@ -21,9 +21,9 @@ struct PetAvatarView: View {
 
 #Preview {
     HStack(spacing: 12) {
-        PetAvatarView(pet: Pet(name: "Max",  color: .orange, systemImage: "dog.fill"),  size: 56)
-        PetAvatarView(pet: Pet(name: "Luna", color: .purple, systemImage: "cat.fill"),  size: 56)
-        PetAvatarView(pet: Pet(name: "Nemo", color: .cyan,   systemImage: "fish.fill"), size: 56)
+        PetAvatarView(pet: Pet(name: "Max",  animalType: .dog),  size: 56)
+        PetAvatarView(pet: Pet(name: "Luna", animalType: .cat),  size: 56)
+        PetAvatarView(pet: Pet(name: "Nemo", animalType: .fish), size: 56)
     }
     .padding()
 }

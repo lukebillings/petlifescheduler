@@ -8,8 +8,11 @@ struct HomeView: View {
             Tab("Schedule", systemImage: "calendar") {
                 ScheduleView(viewModel: viewModel)
             }
+            Tab("My Pets", systemImage: "pawprint.fill") {
+                PetsView(viewModel: viewModel)
+            }
             Tab("Settings", systemImage: "gearshape.fill") {
-                SettingsView()
+                SettingsView(viewModel: viewModel)
             }
         }
         .tint(.appPink)
@@ -17,5 +20,5 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView(viewModel: HomeViewModel())
+    HomeView(viewModel: HomeViewModel.preview)
 }

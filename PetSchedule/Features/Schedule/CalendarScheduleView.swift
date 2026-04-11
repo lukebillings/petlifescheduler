@@ -176,7 +176,7 @@ private struct CalendarDayCell: View {
 
 #Preview {
     ScrollView {
-        CalendarScheduleView(viewModel: HomeViewModel())
+        CalendarScheduleView(viewModel: HomeViewModel.preview)
             .padding(.top)
     }
 }

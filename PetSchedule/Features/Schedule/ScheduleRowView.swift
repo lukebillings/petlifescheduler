@@ -34,7 +34,7 @@ struct ScheduleRowView: View {
 }
 
 #Preview {
-    let pet = Pet(name: "Max", color: .orange, systemImage: "dog.fill")
+    let pet = Pet(name: "Max", animalType: .dog)
     VStack(spacing: 12) {
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Walk", pet: pet, isCompleted: true)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Sleep", pet: pet)) {}
