@@ -66,16 +66,26 @@ private struct PetCard: View {
     var body: some View {
         VStack(spacing: 0) {
             // Animal illustration area
-            RoundedRectangle(cornerRadius: 20)
-                .fill(pet.color.opacity(0.12))
-                .aspectRatio(1, contentMode: .fit)
-                .overlay {
-                    Image(systemName: pet.systemImage)
+            Group {
+                if let data = pet.photoData, let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
                         .resizable()
-                        .scaledToFit()
-                        .padding(32)
-                        .foregroundStyle(pet.color.gradient)
+                        .scaledToFill()
+                        .aspectRatio(1, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                } else {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(pet.color.opacity(0.12))
+                        .aspectRatio(1, contentMode: .fit)
+                        .overlay {
+                            Image(systemName: pet.systemImage)
+                                .resizable()
+                                .scaledToFit()
+                                .padding(32)
+                                .foregroundStyle(pet.color.gradient)
+                        }
                 }
+            }
 
             // Info row
             VStack(spacing: 2) {

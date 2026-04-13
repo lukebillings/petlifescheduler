@@ -1,4 +1,5 @@
 import SwiftUI
+import PhotosUI
 import UserNotifications
 
 struct OnboardingView: View {
@@ -6,35 +7,47 @@ struct OnboardingView: View {
     let onComplete: () -> Void
 
     @State private var step = 0
+    @State private var confettiTrigger = 0
     @State private var petName = ""
     @State private var animalType: AnimalType = .dog
+    @State private var petPhotoData: Data? = nil
+    @State private var triggerPhotoPicker = false
     @State private var activityName = "Walk"
     @State private var activityTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: .now) ?? .now
 
-    private let totalSteps = 4
+    private let totalSteps = 5
 
     var body: some View {
         VStack(spacing: 0) {
-            // Step content fills all available space
             ZStack {
                 switch step {
                 case 0:
                     Step1AddPet(petName: $petName, animalType: $animalType)
                         .transition(slideTransition)
                 case 1:
-                    Step2AddSchedule(
+                    Step2AddPhoto(petName: petName, animalType: animalType, photoData: $petPhotoData, triggerPicker: $triggerPhotoPicker)
+                        .transition(slideTransition)
+                case 2:
+                    Step3AddSchedule(
                         petName: petName,
                         animalType: animalType,
                         activityName: $activityName,
                         activityTime: $activityTime
                     )
                     .transition(slideTransition)
-                case 2:
-                    Step3Notifications()
-                        .transition(slideTransition)
                 case 3:
-                    Step4Paywall(onSkip: completeOnboarding)
+                    Step4Notifications()
                         .transition(slideTransition)
+                case 4:
+                    Step5Paywall(pet: previewPet, onSkip: { withAnimation { step = 5 } })
+                        .transition(slideTransition)
+                case 5:
+                    Step6OfferPaywall(
+                        pet: previewPet,
+                        onSkip: completeOnboarding,
+                        onExpire: { withAnimation { step = 4 } }
+                    )
+                    .transition(slideTransition)
                 default:
                     EmptyView()
                 }
@@ -42,27 +55,44 @@ struct OnboardingView: View {
             .frame(maxHeight: .infinity)
             .animation(.spring(duration: 0.4), value: step)
 
-            // Fixed bottom bar — same position on every screen
-            VStack(spacing: 18) {
-                // Progress dots
-                HStack(spacing: 8) {
-                    ForEach(0..<totalSteps, id: \.self) { i in
-                        Capsule()
-                            .fill(i == step ? Color.appPink : Color.gray.opacity(0.25))
-                            .frame(width: i == step ? 20 : 8, height: 8)
-                            .animation(.spring(duration: 0.3), value: step)
+            // Fixed bottom bar — identical position on every screen
+            VStack(spacing: 14) {
+                // Skip text link — only on photo step
+                if step == 1 {
+                    Button {
+                        withAnimation { step += 1 }
+                    } label: {
+                        Text("Skip")
+                            .font(.subheadline)
+                            .foregroundStyle(Color.gray.opacity(0.5))
                     }
+                    .buttonStyle(.plain)
+                } else {
+                    Color.clear.frame(height: 20)
                 }
 
-                // CTA button
+                // Hide progress dots on offer step
+                if step < 5 {
+                    HStack(spacing: 8) {
+                        ForEach(0..<totalSteps, id: \.self) { i in
+                            Capsule()
+                                .fill(i == step ? Color.appPink : Color.gray.opacity(0.25))
+                                .frame(width: i == step ? 20 : 8, height: 8)
+                                .animation(.spring(duration: 0.3), value: step)
+                        }
+                    }
+                } else {
+                    Color.clear.frame(height: 8)
+                }
+
                 Button(action: advance) {
-                    Text(step == 3 ? "Subscribe" : "Continue")
+                    Text(buttonLabel)
                         .font(.body.bold())
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 56)
                         .background(
-                            RoundedRectangle(cornerRadius: 18)
+                            RoundedRectangle(cornerRadius: 28)
                                 .fill(continueDisabled ? Color.gray.opacity(0.3) : Color.appPink)
                         )
                 }
@@ -70,9 +100,29 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 28)
             .padding(.bottom, 52)
-            .padding(.top, 12)
+            .padding(.top, 8)
         }
         .background(Color(.systemBackground))
+        .overlay(alignment: .top) {
+            ConfettiView(trigger: confettiTrigger)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+        }
+    }
+
+    private var buttonLabel: String {
+        switch step {
+        case 1: return petPhotoData == nil ? "Add Photo" : "Continue"
+        case 3: return "Enable Notifications"
+        case 4: return "Subscribe"
+        case 5: return "Claim 50% Off"
+        default: return "Continue"
+        }
+    }
+
+    private var previewPet: Pet {
+        Pet(name: petName, animalType: animalType, photoData: petPhotoData)
     }
 
     private var slideTransition: AnyTransition {
@@ -87,19 +137,33 @@ struct OnboardingView: View {
     }
 
     private func advance() {
+        HapticManager.impact(.medium)
+        confettiTrigger += 1
+
         switch step {
         case 0:
-            let pet = Pet(name: petName.trimmingCharacters(in: .whitespaces), animalType: animalType)
-            viewModel.addPet(pet)
+            break // name/type collected; pet created after photo step
+        case 1 where petPhotoData == nil:
+            // "Add Photo" tapped with no photo yet — open the picker instead of advancing
+            triggerPhotoPicker = true
+            return
         case 1:
+            // Create the pet now that we have the optional photo
+            let pet = Pet(
+                name: petName.trimmingCharacters(in: .whitespaces),
+                animalType: animalType,
+                photoData: petPhotoData
+            )
+            viewModel.addPet(pet)
+        case 2:
             if let pet = viewModel.pets.first {
                 viewModel.scheduleItems.append(
                     ScheduleItem(time: activityTime, activityName: activityName, pet: pet)
                 )
             }
-        case 2:
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
         case 3:
+            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
+        case 4, 5:
             completeOnboarding()
             return
         default:
@@ -122,7 +186,6 @@ private struct Step1AddPet: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 32) {
-                // Illustration
                 ZStack {
                     Circle()
                         .fill(animalType.color.opacity(0.15))
@@ -137,18 +200,16 @@ private struct Step1AddPet: View {
                 .animation(.spring(duration: 0.3), value: animalType)
                 .padding(.top, 48)
 
-                // Heading
                 VStack(spacing: 10) {
                     Text("Add your first pet")
                         .font(.largeTitle.bold())
                         .multilineTextAlignment(.center)
-                    Text("Tell us a little about your companion\nto get things set up.")
+                    Text("Tell us a little about your companion\nto get things set up. You can add more pets later.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
 
-                // Animal type picker
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(AnimalType.allCases) { type in
@@ -179,7 +240,6 @@ private struct Step1AddPet: View {
                     .padding(.horizontal, 28)
                 }
 
-                // Name field
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Pet's name")
                         .font(.subheadline.bold())
@@ -194,9 +254,91 @@ private struct Step1AddPet: View {
     }
 }
 
-// MARK: - Step 2: Add Schedule
+// MARK: - Step 2: Add Photo
 
-private struct Step2AddSchedule: View {
+private struct Step2AddPhoto: View {
+    let petName: String
+    let animalType: AnimalType
+    @Binding var photoData: Data?
+    @Binding var triggerPicker: Bool
+
+    @State private var photoItem: PhotosPickerItem? = nil
+    @State private var showPicker = false
+
+    var body: some View {
+        VStack(spacing: 32) {
+            Spacer()
+
+            VStack(spacing: 10) {
+                Text("Add a photo of \(petName)")
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+                Text("Optional – you can always add one later.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            // Photo circle
+            PhotosPicker(selection: $photoItem, matching: .images) {
+                ZStack(alignment: .bottomTrailing) {
+                    // Photo or default avatar
+                    ZStack {
+                        if let data = photoData, let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 180, height: 180)
+                                .clipShape(Circle())
+                        } else {
+                            Circle()
+                                .fill(animalType.color.gradient)
+                                .frame(width: 180, height: 180)
+                            Image(systemName: animalType.systemImage)
+                                .resizable()
+                                .scaledToFit()
+                                .foregroundStyle(.white)
+                                .padding(44)
+                                .frame(width: 180, height: 180)
+                        }
+                    }
+                    .shadow(color: animalType.color.opacity(0.4), radius: 12, y: 6)
+
+                    // Camera badge
+                    Circle()
+                        .fill(Color.appPink)
+                        .frame(width: 48, height: 48)
+                        .overlay {
+                            Image(systemName: photoData == nil ? "camera.fill" : "arrow.triangle.2.circlepath")
+                                .font(.body.bold())
+                                .foregroundStyle(.white)
+                        }
+                        .shadow(color: Color.appPink.opacity(0.4), radius: 6, y: 3)
+                        .offset(x: 4, y: 4)
+                }
+            }
+            .onChange(of: photoItem) { _, item in
+                Task {
+                    photoData = try? await item?.loadTransferable(type: Data.self)
+                }
+            }
+
+            Text(photoData == nil ? "Tap to choose a photo" : "Tap to change photo")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .photosPicker(isPresented: $showPicker, selection: $photoItem, matching: .images)
+                .onChange(of: triggerPicker) { _, val in if val { showPicker = true; triggerPicker = false } }
+
+            Spacer()
+            Spacer()
+        }
+        .padding(.horizontal, 28)
+    }
+}
+
+// MARK: - Step 3: Add Schedule
+
+private struct Step3AddSchedule: View {
     let petName: String
     let animalType: AnimalType
     @Binding var activityName: String
@@ -207,7 +349,6 @@ private struct Step2AddSchedule: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 32) {
-                // Illustration
                 ZStack {
                     Circle()
                         .fill(Color.appPink.opacity(0.12))
@@ -225,13 +366,12 @@ private struct Step2AddSchedule: View {
                     Text("Set up \(petName.isEmpty ? "their" : "\(petName)'s") day")
                         .font(.largeTitle.bold())
                         .multilineTextAlignment(.center)
-                    Text("Add a first activity to kick things off.\nYou can add more on the Schedule tab.")
+                    Text("Add an event that is part of \(petName.isEmpty ? "their" : "\(petName)'s") daily schedule.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
 
-                // Activity picker
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Activity")
                         .font(.subheadline.bold())
@@ -242,16 +382,12 @@ private struct Step2AddSchedule: View {
                         HStack(spacing: 10) {
                             ForEach(activities, id: \.self) { activity in
                                 let selected = activityName == activity
-                                Button {
-                                    activityName = activity
-                                } label: {
-                                    Text(activity)
+                                Button { activityName = activity } label: {
+                                    Label(activity, systemImage: ScheduleItem.icon(for: activity))
                                         .font(.subheadline.bold())
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 10)
-                                        .background(
-                                            Capsule().fill(selected ? Color.appPink : Color(.secondarySystemBackground))
-                                        )
+                                        .background(Capsule().fill(selected ? Color.appPink : Color(.secondarySystemBackground)))
                                         .foregroundStyle(selected ? .white : .primary)
                                 }
                                 .buttonStyle(.plain)
@@ -262,7 +398,6 @@ private struct Step2AddSchedule: View {
                     }
                 }
 
-                // Time picker
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Time")
                         .font(.subheadline.bold())
@@ -279,16 +414,13 @@ private struct Step2AddSchedule: View {
     }
 }
 
-// MARK: - Step 3: Notifications
+// MARK: - Step 4: Notifications
 
-private struct Step3Notifications: View {
-    @State private var tapped = false
-
+private struct Step4Notifications: View {
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
 
-            // Illustration
             ZStack {
                 Circle()
                     .fill(Color.orange.opacity(0.12))
@@ -311,23 +443,6 @@ private struct Step3Notifications: View {
                     .multilineTextAlignment(.center)
             }
 
-            Button {
-                tapped = true
-                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
-            } label: {
-                Label(tapped ? "Notifications enabled ✓" : "Enable Notifications", systemImage: tapped ? "checkmark" : "bell.fill")
-                    .font(.subheadline.bold())
-                    .foregroundStyle(tapped ? Color.green : Color.appPink)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 14)
-                            .fill(tapped ? Color.green.opacity(0.1) : Color.appPink.opacity(0.1))
-                    )
-            }
-            .buttonStyle(.plain)
-            .animation(.spring(duration: 0.3), value: tapped)
-
             Text("You can change this in Settings at any time.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
@@ -340,9 +455,10 @@ private struct Step3Notifications: View {
     }
 }
 
-// MARK: - Step 4: Paywall
+// MARK: - Step 5: Paywall
 
-private struct Step4Paywall: View {
+private struct Step5Paywall: View {
+    let pet: Pet
     let onSkip: () -> Void
     @State private var selectedPlan: Plan = .annual
 
@@ -350,60 +466,46 @@ private struct Step4Paywall: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // X dismiss button
-            Button(action: onSkip) {
+            Button {
+                HapticManager.impact(.light)
+                onSkip()
+            } label: {
                 Image(systemName: "xmark")
                     .font(.body.bold())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.appPink)
                     .padding(12)
-                    .background(Color(.secondarySystemBackground), in: Circle())
+                    .background(Color.appPink.opacity(0.1), in: Circle())
             }
             .padding(.top, 16)
             .padding(.trailing, 24)
 
-            // Main content
             VStack(spacing: 28) {
                 Spacer().frame(height: 24)
 
-                // Illustration
-                ZStack {
-                    Circle()
-                        .fill(Color.yellow.opacity(0.15))
-                        .frame(width: 120, height: 120)
-                    Image(systemName: "crown.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(Color.yellow.gradient)
-                        .padding(28)
-                        .frame(width: 120, height: 120)
-                }
+                PetAvatarView(pet: pet, size: 120, glowColor: .appPink)
 
                 VStack(spacing: 8) {
                     Text("PetSchedule Pro")
                         .font(.largeTitle.bold())
-                    Text("Everything you need to keep your\npets healthy and happy.")
+                    Text("Everything you need to keep your pets healthy and happy.")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+
+                // Benefits
+                VStack(alignment: .leading, spacing: 12) {
+                    BenefitRow(text: "Manage schedules for all your pets")
+                    BenefitRow(text: "Smart reminders so you never miss a moment")
+                    BenefitRow(text: "No ads")
+                }
+                .padding(.horizontal, 28)
 
                 // Plan cards
                 VStack(spacing: 12) {
-                    PlanCard(
-                        title: "Annual",
-                        price: "£29.99",
-                        period: "per year",
-                        badge: "Best Value",
-                        isSelected: selectedPlan == .annual
-                    ) { selectedPlan = .annual }
-
-                    PlanCard(
-                        title: "Monthly",
-                        price: "£9.99",
-                        period: "per month",
-                        badge: nil,
-                        isSelected: selectedPlan == .monthly
-                    ) { selectedPlan = .monthly }
+                    PlanCard(title: "Annual",  price: "£29.99", period: "per year",  badge: "≈ £2.50/mo", isSelected: selectedPlan == .annual)  { selectedPlan = .annual }
+                    PlanCard(title: "Monthly", price: "£9.99",  period: "per month", badge: nil,        isSelected: selectedPlan == .monthly) { selectedPlan = .monthly }
                 }
                 .padding(.horizontal, 28)
 
@@ -413,6 +515,21 @@ private struct Step4Paywall: View {
 
                 Spacer()
             }
+        }
+    }
+}
+
+private struct BenefitRow: View {
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(Color.appPink)
+                .font(.body)
+            Text(text)
+                .font(.subheadline)
+                .foregroundStyle(.primary)
         }
     }
 }
@@ -430,8 +547,7 @@ private struct PlanCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        Text(title)
-                            .font(.headline.bold())
+                        Text(title).font(.headline.bold())
                         if let badge {
                             Text(badge)
                                 .font(.caption.bold())
@@ -441,9 +557,7 @@ private struct PlanCard: View {
                                 .background(Color.appPink, in: Capsule())
                         }
                     }
-                    Text(period)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(period).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Text(price)
@@ -454,14 +568,146 @@ private struct PlanCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(.secondarySystemBackground))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(isSelected ? Color.appPink : Color.clear, lineWidth: 2)
-                    )
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(isSelected ? Color.appPink : Color.clear, lineWidth: 2))
             )
         }
         .buttonStyle(.plain)
         .animation(.spring(duration: 0.2), value: isSelected)
+    }
+}
+
+// MARK: - Step 6: Offer Paywall
+
+private struct Step6OfferPaywall: View {
+    let pet: Pet
+    let onSkip: () -> Void
+    let onExpire: () -> Void
+
+    @State private var secondsLeft = 60
+    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            // X — final dismiss
+            Button {
+                HapticManager.impact(.light)
+                onSkip()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.body.bold())
+                    .foregroundStyle(Color.appPink)
+                    .padding(12)
+                    .background(Color.appPink.opacity(0.1), in: Circle())
+            }
+            .padding(.top, 16)
+            .padding(.trailing, 24)
+
+            VStack(spacing: 24) {
+                Spacer().frame(height: 24)
+
+                PetAvatarView(pet: pet, size: 110, glowColor: .appPink)
+
+                VStack(spacing: 8) {
+                    Text("An offer for you")
+                        .font(.largeTitle.bold())
+                        .multilineTextAlignment(.center)
+                    Text("We'd love you to stay. Here's\na special one-time discount.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                // Countdown timer
+                HStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.gray.opacity(0.15), lineWidth: 3)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(secondsLeft) / 60.0)
+                            .stroke(Color.appPink, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .animation(.linear(duration: 1), value: secondsLeft)
+                        Text("\(secondsLeft)")
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .foregroundStyle(Color.appPink)
+                    }
+                    .frame(width: 40, height: 40)
+
+                    Text("Offer expires in \(secondsLeft)s")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(secondsLeft <= 10 ? Color.red : Color.appPink)
+                        .animation(.default, value: secondsLeft)
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(Color.appPink.opacity(0.08), in: Capsule())
+                .onReceive(ticker) { _ in
+                    if secondsLeft > 0 {
+                        secondsLeft -= 1
+                    } else {
+                        onExpire()
+                    }
+                }
+
+                // Offer card
+                VStack(spacing: 6) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack(spacing: 8) {
+                                Text("Annual Plan")
+                                    .font(.headline.bold())
+                                Text("50% OFF")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.white)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 3)
+                                    .background(Color.appPink, in: Capsule())
+                            }
+                            Text("per year · today only")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text("£29.99")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .strikethrough()
+                            Text("£14.99")
+                                .font(.title2.bold())
+                                .foregroundStyle(Color.appPink)
+                        }
+                    }
+                    .padding(18)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.secondarySystemBackground))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.appPink, lineWidth: 2))
+                    )
+
+                    Text("That's just £1.25/mo — less than a coffee a month.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 4)
+                }
+                .padding(.horizontal, 28)
+
+                // Benefits
+                VStack(alignment: .leading, spacing: 12) {
+                    BenefitRow(text: "Manage schedules for all your pets")
+                    BenefitRow(text: "Smart reminders so you never miss a moment")
+                    BenefitRow(text: "No ads")
+                }
+                .padding(.horizontal, 28)
+
+                Text("Cancel anytime. Renews automatically.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+
+                Spacer()
+            }
+        }
     }
 }
 

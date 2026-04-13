@@ -1,10 +1,12 @@
 import SwiftUI
 
 enum AnimalType: String, CaseIterable, Identifiable, Hashable {
-    case dog, cat, fish, rabbit, bird, tortoise, hamster
+    case dog, cat, fish, rabbit, bird, tortoise, hamster, other
 
     var id: String { rawValue }
-    var displayName: String { rawValue.capitalized }
+    var displayName: String {
+        self == .other ? "Other" : rawValue.capitalized
+    }
 
     var systemImage: String {
         switch self {
@@ -14,7 +16,8 @@ enum AnimalType: String, CaseIterable, Identifiable, Hashable {
         case .rabbit:   return "hare.fill"
         case .bird:     return "bird.fill"
         case .tortoise: return "tortoise.fill"
-        case .hamster:  return "cat.fill" // closest available symbol
+        case .hamster:  return "cat.fill"
+        case .other:    return "pawprint.fill"
         }
     }
 
@@ -27,6 +30,7 @@ enum AnimalType: String, CaseIterable, Identifiable, Hashable {
         case .bird:     return .blue
         case .tortoise: return Color(red: 0.25, green: 0.65, blue: 0.35)
         case .hamster:  return Color(red: 0.85, green: 0.65, blue: 0.35)
+        case .other:    return Color.appPink
         }
     }
 }

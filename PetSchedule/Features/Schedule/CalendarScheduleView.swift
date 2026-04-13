@@ -2,6 +2,9 @@ import SwiftUI
 
 struct CalendarScheduleView: View {
     @Bindable var viewModel: HomeViewModel
+    @State private var showingAddEvent = false
+    @State private var editingItem: ScheduleItem? = nil
+    @State private var viewingPet: Pet? = nil
 
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
@@ -80,35 +83,58 @@ struct CalendarScheduleView: View {
 
             // Items for selected date
             let selectedItems = viewModel.items(for: viewModel.selectedCalendarDate)
-            if !selectedItems.isEmpty {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        Text(viewModel.selectedCalendarDate.formatted(.dateTime.weekday(.wide).month().day()))
-                            .font(.headline)
-
-                        Spacer()
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text(viewModel.selectedCalendarDate.formatted(.dateTime.weekday(.wide).month().day()))
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        showingAddEvent = true
+                    } label: {
+                        Label("Add Event", systemImage: "plus")
+                            .font(.caption.bold())
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .foregroundStyle(.white)
+                            .background(Color.appPink, in: Capsule())
                     }
-                    .padding(.horizontal)
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal)
 
+                if selectedItems.isEmpty {
+                    ContentUnavailableView(
+                        "No activities",
+                        systemImage: "calendar.badge.checkmark",
+                        description: Text("Nothing scheduled for this day.")
+                    )
+                    .padding(.vertical, 20)
+                } else {
                     GlassEffectContainer(spacing: 12) {
                         VStack(spacing: 12) {
                             ForEach(selectedItems) { item in
                                 ScheduleRowView(item: item) {
                                     viewModel.toggleCompletion(for: item)
+                                } onTap: {
+                                    editingItem = item
+                                } onPetTap: {
+                                    viewingPet = item.pet
                                 }
                             }
                         }
                     }
                     .padding(.horizontal)
                 }
-            } else {
-                ContentUnavailableView(
-                    "No activities",
-                    systemImage: "calendar.badge.checkmark",
-                    description: Text("Nothing scheduled for this day.")
-                )
-                .padding(.vertical, 20)
             }
+        }
+        .sheet(isPresented: $showingAddEvent) {
+            AddEventSheet(viewModel: viewModel, prefilledDate: viewModel.selectedCalendarDate)
+        }
+        .sheet(item: $editingItem) { item in
+            EditEventSheet(viewModel: viewModel, item: item)
+        }
+        .sheet(item: $viewingPet) { pet in
+            PetDetailSheet(pet: pet) { updated in viewModel.updatePet(updated) }
         }
     }
 

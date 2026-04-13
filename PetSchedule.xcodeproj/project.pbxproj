@@ -3,28 +3,33 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		0CE83C345B35DF235C3FC674 /* PetDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */; };
 		1862AADE2B4859F822063446 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3FD342A675248F7267C680 /* Pet.swift */; };
 		19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */; };
+		223A36163E699597848BCD3A /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91838FB176EEFF031E2CD16 /* ConfettiView.swift */; };
 		2BFEE6C53A95BA2B09F2D732 /* ScheduleRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E228C28C3910BD1ACD24EAD9 /* ScheduleRowView.swift */; };
 		2E00AC531EA5D3BC68C52653 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 085D2996E216446E27F6CDA6 /* ScheduleView.swift */; };
 		3B7BE9095CD18A9921E2F7DD /* ScheduleItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED9087F17B21DC83D342723 /* ScheduleItem.swift */; };
 		4B02216A6044074925DA1D5F /* AnimalType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2109911DE712C5453FC5D026 /* AnimalType.swift */; };
 		627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65728BE60D7A10B782998709 /* PetScheduleApp.swift */; };
+		66067D350BD915B5E4A0CD8A /* EditEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AF10EE3C14C2123427C6898 /* EditEventSheet.swift */; };
 		6E04C1751D6C0A38AAA95B08 /* PetAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */; };
 		7C6341ED2574F5ED3378E189 /* AddEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3327F274E84078B38862BEED /* AddEventSheet.swift */; };
 		845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 004BEB5D563AD507764446BB /* Assets.xcassets */; };
+		855DDBBC929D3FF621EB9976 /* HeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */; };
 		8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5C7586D9735ADDB5C9842C /* HomeView.swift */; };
+		D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */; };
 		D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */; };
 		D72C7128A019801C00BF8732 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
 		D7497F803AB294807D80630D /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */; };
 		E344CC248B2F9819D2ABAB82 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C629F5BF9352863F3F86CEF /* OnboardingView.swift */; };
 		E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C426C7BD93CA490A97C5D60E /* SettingsView.swift */; };
 		E92F4B81D406413472DFCEDF /* ScheduleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A63243C759BB8D063AF92A /* ScheduleListView.swift */; };
+		F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +37,7 @@
 		082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
 		085D2996E216446E27F6CDA6 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
 		12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetailSheet.swift; sourceTree = "<group>"; };
+		1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		2109911DE712C5453FC5D026 /* AnimalType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimalType.swift; sourceTree = "<group>"; };
 		21A63243C759BB8D063AF92A /* ScheduleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleListView.swift; sourceTree = "<group>"; };
 		3327F274E84078B38862BEED /* AddEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEventSheet.swift; sourceTree = "<group>"; };
@@ -41,12 +47,16 @@
 		65728BE60D7A10B782998709 /* PetScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleApp.swift; sourceTree = "<group>"; };
 		8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsView.swift; sourceTree = "<group>"; };
 		8C629F5BF9352863F3F86CEF /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		9AF10EE3C14C2123427C6898 /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
 		ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		B91838FB176EEFF031E2CD16 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 		C426C7BD93CA490A97C5D60E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		CED9087F17B21DC83D342723 /* ScheduleItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleItem.swift; sourceTree = "<group>"; };
 		DD3FD342A675248F7267C680 /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
 		E228C28C3910BD1ACD24EAD9 /* ScheduleRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRowView.swift; sourceTree = "<group>"; };
-		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeightEntry.swift; sourceTree = "<group>"; };
+		EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntry.swift; sourceTree = "<group>"; };
+		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -67,6 +77,7 @@
 			children = (
 				3327F274E84078B38862BEED /* AddEventSheet.swift */,
 				3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */,
+				9AF10EE3C14C2123427C6898 /* EditEventSheet.swift */,
 				21A63243C759BB8D063AF92A /* ScheduleListView.swift */,
 				E228C28C3910BD1ACD24EAD9 /* ScheduleRowView.swift */,
 				085D2996E216446E27F6CDA6 /* ScheduleView.swift */,
@@ -85,6 +96,7 @@
 		46B5109A87B29D224A344EA1 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				B91838FB176EEFF031E2CD16 /* ConfettiView.swift */,
 				5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */,
 			);
 			path = Views;
@@ -106,6 +118,7 @@
 			isa = PBXGroup;
 			children = (
 				082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */,
+				1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */,
 				46B5109A87B29D224A344EA1 /* Views */,
 			);
 			path = Shared;
@@ -148,8 +161,10 @@
 			isa = PBXGroup;
 			children = (
 				2109911DE712C5453FC5D026 /* AnimalType.swift */,
+				E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */,
 				DD3FD342A675248F7267C680 /* Pet.swift */,
 				CED9087F17B21DC83D342723 /* ScheduleItem.swift */,
+				EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -211,6 +226,7 @@
 			);
 			mainGroup = 8540F915B73F12C9DB2CCCA7;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -239,6 +255,10 @@
 				4B02216A6044074925DA1D5F /* AnimalType.swift in Sources */,
 				D72C7128A019801C00BF8732 /* AppColors.swift in Sources */,
 				D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */,
+				223A36163E699597848BCD3A /* ConfettiView.swift in Sources */,
+				66067D350BD915B5E4A0CD8A /* EditEventSheet.swift in Sources */,
+				D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */,
+				855DDBBC929D3FF621EB9976 /* HeightEntry.swift in Sources */,
 				8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */,
 				19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */,
 				E344CC248B2F9819D2ABAB82 /* OnboardingView.swift in Sources */,
@@ -252,6 +272,7 @@
 				2BFEE6C53A95BA2B09F2D732 /* ScheduleRowView.swift in Sources */,
 				2E00AC531EA5D3BC68C52653 /* ScheduleView.swift in Sources */,
 				E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */,
+				F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -265,7 +286,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 66VA8628J7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PetSchedule;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -410,7 +430,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 66VA8628J7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PetSchedule;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

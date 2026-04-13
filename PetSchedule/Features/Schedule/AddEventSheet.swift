@@ -3,10 +3,15 @@ import SwiftUI
 struct AddEventSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var viewModel: HomeViewModel
+    var prefilledDate: Date? = nil
 
     @State private var selectedPet: Pet?
     @State private var activityName = ""
+    @State private var eventDescription = ""
     @State private var eventDate = Date.now
+    @State private var hasEndTime = false
+    @State private var endTime = Calendar.current.date(byAdding: .hour, value: 1, to: .now) ?? .now
+    @State private var repeatRule: RepeatRule = .never
     @State private var customActivity = false
 
     private let commonActivities = ["Walk", "Eat", "Sleep", "Play", "Vet", "Groom", "Medicine"]
@@ -57,7 +62,7 @@ struct AddEventSheet: View {
                     } else {
                         Picker("Activity", selection: $activityName) {
                             ForEach(commonActivities, id: \.self) { activity in
-                                Text(activity).tag(activity)
+                                Label(activity, systemImage: ScheduleItem.icon(for: activity)).tag(activity)
                             }
                         }
                         .onAppear {
@@ -66,8 +71,33 @@ struct AddEventSheet: View {
                     }
                 }
 
+                Section("Description") {
+                    TextField("Optional notes…", text: $eventDescription, axis: .vertical)
+                        .lineLimit(3...6)
+                }
+
                 Section("When") {
-                    DatePicker("Date & time", selection: $eventDate, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("Start", selection: $eventDate, displayedComponents: [.date, .hourAndMinute])
+                    Toggle("Add end time", isOn: $hasEndTime.animation())
+                        .tint(Color.appPink)
+                    if hasEndTime {
+                        DatePicker("End", selection: $endTime, in: eventDate..., displayedComponents: .hourAndMinute)
+                    }
+                }
+
+                Section("Repeat") {
+                    Picker("Repeat", selection: $repeatRule) {
+                        ForEach(RepeatRule.allCases) { rule in
+                            Label(rule.rawValue, systemImage: rule.icon).tag(rule)
+                        }
+                    }
+                    .pickerStyle(.navigationLink)
+                }
+            }
+            .onAppear {
+                if let date = prefilledDate {
+                    eventDate = date
+                    endTime = Calendar.current.date(byAdding: .hour, value: 1, to: date) ?? date
                 }
             }
             .navigationTitle("New Event")
@@ -80,7 +110,14 @@ struct AddEventSheet: View {
                     Button("Add") {
                         guard let pet = selectedPet, !activityName.isEmpty else { return }
                         viewModel.scheduleItems.append(
-                            ScheduleItem(time: eventDate, activityName: activityName, pet: pet)
+                            ScheduleItem(
+                                time: eventDate,
+                                endTime: hasEndTime ? endTime : nil,
+                                activityName: activityName,
+                                description: eventDescription,
+                                repeatRule: repeatRule,
+                                pet: pet
+                            )
                         )
                         dismiss()
                     }

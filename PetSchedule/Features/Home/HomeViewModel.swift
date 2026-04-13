@@ -9,8 +9,8 @@ final class HomeViewModel {
     var selectedPet: Pet? = nil
 
     enum ViewMode: String, CaseIterable {
-        case list = "List"
-        case calendar = "Calendar"
+        case list = "Today"
+        case calendar = "Month View"
     }
 
     init() {

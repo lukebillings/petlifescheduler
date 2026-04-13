@@ -40,8 +40,9 @@ struct ScheduleView: View {
                                 }
                             }
                             .padding(.horizontal)
-                            .padding(.vertical, 8)
+                            .padding(.vertical, 16)
                         }
+                        .scrollClipDisabled()
                     }
 
                     // List / Calendar picker

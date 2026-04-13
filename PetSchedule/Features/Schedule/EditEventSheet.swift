@@ -1,0 +1,102 @@
+import SwiftUI
+
+struct EditEventSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var viewModel: HomeViewModel
+    let item: ScheduleItem
+
+    @State private var activityName: String
+    @State private var eventDescription: String
+    @State private var eventDate: Date
+    @State private var hasEndTime: Bool
+    @State private var endTime: Date
+    @State private var repeatRule: RepeatRule
+    @State private var customActivity: Bool
+
+    private let commonActivities = ["Walk", "Eat", "Sleep", "Play", "Vet", "Groom", "Medicine"]
+
+    init(viewModel: HomeViewModel, item: ScheduleItem) {
+        self.viewModel = viewModel
+        self.item = item
+        _activityName    = State(initialValue: item.activityName)
+        _eventDescription = State(initialValue: item.description)
+        _eventDate       = State(initialValue: item.time)
+        _hasEndTime      = State(initialValue: item.endTime != nil)
+        _endTime         = State(initialValue: item.endTime ?? Calendar.current.date(byAdding: .hour, value: 1, to: item.time) ?? item.time)
+        _repeatRule      = State(initialValue: item.repeatRule)
+        _customActivity  = State(initialValue: !["Walk","Eat","Sleep","Play","Vet","Groom","Medicine"].contains(item.activityName))
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Activity") {
+                    Toggle("Custom activity", isOn: $customActivity.animation())
+
+                    if customActivity {
+                        TextField("Activity name", text: $activityName)
+                    } else {
+                        Picker("Activity", selection: $activityName) {
+                            ForEach(commonActivities, id: \.self) { activity in
+                                Label(activity, systemImage: ScheduleItem.icon(for: activity)).tag(activity)
+                            }
+                        }
+                    }
+                }
+
+                Section("Description") {
+                    TextField("Optional notes…", text: $eventDescription, axis: .vertical)
+                        .lineLimit(3...6)
+                }
+
+                Section("When") {
+                    DatePicker("Start", selection: $eventDate, displayedComponents: [.date, .hourAndMinute])
+                    Toggle("End time", isOn: $hasEndTime.animation())
+                        .tint(Color.appPink)
+                    if hasEndTime {
+                        DatePicker("End", selection: $endTime, in: eventDate..., displayedComponents: .hourAndMinute)
+                    }
+                }
+
+                Section("Repeat") {
+                    Picker("Repeat", selection: $repeatRule) {
+                        ForEach(RepeatRule.allCases) { rule in
+                            Label(rule.rawValue, systemImage: rule.icon).tag(rule)
+                        }
+                    }
+                    .pickerStyle(.navigationLink)
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        viewModel.scheduleItems.removeAll { $0.id == item.id }
+                        dismiss()
+                    } label: {
+                        Label("Delete Event", systemImage: "trash")
+                    }
+                }
+            }
+            .navigationTitle("Edit Event")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Save") {
+                        if let idx = viewModel.scheduleItems.firstIndex(where: { $0.id == item.id }) {
+                            viewModel.scheduleItems[idx].activityName = activityName
+                            viewModel.scheduleItems[idx].description = eventDescription
+                            viewModel.scheduleItems[idx].time = eventDate
+                            viewModel.scheduleItems[idx].endTime = hasEndTime ? endTime : nil
+                            viewModel.scheduleItems[idx].repeatRule = repeatRule
+                        }
+                        dismiss()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(activityName.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+}

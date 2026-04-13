@@ -3,19 +3,27 @@ import SwiftUI
 struct PetAvatarView: View {
     let pet: Pet
     var size: CGFloat = 48
+    var glowColor: Color? = nil
 
     var body: some View {
-        Circle()
-            .fill(pet.color.gradient)
-            .frame(width: size, height: size)
-            .overlay {
+        ZStack {
+            if let data = pet.photoData, let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Circle()
+                    .fill(pet.color.gradient)
                 Image(systemName: pet.systemImage)
                     .resizable()
                     .scaledToFit()
                     .padding(size * 0.2)
                     .foregroundStyle(.white)
             }
-            .shadow(color: pet.color.opacity(0.4), radius: 4, y: 2)
+        }
+        .frame(width: size, height: size)
+        .clipShape(Circle())
+        .shadow(color: (glowColor ?? Color.appPink).opacity(0.5), radius: 12, y: 4)
     }
 }
 
