@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AnimalType: String, CaseIterable, Identifiable, Hashable {
-    case dog, cat, fish, rabbit, bird, tortoise, hamster, other
+    case dog, cat, fish, rabbit, bird, tortoise, other
 
     var id: String { rawValue }
     var displayName: String {
@@ -16,7 +16,6 @@ enum AnimalType: String, CaseIterable, Identifiable, Hashable {
         case .rabbit:   return "hare.fill"
         case .bird:     return "bird.fill"
         case .tortoise: return "tortoise.fill"
-        case .hamster:  return "cat.fill"
         case .other:    return "pawprint.fill"
         }
     }
@@ -29,7 +28,6 @@ enum AnimalType: String, CaseIterable, Identifiable, Hashable {
         case .rabbit:   return Color(red: 0.85, green: 0.55, blue: 0.45)
         case .bird:     return .blue
         case .tortoise: return Color(red: 0.25, green: 0.65, blue: 0.35)
-        case .hamster:  return Color(red: 0.85, green: 0.65, blue: 0.35)
         case .other:    return Color.appPink
         }
     }

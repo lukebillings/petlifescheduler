@@ -91,8 +91,7 @@ struct SettingsView: View {
                         Label("Haptic feedback", systemImage: "iphone.radiowaves.left.and.right")
                     }
                     .tint(Color.appPink)
-                    Label("Version 1.0", systemImage: "info.circle")
-                        .foregroundStyle(.secondary)
+
                 }
 
                 Section("Rate Us") {
@@ -102,18 +101,8 @@ struct SettingsView: View {
                             SKStoreReviewController.requestReview(in: scene)
                         }
                     } label: {
-                        HStack {
-                            Label("Rate PetSchedule", systemImage: "star.fill")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            HStack(spacing: 2) {
-                                ForEach(0..<5) { _ in
-                                    Image(systemName: "star.fill")
-                                        .foregroundStyle(Color.appPink)
-                                        .font(.caption)
-                                }
-                            }
-                        }
+                        Label("Rate PetSchedule", systemImage: "star.fill")
+                            .foregroundStyle(.primary)
                     }
                     Link(destination: URL(string: "https://apps.apple.com/app/idYOUR_APP_ID?action=write-review")!) {
                         HStack {

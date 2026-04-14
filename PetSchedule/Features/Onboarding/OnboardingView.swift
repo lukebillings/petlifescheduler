@@ -8,8 +8,10 @@ struct OnboardingView: View {
 
     @State private var step = 0
     @State private var confettiTrigger = 0
+    @State private var shimmerPhase: CGFloat = -1
     @State private var petName = ""
     @State private var animalType: AnimalType = .dog
+    @State private var customAnimalType = ""
     @State private var petPhotoData: Data? = nil
     @State private var triggerPhotoPicker = false
     @State private var activityName = "Walk"
@@ -22,7 +24,7 @@ struct OnboardingView: View {
             ZStack {
                 switch step {
                 case 0:
-                    Step1AddPet(petName: $petName, animalType: $animalType)
+                    Step1AddPet(petName: $petName, animalType: $animalType, customAnimalType: $customAnimalType)
                         .transition(slideTransition)
                 case 1:
                     Step2AddPhoto(petName: petName, animalType: animalType, photoData: $petPhotoData, triggerPicker: $triggerPhotoPicker)
@@ -95,8 +97,29 @@ struct OnboardingView: View {
                             RoundedRectangle(cornerRadius: 28)
                                 .fill(continueDisabled ? Color.gray.opacity(0.3) : Color.appPink)
                         )
+                        .overlay(
+                            GeometryReader { geo in
+                                LinearGradient(
+                                    colors: [.clear, .white.opacity(0.45), .clear],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                                .frame(width: 16, height: geo.size.height * 3)
+                                .rotationEffect(.degrees(20))
+                                .offset(x: shimmerPhase * (geo.size.width + 40) - 20,
+                                        y: -(geo.size.height))
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 28))
+                            .allowsHitTesting(false)
+                            .opacity(continueDisabled ? 0 : 1)
+                        )
                 }
                 .disabled(continueDisabled)
+                .onAppear {
+                    withAnimation(.linear(duration: 3.5).repeatForever(autoreverses: false)) {
+                        shimmerPhase = 1.6
+                    }
+                }
             }
             .padding(.horizontal, 28)
             .padding(.bottom, 52)
@@ -115,7 +138,7 @@ struct OnboardingView: View {
         switch step {
         case 1: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 3: return "Enable Notifications"
-        case 4: return "Subscribe"
+        case 4: return "Continue"
         case 5: return "Claim 50% Off"
         default: return "Continue"
         }
@@ -152,6 +175,7 @@ struct OnboardingView: View {
             let pet = Pet(
                 name: petName.trimmingCharacters(in: .whitespaces),
                 animalType: animalType,
+                customAnimalType: animalType == .other ? customAnimalType.trimmingCharacters(in: .whitespaces) : nil,
                 photoData: petPhotoData
             )
             viewModel.addPet(pet)
@@ -182,6 +206,10 @@ struct OnboardingView: View {
 private struct Step1AddPet: View {
     @Binding var petName: String
     @Binding var animalType: AnimalType
+    @Binding var customAnimalType: String
+
+    @State private var showOtherAlert = false
+    @State private var otherDraft = ""
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -216,6 +244,10 @@ private struct Step1AddPet: View {
                             let selected = animalType == type
                             Button {
                                 withAnimation(.spring(duration: 0.25)) { animalType = type }
+                                if type == .other {
+                                    otherDraft = customAnimalType
+                                    showOtherAlert = true
+                                }
                             } label: {
                                 VStack(spacing: 6) {
                                     ZStack {
@@ -229,9 +261,10 @@ private struct Step1AddPet: View {
                                             .padding(13)
                                             .frame(width: 54, height: 54)
                                     }
-                                    Text(type.displayName)
+                                    Text(type == .other && !customAnimalType.isEmpty ? customAnimalType.capitalized : type.displayName)
                                         .font(.caption.bold())
                                         .foregroundStyle(selected ? Color.appPink : .secondary)
+                                        .lineLimit(1)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -251,6 +284,15 @@ private struct Step1AddPet: View {
                 .padding(.horizontal, 28)
             }
         }
+        .alert("What type of pet?", isPresented: $showOtherAlert) {
+            TextField("e.g. Guinea pig, Gecko…", text: $otherDraft)
+            Button("Done") {
+                customAnimalType = otherDraft.trimmingCharacters(in: .whitespaces)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Enter the type of animal for your pet.")
+        }
     }
 }
 
@@ -268,16 +310,6 @@ private struct Step2AddPhoto: View {
     var body: some View {
         VStack(spacing: 32) {
             Spacer()
-
-            VStack(spacing: 10) {
-                Text("Add a photo of \(petName)")
-                    .font(.largeTitle.bold())
-                    .multilineTextAlignment(.center)
-                Text("Optional – you can always add one later.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
 
             // Photo circle
             PhotosPicker(selection: $photoItem, matching: .images) {
@@ -328,6 +360,16 @@ private struct Step2AddPhoto: View {
                 .foregroundStyle(.tertiary)
                 .photosPicker(isPresented: $showPicker, selection: $photoItem, matching: .images)
                 .onChange(of: triggerPicker) { _, val in if val { showPicker = true; triggerPicker = false } }
+
+            VStack(spacing: 10) {
+                Text("Add a photo of \(petName)")
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+                Text("Optional – you can always add one later.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
 
             Spacer()
             Spacer()
@@ -464,6 +506,12 @@ private struct Step5Paywall: View {
 
     enum Plan { case monthly, annual }
 
+    private let benefits: [(icon: String, color: Color, label: String)] = [
+        ("calendar.badge.clock", .appPink,    "All your pets"),
+        ("bell.badge.fill",      .orange,      "Smart reminders"),
+        ("hand.thumbsup.fill",   .cyan,        "No ads"),
+    ]
+
     var body: some View {
         ZStack(alignment: .topTrailing) {
             Button {
@@ -471,10 +519,9 @@ private struct Step5Paywall: View {
                 onSkip()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.body.bold())
-                    .foregroundStyle(Color.appPink)
-                    .padding(12)
-                    .background(Color.appPink.opacity(0.1), in: Circle())
+                    .font(.caption.bold())
+                    .foregroundStyle(Color(.systemGray3))
+                    .padding(8)
             }
             .padding(.top, 16)
             .padding(.trailing, 24)
@@ -482,36 +529,63 @@ private struct Step5Paywall: View {
             VStack(spacing: 28) {
                 Spacer().frame(height: 24)
 
-                PetAvatarView(pet: pet, size: 120, glowColor: .appPink)
+                Text("Get started today!")
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
 
-                VStack(spacing: 8) {
-                    Text("PetSchedule Pro")
-                        .font(.largeTitle.bold())
-                    Text("Everything you need to keep your pets healthy and happy.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                // Benefits
-                VStack(alignment: .leading, spacing: 12) {
-                    BenefitRow(text: "Manage schedules for all your pets")
-                    BenefitRow(text: "Smart reminders so you never miss a moment")
-                    BenefitRow(text: "No ads")
+                // 3-icon benefits grid
+                HStack(spacing: 0) {
+                    ForEach(benefits, id: \.label) { benefit in
+                        VStack(spacing: 10) {
+                            ZStack {
+                                Circle()
+                                    .fill(benefit.color.opacity(0.12))
+                                    .frame(width: 60, height: 60)
+                                Image(systemName: benefit.icon)
+                                    .font(.title2.bold())
+                                    .foregroundStyle(benefit.color)
+                            }
+                            Text(benefit.label)
+                                .font(.caption.bold())
+                                .foregroundStyle(.primary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
                 }
                 .padding(.horizontal, 28)
 
                 // Plan cards
                 VStack(spacing: 12) {
-                    PlanCard(title: "Annual",  price: "£29.99", period: "per year",  badge: "≈ £2.50/mo", isSelected: selectedPlan == .annual)  { selectedPlan = .annual }
+                    PlanCard(title: "Annual",  price: "£49.99", period: "per year",  badge: "≈ £4.17/mo", isSelected: selectedPlan == .annual)  { selectedPlan = .annual }
                     PlanCard(title: "Monthly", price: "£9.99",  period: "per month", badge: nil,        isSelected: selectedPlan == .monthly) { selectedPlan = .monthly }
                 }
                 .padding(.horizontal, 28)
 
-                Text("Cancel anytime. Renews automatically.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+                VStack(spacing: 10) {
+                        Button("Restore Purchases") {}
+                            .font(.footnote.bold())
+                            .foregroundStyle(.secondary)
+                            .buttonStyle(.plain)
+
+                    Text("Payment will be charged to your Apple Account at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Cancel anytime in App Store settings.")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+
+                    HStack(spacing: 4) {
+                        Button("Privacy Policy") {}
+                        Text("·").foregroundStyle(.tertiary)
+                        Button("Terms and Conditions") {}
+                        Text("·").foregroundStyle(.tertiary)
+                        Button("Terms of Use (EULA)") {}
+                    }
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.secondary.opacity(0.7))
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 28)
 
                 Spacer()
             }
@@ -546,23 +620,20 @@ private struct PlanCard: View {
         Button(action: onTap) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Text(title).font(.headline.bold())
-                        if let badge {
-                            Text(badge)
-                                .font(.caption.bold())
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(Color.appPink, in: Capsule())
-                        }
-                    }
+                    Text(title).font(.headline.bold())
                     Text(period).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text(price)
-                    .font(.title3.bold())
-                    .foregroundStyle(isSelected ? Color.appPink : .primary)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(price)
+                        .font(.title3.bold())
+                        .foregroundStyle(.primary)
+                    if let badge {
+                        Text(badge)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .padding(18)
             .background(
@@ -584,38 +655,38 @@ private struct Step6OfferPaywall: View {
     let onExpire: () -> Void
 
     @State private var secondsLeft = 60
+    @State private var selectedPlan: Plan = .annual
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    enum Plan { case monthly, annual }
+
+    private let benefits: [(icon: String, color: Color, label: String)] = [
+        ("calendar.badge.clock", .appPink,  "All your pets"),
+        ("bell.badge.fill",      .orange,   "Smart reminders"),
+        ("hand.thumbsup.fill",   .cyan,     "No ads"),
+    ]
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            // X — final dismiss
             Button {
                 HapticManager.impact(.light)
                 onSkip()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.body.bold())
-                    .foregroundStyle(Color.appPink)
-                    .padding(12)
-                    .background(Color.appPink.opacity(0.1), in: Circle())
+                    .font(.caption.bold())
+                    .foregroundStyle(Color(.systemGray3))
+                    .padding(8)
             }
             .padding(.top, 16)
             .padding(.trailing, 24)
 
-            VStack(spacing: 24) {
+            VStack(spacing: 28) {
                 Spacer().frame(height: 24)
 
-                PetAvatarView(pet: pet, size: 110, glowColor: .appPink)
-
-                VStack(spacing: 8) {
-                    Text("An offer for you")
-                        .font(.largeTitle.bold())
-                        .multilineTextAlignment(.center)
-                    Text("We'd love you to stay. Here's\na special one-time discount.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+                Text("Get started today!")
+                    .font(.largeTitle.bold())
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
 
                 // Countdown timer
                 HStack(spacing: 10) {
@@ -642,68 +713,60 @@ private struct Step6OfferPaywall: View {
                 .padding(.vertical, 10)
                 .background(Color.appPink.opacity(0.08), in: Capsule())
                 .onReceive(ticker) { _ in
-                    if secondsLeft > 0 {
-                        secondsLeft -= 1
-                    } else {
-                        onExpire()
-                    }
+                    if secondsLeft > 0 { secondsLeft -= 1 } else { onExpire() }
                 }
 
-                // Offer card
-                VStack(spacing: 6) {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 8) {
-                                Text("Annual Plan")
-                                    .font(.headline.bold())
-                                Text("50% OFF")
-                                    .font(.caption.bold())
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 3)
-                                    .background(Color.appPink, in: Capsule())
+                // 3-icon benefits grid
+                HStack(spacing: 0) {
+                    ForEach(benefits, id: \.label) { benefit in
+                        VStack(spacing: 10) {
+                            ZStack {
+                                Circle()
+                                    .fill(benefit.color.opacity(0.12))
+                                    .frame(width: 60, height: 60)
+                                Image(systemName: benefit.icon)
+                                    .font(.title2.bold())
+                                    .foregroundStyle(benefit.color)
                             }
-                            Text("per year · today only")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            Text(benefit.label)
+                                .font(.caption.bold())
+                                .foregroundStyle(.primary)
+                                .multilineTextAlignment(.center)
                         }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("£29.99")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .strikethrough()
-                            Text("£14.99")
-                                .font(.title2.bold())
-                                .foregroundStyle(Color.appPink)
-                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .padding(18)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.secondarySystemBackground))
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.appPink, lineWidth: 2))
-                    )
+                }
+                .padding(.horizontal, 28)
 
-                    Text("That's just £1.25/mo — less than a coffee a month.")
-                        .font(.caption)
+                // Plan cards
+                VStack(spacing: 12) {
+                    PlanCard(title: "Annual",  price: "£24.99", period: "50% off first year · then £49.99/yr",  badge: "≈ £2.08/mo", isSelected: true)  {}
+                }
+                .padding(.horizontal, 28)
+
+                VStack(spacing: 10) {
+                    Button("Restore Purchases") {}
+                        .font(.footnote.bold())
                         .foregroundStyle(.secondary)
+                        .buttonStyle(.plain)
+
+                    Text("Payment will be charged to your Apple Account at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Cancel anytime in App Store settings.")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.tertiary)
                         .multilineTextAlignment(.center)
-                        .padding(.top, 4)
+
+                    HStack(spacing: 4) {
+                        Button("Privacy Policy") {}
+                        Text("·").foregroundStyle(.tertiary)
+                        Button("Terms and Conditions") {}
+                        Text("·").foregroundStyle(.tertiary)
+                        Button("Terms of Use (EULA)") {}
+                    }
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color.secondary.opacity(0.7))
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 28)
-
-                // Benefits
-                VStack(alignment: .leading, spacing: 12) {
-                    BenefitRow(text: "Manage schedules for all your pets")
-                    BenefitRow(text: "Smart reminders so you never miss a moment")
-                    BenefitRow(text: "No ads")
-                }
-                .padding(.horizontal, 28)
-
-                Text("Cancel anytime. Renews automatically.")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
 
                 Spacer()
             }
