@@ -11,6 +11,9 @@ struct HomeView: View {
             Tab("My Pets", systemImage: "pawprint.fill") {
                 PetsView(viewModel: viewModel)
             }
+            Tab("Analytics", systemImage: "chart.bar.fill") {
+                AnalyticsView(viewModel: viewModel)
+            }
             Tab("Settings", systemImage: "gearshape.fill") {
                 SettingsView(viewModel: viewModel)
             }

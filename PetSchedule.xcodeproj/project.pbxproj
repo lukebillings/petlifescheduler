@@ -10,6 +10,7 @@
 		0CE83C345B35DF235C3FC674 /* PetDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */; };
 		1862AADE2B4859F822063446 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3FD342A675248F7267C680 /* Pet.swift */; };
 		19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */; };
+		AA11BB22CC33DD44EE55FF01 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF02 /* AnalyticsView.swift */; };
 		223A36163E699597848BCD3A /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91838FB176EEFF031E2CD16 /* ConfettiView.swift */; };
 		2BFEE6C53A95BA2B09F2D732 /* ScheduleRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E228C28C3910BD1ACD24EAD9 /* ScheduleRowView.swift */; };
 		2E00AC531EA5D3BC68C52653 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 085D2996E216446E27F6CDA6 /* ScheduleView.swift */; };
@@ -36,6 +37,7 @@
 		004BEB5D563AD507764446BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
 		085D2996E216446E27F6CDA6 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
+		AA11BB22CC33DD44EE55FF02 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetailSheet.swift; sourceTree = "<group>"; };
 		1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		2109911DE712C5453FC5D026 /* AnimalType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimalType.swift; sourceTree = "<group>"; };
@@ -63,6 +65,7 @@
 		0308B8A05C78834394D5131C /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				AA11BB22CC33DD44EE55FF03 /* Analytics */,
 				F0C471B52A56DBE9A768AC24 /* Home */,
 				B309AB633975C5D36865C320 /* Onboarding */,
 				AC407893160D80816D7BCA76 /* Pets */,
@@ -70,6 +73,14 @@
 				C1809A53A5C37C66B48FAAFE /* Settings */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF03 /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				AA11BB22CC33DD44EE55FF02 /* AnalyticsView.swift */,
+			);
+			path = Analytics;
 			sourceTree = "<group>";
 		};
 		26AFE47F673F4D6494877740 /* Schedule */ = {
@@ -250,6 +261,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA11BB22CC33DD44EE55FF01 /* AnalyticsView.swift in Sources */,
 				7C6341ED2574F5ED3378E189 /* AddEventSheet.swift in Sources */,
 				4B02216A6044074925DA1D5F /* AnimalType.swift in Sources */,
 				D72C7128A019801C00BF8732 /* AppColors.swift in Sources */,

@@ -41,7 +41,7 @@ struct OnboardingView: View {
                     Step4Notifications()
                         .transition(slideTransition)
                 case 4:
-                    Step5Paywall(pet: previewPet, onSkip: { withAnimation { step = 5 } })
+                    Step5Paywall(pet: previewPet, onSkip: { step = 5 })
                         .transition(slideTransition)
                 case 5:
                     Step6OfferPaywall(
@@ -139,7 +139,7 @@ struct OnboardingView: View {
         case 1: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 3: return "Enable Notifications"
         case 4: return "Continue"
-        case 5: return "Claim 50% Off"
+        case 5: return "Claim 50% Off Your 1st Year"
         default: return "Continue"
         }
     }
@@ -386,7 +386,7 @@ private struct Step3AddSchedule: View {
     @Binding var activityName: String
     @Binding var activityTime: Date
 
-    private let activities = ["Walk", "Eat", "Sleep", "Play", "Vet", "Groom", "Medicine"]
+    private let activities = ["Walk", "Eat", "Sleep", "Play", "Medicine"]
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -502,9 +502,9 @@ private struct Step4Notifications: View {
 private struct Step5Paywall: View {
     let pet: Pet
     let onSkip: () -> Void
-    @State private var selectedPlan: Plan = .annual
+    @State private var selectedPlan: Plan = .yearly
 
-    enum Plan { case monthly, annual }
+    enum Plan { case monthly, yearly }
 
     private let benefits: [(icon: String, color: Color, label: String)] = [
         ("calendar.badge.clock", .appPink,    "All your pets"),
@@ -513,82 +513,119 @@ private struct Step5Paywall: View {
     ]
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Button {
-                HapticManager.impact(.light)
-                onSkip()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption.bold())
-                    .foregroundStyle(Color(.systemGray3))
-                    .padding(8)
-            }
-            .padding(.top, 16)
-            .padding(.trailing, 24)
+        VStack(spacing: 0) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 28) {
+                    Spacer().frame(height: 24)
 
-            VStack(spacing: 28) {
-                Spacer().frame(height: 24)
+                    Text("Get started today!")
+                        .font(.largeTitle.bold())
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 28)
 
-                Text("Get started today!")
-                    .font(.largeTitle.bold())
-                    .multilineTextAlignment(.center)
+                    // 3-icon benefits grid
+                    HStack(spacing: 0) {
+                        ForEach(benefits, id: \.label) { benefit in
+                            VStack(spacing: 10) {
+                                ZStack {
+                                    Circle()
+                                        .fill(benefit.color.opacity(0.12))
+                                        .frame(width: 60, height: 60)
+                                    Image(systemName: benefit.icon)
+                                        .font(.title2.bold())
+                                        .foregroundStyle(benefit.color)
+                                }
+                                Text(benefit.label)
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.primary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
                     .padding(.horizontal, 28)
 
-                // 3-icon benefits grid
-                HStack(spacing: 0) {
-                    ForEach(benefits, id: \.label) { benefit in
-                        VStack(spacing: 10) {
-                            ZStack {
-                                Circle()
-                                    .fill(benefit.color.opacity(0.12))
-                                    .frame(width: 60, height: 60)
-                                Image(systemName: benefit.icon)
-                                    .font(.title2.bold())
-                                    .foregroundStyle(benefit.color)
-                            }
-                            Text(benefit.label)
-                                .font(.caption.bold())
-                                .foregroundStyle(.primary)
-                                .multilineTextAlignment(.center)
+                    // Plan cards — price must clearly match the stated billing period (App Store subscription display)
+                        VStack(spacing: 12) {
+                            PlanCard(
+                                planTitle: "Yearly",
+                                price: "£49.99",
+                                billingPeriodPhrase: "per year",
+                                equivalentDetail: "≈ £4.17/mo",
+                                isSelected: selectedPlan == .yearly
+                            ) { selectedPlan = .yearly }
+                            PlanCard(
+                                planTitle: "Monthly",
+                                price: "£9.99",
+                                billingPeriodPhrase: "per month",
+                                equivalentDetail: nil,
+                                isSelected: selectedPlan == .monthly
+                            ) { selectedPlan = .monthly }
                         }
-                        .frame(maxWidth: .infinity)
-                    }
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 28)
-
-                // Plan cards
-                VStack(spacing: 12) {
-                    PlanCard(title: "Annual",  price: "£49.99", period: "per year",  badge: "≈ £4.17/mo", isSelected: selectedPlan == .annual)  { selectedPlan = .annual }
-                    PlanCard(title: "Monthly", price: "£9.99",  period: "per month", badge: nil,        isSelected: selectedPlan == .monthly) { selectedPlan = .monthly }
-                }
-                .padding(.horizontal, 28)
-
-                VStack(spacing: 10) {
-                        Button("Restore Purchases") {}
-                            .font(.footnote.bold())
-                            .foregroundStyle(.secondary)
-                            .buttonStyle(.plain)
-
-                    Text("Payment will be charged to your Apple Account at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Cancel anytime in App Store settings.")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                        .multilineTextAlignment(.center)
-
-                    HStack(spacing: 4) {
-                        Button("Privacy Policy") {}
-                        Text("·").foregroundStyle(.tertiary)
-                        Button("Terms and Conditions") {}
-                        Text("·").foregroundStyle(.tertiary)
-                        Button("Terms of Use (EULA)") {}
-                    }
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.secondary.opacity(0.7))
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 28)
-
-                Spacer()
             }
+
+            PaywallSubscriptionFooter()
+                .padding(.horizontal, 28)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
+                .background(Color(.systemBackground))
+        }
+        .overlay(alignment: .topTrailing) {
+            PaywallCloseButton(action: onSkip)
+        }
+    }
+}
+
+/// Dismiss control on top of paywall content (overlay beats ScrollView hit testing) with a proper 44pt target.
+private struct PaywallCloseButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button {
+            HapticManager.impact(.light)
+            action()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Color(.systemGray3))
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Close")
+        .padding(.top, 8)
+        .padding(.trailing, 16)
+    }
+}
+
+/// Restore, subscription disclosure, and legal links — pinned below scroll content so it stays visible above the onboarding bottom bar.
+private struct PaywallSubscriptionFooter: View {
+    var body: some View {
+        VStack(spacing: 10) {
+            Button("Restore Purchases") {}
+                .font(.footnote.bold())
+                .foregroundStyle(.secondary)
+                .buttonStyle(.plain)
+
+            Text("Payment will be charged to your Apple Account at confirmation of purchase. Subscriptions auto-renew until cancelled. Manage or cancel in Account Settings · Subscriptions at least 24 hours before the current period ends. If you cancel, you keep access until the end of the billing period.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: 4) {
+                Button("Privacy Policy") {}
+                Text("·").foregroundStyle(.secondary.opacity(0.8))
+                Button("Terms and Conditions") {}
+                Text("·").foregroundStyle(.secondary.opacity(0.8))
+                Button("Terms of Use (EULA)") {}
+            }
+            .font(.caption2)
+            .foregroundStyle(.secondary)
+            .buttonStyle(.plain)
         }
     }
 }
@@ -609,33 +646,50 @@ private struct BenefitRow: View {
 }
 
 private struct PlanCard: View {
-    let title: String
+    let planTitle: String
     let price: String
-    let period: String
-    let badge: String?
+    /// Completes the price line, e.g. "per year" — same font size as `price`
+    let billingPeriodPhrase: String
+    /// Optional average (yearly plans); shown on the same line as price when set
+    let equivalentDetail: String?
     let isSelected: Bool
     let onTap: () -> Void
 
+    private var priceLineAccessibility: String {
+        "\(price) \(billingPeriodPhrase)"
+        + (equivalentDetail.map { ", \($0)" } ?? "")
+    }
+
     var body: some View {
         Button(action: onTap) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title).font(.headline.bold())
-                    Text(period).font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? Color.appPink : Color(.systemGray4))
+                    .accessibilityHidden(true)
+
+                Text(planTitle)
+                    .font(.headline.bold())
+                    .lineLimit(1)
+
+                Spacer(minLength: 8)
+
                 VStack(alignment: .trailing, spacing: 2) {
-                    Text(price)
-                        .font(.title3.bold())
+                    Text("\(price) \(billingPeriodPhrase)")
+                        .font(.headline.weight(.semibold))
                         .foregroundStyle(.primary)
-                    if let badge {
-                        Text(badge)
-                            .font(.caption)
+                        .lineLimit(1)
+                    if let equivalentDetail {
+                        Text(equivalentDetail)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
             }
-            .padding(18)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color(.secondarySystemBackground))
@@ -643,6 +697,8 @@ private struct PlanCard: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(planTitle). \(priceLineAccessibility)")
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         .animation(.spring(duration: 0.2), value: isSelected)
     }
 }
@@ -655,10 +711,10 @@ private struct Step6OfferPaywall: View {
     let onExpire: () -> Void
 
     @State private var secondsLeft = 60
-    @State private var selectedPlan: Plan = .annual
+    @State private var selectedPlan: Plan = .yearly
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
-    enum Plan { case monthly, annual }
+    enum Plan { case monthly, yearly }
 
     private let benefits: [(icon: String, color: Color, label: String)] = [
         ("calendar.badge.clock", .appPink,  "All your pets"),
@@ -667,110 +723,135 @@ private struct Step6OfferPaywall: View {
     ]
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            Button {
-                HapticManager.impact(.light)
-                onSkip()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption.bold())
-                    .foregroundStyle(Color(.systemGray3))
-                    .padding(8)
-            }
-            .padding(.top, 16)
-            .padding(.trailing, 24)
+        VStack(spacing: 0) {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 28) {
+                    Spacer().frame(height: 24)
 
-            VStack(spacing: 28) {
-                Spacer().frame(height: 24)
+                    Text("Get started today!")
+                        .font(.largeTitle.bold())
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 28)
 
-                Text("Get started today!")
-                    .font(.largeTitle.bold())
-                    .multilineTextAlignment(.center)
+                    // Countdown timer
+                    HStack(spacing: 10) {
+                        ZStack {
+                            Circle()
+                                .stroke(Color.gray.opacity(0.15), lineWidth: 3)
+                            Circle()
+                                .trim(from: 0, to: CGFloat(secondsLeft) / 60.0)
+                                .stroke(Color.appPink, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                                .animation(.linear(duration: 1), value: secondsLeft)
+                            Text("\(secondsLeft)")
+                                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                .foregroundStyle(Color.appPink)
+                        }
+                        .frame(width: 40, height: 40)
+
+                        Text("Offer expires in \(secondsLeft)s")
+                            .font(.subheadline.bold())
+                            .foregroundStyle(secondsLeft <= 10 ? Color.red : Color.appPink)
+                            .animation(.default, value: secondsLeft)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 10)
+                    .background(Color.appPink.opacity(0.08), in: Capsule())
+                    .onReceive(ticker) { _ in
+                        if secondsLeft > 0 { secondsLeft -= 1 } else { onExpire() }
+                    }
+
+                    // 3-icon benefits grid
+                    HStack(spacing: 0) {
+                        ForEach(benefits, id: \.label) { benefit in
+                            VStack(spacing: 10) {
+                                ZStack {
+                                    Circle()
+                                        .fill(benefit.color.opacity(0.12))
+                                        .frame(width: 60, height: 60)
+                                    Image(systemName: benefit.icon)
+                                        .font(.title2.bold())
+                                        .foregroundStyle(benefit.color)
+                                }
+                                Text(benefit.label)
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.primary)
+                                    .multilineTextAlignment(.center)
+                            }
+                            .frame(maxWidth: .infinity)
+                        }
+                    }
                     .padding(.horizontal, 28)
 
-                // Countdown timer
-                HStack(spacing: 10) {
-                    ZStack {
-                        Circle()
-                            .stroke(Color.gray.opacity(0.15), lineWidth: 3)
-                        Circle()
-                            .trim(from: 0, to: CGFloat(secondsLeft) / 60.0)
-                            .stroke(Color.appPink, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
-                            .animation(.linear(duration: 1), value: secondsLeft)
-                        Text("\(secondsLeft)")
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
-                            .foregroundStyle(Color.appPink)
-                    }
-                    .frame(width: 40, height: 40)
+                    // Offer card: intro price + equivalent inside box; renewal line outside
+                    VStack(alignment: .trailing, spacing: 10) {
+                        PromoPlanCard(
+                            planTitle: "Yearly",
+                            firstTermPrice: "£24.99",
+                            firstTermPhrase: "(1st year)",
+                            equivalentDetail: "≈ £2.08/mo"
+                        )
 
-                    Text("Offer expires in \(secondsLeft)s")
-                        .font(.subheadline.bold())
-                        .foregroundStyle(secondsLeft <= 10 ? Color.red : Color.appPink)
-                        .animation(.default, value: secondsLeft)
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 10)
-                .background(Color.appPink.opacity(0.08), in: Capsule())
-                .onReceive(ticker) { _ in
-                    if secondsLeft > 0 { secondsLeft -= 1 } else { onExpire() }
-                }
-
-                // 3-icon benefits grid
-                HStack(spacing: 0) {
-                    ForEach(benefits, id: \.label) { benefit in
-                        VStack(spacing: 10) {
-                            ZStack {
-                                Circle()
-                                    .fill(benefit.color.opacity(0.12))
-                                    .frame(width: 60, height: 60)
-                                Image(systemName: benefit.icon)
-                                    .font(.title2.bold())
-                                    .foregroundStyle(benefit.color)
-                            }
-                            Text(benefit.label)
-                                .font(.caption.bold())
+                        HStack(spacing: 6) {
+                            Text("Then")
+                                .foregroundStyle(.secondary)
+                            Text("£49.99 / year")
                                 .foregroundStyle(.primary)
-                                .multilineTextAlignment(.center)
                         }
-                        .frame(maxWidth: .infinity)
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .padding(.horizontal, 4)
                     }
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 28)
-
-                // Plan cards
-                VStack(spacing: 12) {
-                    PlanCard(title: "Annual",  price: "£24.99", period: "50% off first year · then £49.99/yr",  badge: "≈ £2.08/mo", isSelected: true)  {}
-                }
-                .padding(.horizontal, 28)
-
-                VStack(spacing: 10) {
-                    Button("Restore Purchases") {}
-                        .font(.footnote.bold())
-                        .foregroundStyle(.secondary)
-                        .buttonStyle(.plain)
-
-                    Text("Payment will be charged to your Apple Account at confirmation of purchase. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period. Cancel anytime in App Store settings.")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.tertiary)
-                        .multilineTextAlignment(.center)
-
-                    HStack(spacing: 4) {
-                        Button("Privacy Policy") {}
-                        Text("·").foregroundStyle(.tertiary)
-                        Button("Terms and Conditions") {}
-                        Text("·").foregroundStyle(.tertiary)
-                        Button("Terms of Use (EULA)") {}
-                    }
-                    .font(.system(size: 10))
-                    .foregroundStyle(Color.secondary.opacity(0.7))
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal, 28)
-
-                Spacer()
             }
+
+            PaywallSubscriptionFooter()
+                .padding(.horizontal, 28)
+                .padding(.top, 8)
+                .padding(.bottom, 4)
+                .background(Color(.systemBackground))
         }
+        .overlay(alignment: .topTrailing) {
+            PaywallCloseButton(action: onSkip)
+        }
+    }
+}
+
+/// Offer card: intro price + equivalent monthly inside the bordered box.
+/// Renewal pricing sits outside, below the card.
+private struct PromoPlanCard: View {
+    let planTitle: String
+    let firstTermPrice: String
+    let firstTermPhrase: String
+    let equivalentDetail: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 12) {
+                Text(planTitle)
+                    .font(.headline.bold())
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Text("\(firstTermPrice) \(firstTermPhrase)")
+                    .font(.headline.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+            }
+            Text(equivalentDetail)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.secondarySystemBackground))
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.appPink, lineWidth: 2))
+        )
+        .accessibilityElement(children: .combine)
     }
 }
 
