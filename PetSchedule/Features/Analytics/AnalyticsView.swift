@@ -422,8 +422,8 @@ struct AnalyticsView: View {
                     )
                     .foregroundStyle(
                         day.isEmpty
-                            ? Color(.tertiarySystemFill)
-                            : rateColor(day.rate).gradient
+                            ? AnyShapeStyle(Color(.tertiarySystemFill))
+                            : AnyShapeStyle(rateColor(day.rate).gradient)
                     )
                     .cornerRadius(4)
                 }

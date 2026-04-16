@@ -62,6 +62,7 @@ struct OnboardingView: View {
                 // Skip text link — only on photo step
                 if step == 1 {
                     Button {
+                        addPetIfNeeded()
                         withAnimation { step += 1 }
                     } label: {
                         Text("Skip")
@@ -171,14 +172,7 @@ struct OnboardingView: View {
             triggerPhotoPicker = true
             return
         case 1:
-            // Create the pet now that we have the optional photo
-            let pet = Pet(
-                name: petName.trimmingCharacters(in: .whitespaces),
-                animalType: animalType,
-                customAnimalType: animalType == .other ? customAnimalType.trimmingCharacters(in: .whitespaces) : nil,
-                photoData: petPhotoData
-            )
-            viewModel.addPet(pet)
+            addPetIfNeeded()
         case 2:
             if let pet = viewModel.pets.first {
                 viewModel.scheduleItems.append(
@@ -194,6 +188,16 @@ struct OnboardingView: View {
             break
         }
         withAnimation { step += 1 }
+    }
+
+    private func addPetIfNeeded() {
+        guard viewModel.pets.isEmpty else { return }
+        viewModel.addPet(Pet(
+            name: petName.trimmingCharacters(in: .whitespaces),
+            animalType: animalType,
+            customAnimalType: animalType == .other ? customAnimalType.trimmingCharacters(in: .whitespaces) : nil,
+            photoData: petPhotoData
+        ))
     }
 
     private func completeOnboarding() {
