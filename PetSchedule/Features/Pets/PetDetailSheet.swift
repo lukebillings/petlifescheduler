@@ -1,6 +1,7 @@
 import SwiftUI
 import PhotosUI
 import Charts
+import UniformTypeIdentifiers
 
 struct PetDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -20,6 +21,16 @@ struct PetDetailSheet: View {
     @State private var heightDate: Date = .now
     @State private var notes: String
     @State private var vetDetails: VetDetails
+    @State private var documents: [PetDocument]
+
+    // Documents
+    @State private var showingDocumentPicker = false
+    @State private var documentPickerError: String? = nil
+
+    // Share with Vet
+    @State private var shareItems: [Any] = []
+    @State private var showingShareSheet = false
+    @State private var isGeneratingPDF = false
 
     private let petID: UUID
     private let isNew: Bool
@@ -39,6 +50,7 @@ struct PetDetailSheet: View {
         _heightHistory    = State(initialValue: pet?.heightHistory ?? [])
         _notes            = State(initialValue: pet?.notes ?? "")
         _vetDetails       = State(initialValue: pet?.vetDetails ?? VetDetails())
+        _documents        = State(initialValue: pet?.documents ?? [])
     }
 
     var body: some View {
@@ -140,8 +152,98 @@ struct PetDetailSheet: View {
                                 .font(.subheadline.bold())
                         }
                     }
+
+                    // Share with Vet — generates a PDF of the pet's full profile
+                    Button {
+                        isGeneratingPDF = true
+                        Task {
+                            let currentPet = Pet(
+                                id: petID, name: name, animalType: animalType,
+                                customAnimalType: animalType == .other ? customAnimalType : nil,
+                                dateOfBirth: hasDOB ? dateOfBirth : nil,
+                                photoData: photoData,
+                                weightHistory: weightHistory,
+                                heightHistory: heightHistory,
+                                notes: notes,
+                                vetDetails: vetDetails,
+                                documents: documents
+                            )
+                            let pdfData = PetPDFGenerator.generate(for: currentPet)
+                            let url = FileManager.default.temporaryDirectory
+                                .appendingPathComponent("\(currentPet.name.replacingOccurrences(of: " ", with: "_"))_HealthRecord.pdf")
+                            try? pdfData.write(to: url)
+                            shareItems = [url]
+                            isGeneratingPDF = false
+                            showingShareSheet = true
+                        }
+                    } label: {
+                        HStack {
+                            if isGeneratingPDF {
+                                ProgressView().tint(Color.appPink)
+                            } else {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundStyle(Color.appPink)
+                            }
+                            Text("Share with Vet")
+                                .foregroundStyle(Color.appPink)
+                                .font(.subheadline.bold())
+                        }
+                    }
+                    .disabled(isGeneratingPDF)
+
                 } header: {
                     Label("Vet Details", systemImage: "stethoscope")
+                }
+
+                // ── Documents ──────────────────────────────────────────────
+                Section {
+                    Button {
+                        showingDocumentPicker = true
+                    } label: {
+                        Label("Add Document from Files", systemImage: "icloud.and.arrow.up")
+                            .foregroundStyle(Color.appPink)
+                            .font(.subheadline.bold())
+                    }
+
+                    ForEach(documents) { doc in
+                        HStack(spacing: 12) {
+                            Image(systemName: doc.iconName)
+                                .font(.title3)
+                                .foregroundStyle(Color.appPink)
+                                .frame(width: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(doc.displayName)
+                                    .font(.subheadline)
+                                    .lineLimit(1)
+                                Text("\(doc.sizeString) · \(doc.dateAdded.formatted(date: .abbreviated, time: .omitted))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            // Preview / share button
+                            ShareLink(item: documentShareURL(for: doc), preview: SharePreview(doc.displayName)) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                withAnimation { documents.removeAll { $0.id == doc.id } }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                    }
+
+                    if documents.isEmpty {
+                        Text("No documents yet. Tap above to import from iCloud Drive or your device.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Label("Documents", systemImage: "folder.fill")
                 }
 
                 Section("Weight") {
@@ -323,6 +425,16 @@ struct PetDetailSheet: View {
             }
             .navigationTitle(isNew ? "New Pet" : name.trimmingCharacters(in: .whitespaces).isEmpty ? "Edit Pet" : name)
             .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showingDocumentPicker) {
+                DocumentPickerView { docs in
+                    documents.append(contentsOf: docs)
+                }
+            }
+            .sheet(isPresented: $showingShareSheet) {
+                if !shareItems.isEmpty {
+                    ShareSheetView(activityItems: shareItems)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
@@ -339,7 +451,8 @@ struct PetDetailSheet: View {
                             weightHistory: weightHistory,
                             heightHistory: heightHistory,
                             notes: notes,
-                            vetDetails: vetDetails
+                            vetDetails: vetDetails,
+                            documents: documents
                         ))
                         dismiss()
                     }
@@ -353,6 +466,12 @@ struct PetDetailSheet: View {
 
     private var previewPet: Pet {
         Pet(id: petID, name: name.isEmpty ? "Pet" : name, animalType: animalType, customAnimalType: customAnimalType, photoData: photoData)
+    }
+
+    private func documentShareURL(for doc: PetDocument) -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(doc.displayName)
+        try? doc.data.write(to: url)
+        return url
     }
 
     private var calculatedAge: String {
@@ -496,6 +615,57 @@ private struct HeightChartView: View {
             }
         }
     }
+}
+
+// MARK: - Document Picker (UIDocumentPickerViewController wrapper)
+
+private struct DocumentPickerView: UIViewControllerRepresentable {
+    let onPick: ([PetDocument]) -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
+
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let types: [UTType] = [.pdf, .image, .text, .spreadsheet,
+                               UTType("com.microsoft.word.doc") ?? .data,
+                               UTType("org.openxmlformats.wordprocessingml.document") ?? .data]
+        let vc = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: true)
+        vc.allowsMultipleSelection = true
+        vc.delegate = context.coordinator
+        return vc
+    }
+
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        let onPick: ([PetDocument]) -> Void
+        init(onPick: @escaping ([PetDocument]) -> Void) { self.onPick = onPick }
+
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            let docs: [PetDocument] = urls.compactMap { url in
+                guard url.startAccessingSecurityScopedResource(),
+                      let data = try? Data(contentsOf: url) else {
+                    url.stopAccessingSecurityScopedResource()
+                    return nil
+                }
+                defer { url.stopAccessingSecurityScopedResource() }
+                let ext = url.pathExtension
+                let nameBase = url.deletingPathExtension().lastPathComponent
+                return PetDocument(name: nameBase, data: data, fileExtension: ext)
+            }
+            onPick(docs)
+        }
+    }
+}
+
+// MARK: - Share Sheet (UIActivityViewController wrapper)
+
+private struct ShareSheetView: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

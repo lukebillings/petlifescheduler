@@ -12,13 +12,9 @@ struct PetAvatarView: View {
                     .resizable()
                     .scaledToFill()
             } else {
-                Circle()
-                    .fill(pet.color.gradient)
-                Image(systemName: pet.systemImage)
+                Image(pet.animalType.placeholderImage)
                     .resizable()
-                    .scaledToFit()
-                    .padding(size * 0.2)
-                    .foregroundStyle(.white)
+                    .scaledToFill()
             }
         }
         .frame(width: size, height: size)

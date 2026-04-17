@@ -23,8 +23,9 @@ struct Pet: Identifiable, Hashable {
     var heightHistory: [HeightEntry]
     var notes: String
     var vetDetails: VetDetails
+    var documents: [PetDocument]
 
-    init(id: UUID = UUID(), name: String, animalType: AnimalType, customAnimalType: String? = nil, dateOfBirth: Date? = nil, photoData: Data? = nil, weightHistory: [WeightEntry] = [], heightHistory: [HeightEntry] = [], notes: String = "", vetDetails: VetDetails = VetDetails()) {
+    init(id: UUID = UUID(), name: String, animalType: AnimalType, customAnimalType: String? = nil, dateOfBirth: Date? = nil, photoData: Data? = nil, weightHistory: [WeightEntry] = [], heightHistory: [HeightEntry] = [], notes: String = "", vetDetails: VetDetails = VetDetails(), documents: [PetDocument] = []) {
         self.id = id
         self.name = name
         self.animalType = animalType
@@ -35,6 +36,7 @@ struct Pet: Identifiable, Hashable {
         self.heightHistory = heightHistory
         self.notes = notes
         self.vetDetails = vetDetails
+        self.documents = documents
     }
 
     var systemImage: String { animalType.systemImage }

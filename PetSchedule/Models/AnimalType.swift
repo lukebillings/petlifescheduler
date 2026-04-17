@@ -20,6 +20,10 @@ enum AnimalType: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
+    var placeholderImage: String {
+        "placeholder_\(rawValue)"
+    }
+
     var color: Color {
         switch self {
         case .dog:      return .orange

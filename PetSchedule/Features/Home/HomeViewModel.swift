@@ -117,20 +117,63 @@ final class HomeViewModel {
         selectedCalendarDate = .now
     }
 
+    // MARK: - Birthday events
+
+    func birthdayItem(for pet: Pet, on date: Date) -> ScheduleItem? {
+        guard let dob = pet.dateOfBirth else { return nil }
+        let cal = Calendar.current
+        guard cal.component(.month, from: dob) == cal.component(.month, from: date),
+              cal.component(.day,   from: dob) == cal.component(.day,   from: date) else { return nil }
+        let years = cal.dateComponents([.year], from: dob, to: date).year ?? 0
+        let ordinal: String
+        switch years % 10 {
+        case 1 where years % 100 != 11: ordinal = "\(years)st"
+        case 2 where years % 100 != 12: ordinal = "\(years)nd"
+        case 3 where years % 100 != 13: ordinal = "\(years)rd"
+        default:                         ordinal = "\(years)th"
+        }
+        let title = years > 0 ? "\(pet.name)'s \(ordinal) Birthday 🎂" : "\(pet.name)'s Birthday 🎂"
+        // Derive a stable UUID from the pet's id XORed with the birthday year,
+        // so ForEach gets a consistent identity without storing the item.
+        let year = cal.component(.year, from: date)
+        var bytes = pet.id.uuid
+        bytes.0  ^= UInt8((year >> 8) & 0xFF)
+        bytes.1  ^= UInt8(year & 0xFF)
+        bytes.6   = (bytes.6 & 0x0F) | 0x50  // version 5
+        bytes.8   = (bytes.8 & 0x3F) | 0x80  // variant
+        let stableID = UUID(uuid: bytes)
+        return ScheduleItem(
+            id: stableID,
+            time: cal.startOfDay(for: date),
+            activityName: title,
+            pet: pet,
+            isAllDay: true,
+            isBirthday: true
+        )
+    }
+
+    private func birthdayItems(on date: Date) -> [ScheduleItem] {
+        pets
+            .filter { selectedPet == nil || $0.id == selectedPet!.id }
+            .compactMap { birthdayItem(for: $0, on: date) }
+    }
+
     // MARK: - Filtered queries
 
     var todayItems: [ScheduleItem] {
-        scheduleItems
+        let regular = scheduleItems
             .filter { Calendar.current.isDateInToday($0.time) }
             .filter { selectedPet == nil || $0.pet.id == selectedPet!.id }
-            .sorted { $0.time < $1.time }
+        let birthdays = birthdayItems(on: .now)
+        return (birthdays + regular).sorted { $0.time < $1.time }
     }
 
     func items(for date: Date) -> [ScheduleItem] {
-        scheduleItems
+        let regular = scheduleItems
             .filter { Calendar.current.isDate($0.time, inSameDayAs: date) }
             .filter { selectedPet == nil || $0.pet.id == selectedPet!.id }
-            .sorted { $0.time < $1.time }
+        let birthdays = birthdayItems(on: date)
+        return (birthdays + regular).sorted { $0.time < $1.time }
     }
 
     // MARK: - Schedule actions

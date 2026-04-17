@@ -74,16 +74,11 @@ private struct PetCard: View {
                         .aspectRatio(1, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 20))
                 } else {
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(pet.color.opacity(0.12))
+                    Image(pet.animalType.placeholderImage)
+                        .resizable()
+                        .scaledToFill()
                         .aspectRatio(1, contentMode: .fit)
-                        .overlay {
-                            Image(systemName: pet.systemImage)
-                                .resizable()
-                                .scaledToFit()
-                                .padding(32)
-                                .foregroundStyle(pet.color.gradient)
-                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
             }
 

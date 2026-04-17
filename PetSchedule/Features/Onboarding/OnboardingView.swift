@@ -218,18 +218,14 @@ private struct Step1AddPet: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 32) {
-                ZStack {
-                    Circle()
-                        .fill(animalType.color.opacity(0.15))
-                        .frame(width: 140, height: 140)
-                    Image(systemName: animalType.systemImage)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(animalType.color.gradient)
-                        .padding(34)
-                        .frame(width: 140, height: 140)
-                }
-                .animation(.spring(duration: 0.3), value: animalType)
+                    ZStack {
+                        Image(animalType.placeholderImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 140, height: 140)
+                            .clipShape(Circle())
+                    }
+                    .animation(.spring(duration: 0.3), value: animalType)
                 .padding(.top, 48)
 
                 VStack(spacing: 10) {
@@ -327,15 +323,11 @@ private struct Step2AddPhoto: View {
                                 .frame(width: 180, height: 180)
                                 .clipShape(Circle())
                         } else {
-                            Circle()
-                                .fill(animalType.color.gradient)
-                                .frame(width: 180, height: 180)
-                            Image(systemName: animalType.systemImage)
+                            Image(animalType.placeholderImage)
                                 .resizable()
-                                .scaledToFit()
-                                .foregroundStyle(.white)
-                                .padding(44)
+                                .scaledToFill()
                                 .frame(width: 180, height: 180)
+                                .clipShape(Circle())
                         }
                     }
                     .shadow(color: animalType.color.opacity(0.4), radius: 12, y: 6)

@@ -31,6 +31,8 @@ struct ScheduleItem: Identifiable {
     var repeatRule: RepeatRule
     var pet: Pet
     var isCompleted: Bool
+    var isAllDay: Bool
+    var isBirthday: Bool
 
     init(
         id: UUID = UUID(),
@@ -40,7 +42,9 @@ struct ScheduleItem: Identifiable {
         description: String = "",
         repeatRule: RepeatRule = .never,
         pet: Pet,
-        isCompleted: Bool = false
+        isCompleted: Bool = false,
+        isAllDay: Bool = false,
+        isBirthday: Bool = false
     ) {
         self.id = id
         self.time = time
@@ -50,9 +54,12 @@ struct ScheduleItem: Identifiable {
         self.repeatRule = repeatRule
         self.pet = pet
         self.isCompleted = isCompleted
+        self.isAllDay = isAllDay
+        self.isBirthday = isBirthday
     }
 
     var timeString: String {
+        if isAllDay { return "All day" }
         let f = DateFormatter()
         f.dateFormat = "ha"
         let start = f.string(from: time).lowercased()
