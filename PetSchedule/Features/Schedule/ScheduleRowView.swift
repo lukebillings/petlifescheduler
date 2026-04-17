@@ -5,6 +5,7 @@ struct ScheduleRowView: View {
     let onToggle: () -> Void
     var onTap: (() -> Void)? = nil
     var onPetTap: (() -> Void)? = nil
+    var onMedicineAccept: ((Bool) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 14) {
@@ -37,6 +38,14 @@ struct ScheduleRowView: View {
 
             Spacer()
 
+            if item.isMedicineEvent {
+                MedicineAcceptancePill(
+                    accepted: item.medicineAccepted,
+                    onAccept: { onMedicineAccept?(true) },
+                    onDecline: { onMedicineAccept?(false) }
+                )
+            }
+
             Button {
                 onToggle()
             } label: {
@@ -55,11 +64,88 @@ struct ScheduleRowView: View {
     }
 }
 
+// MARK: - Medicine Acceptance Pill
+
+private struct MedicineAcceptancePill: View {
+    let accepted: Bool?
+    let onAccept: () -> Void
+    let onDecline: () -> Void
+
+    var body: some View {
+        Group {
+            if let accepted {
+                // Already answered — show result badge
+                HStack(spacing: 4) {
+                    Image(systemName: accepted ? "checkmark" : "xmark")
+                        .font(.caption2.bold())
+                    Text(accepted ? "Taken" : "Skipped")
+                        .font(.caption2.bold())
+                }
+                .foregroundStyle(accepted ? Color.green : Color.red)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule()
+                        .fill(accepted ? Color.green.opacity(0.12) : Color.red.opacity(0.12))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(accepted ? Color.green.opacity(0.35) : Color.red.opacity(0.35), lineWidth: 1)
+                )
+            } else {
+                // Unanswered — show Accept? prompt with yes/no
+                HStack(spacing: 0) {
+                    Text("Accept?")
+                        .font(.caption2.bold())
+                        .foregroundStyle(.secondary)
+                        .padding(.leading, 8)
+                        .padding(.trailing, 6)
+
+                    Divider()
+                        .frame(height: 18)
+
+                    Button(action: onAccept) {
+                        Image(systemName: "checkmark")
+                            .font(.caption2.bold())
+                            .foregroundStyle(.white)
+                            .frame(width: 26, height: 26)
+                            .background(Color.green, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 4)
+
+                    Button(action: onDecline) {
+                        Image(systemName: "xmark")
+                            .font(.caption2.bold())
+                            .foregroundStyle(.white)
+                            .frame(width: 26, height: 26)
+                            .background(Color.red, in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 4)
+                }
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color(.secondarySystemBackground))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(Color(.separator).opacity(0.5), lineWidth: 1)
+                )
+            }
+        }
+        .animation(.spring(duration: 0.25), value: accepted)
+    }
+}
+
 #Preview {
     let pet = Pet(name: "Max", animalType: .dog)
     VStack(spacing: 12) {
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Walk", pet: pet, isCompleted: true)) {}
-        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Sleep", pet: pet)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medicine", pet: pet)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medicine", pet: pet, medicineAccepted: true)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medicine", pet: pet, medicineAccepted: false)) {}
     }
     .padding()
 }

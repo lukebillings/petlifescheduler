@@ -4,9 +4,21 @@ import Charts
 // MARK: - Supporting Types
 
 private enum AnalyticsRange: String, CaseIterable {
-    case week  = "7 Days"
-    case month = "30 Days"
-    var days: Int { self == .week ? 7 : 30 }
+    case day   = "Day"
+    case week  = "Week"
+    case month = "Month"
+    var days: Int {
+        switch self {
+        case .day:   return 1
+        case .week:  return 7
+        case .month: return 30
+        }
+    }
+}
+
+private enum ChartDisplayMode: String, CaseIterable {
+    case combined  = "Combined"
+    case separate  = "Separate"
 }
 
 private struct DayCompletion: Identifiable {
@@ -42,6 +54,9 @@ struct AnalyticsView: View {
 
     @State private var selectedRange: AnalyticsRange = .week
     @State private var selectedPetID: UUID? = nil
+    @State private var weightChartMode: ChartDisplayMode = .combined
+    @State private var heightChartMode: ChartDisplayMode = .combined
+    @State private var medicineChartMode: ChartDisplayMode = .combined
 
     private let calendar = Calendar.current
 
@@ -50,6 +65,16 @@ struct AnalyticsView: View {
     private var rangeStart: Date {
         let today = calendar.startOfDay(for: .now)
         return calendar.date(byAdding: .day, value: -(selectedRange.days - 1), to: today) ?? today
+    }
+
+    // Per-pet color palette for multi-series charts
+    private static let petColors: [Color] = [.appPink, .blue, .orange, .purple, .teal, .indigo]
+    private func petColor(at index: Int) -> Color {
+        Self.petColors[index % Self.petColors.count]
+    }
+    private func petColor(for petID: UUID) -> Color {
+        let index = viewModel.pets.firstIndex(where: { $0.id == petID }) ?? 0
+        return petColor(at: index)
     }
 
     private var rangeItems: [ScheduleItem] {
@@ -259,6 +284,7 @@ struct AnalyticsView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
+                    .animation(.easeInOut(duration: 0.2), value: selectedRange)
 
                     summaryRow
                         .padding(.horizontal)
@@ -278,6 +304,12 @@ struct AnalyticsView: View {
                     }
 
                     weightSection
+                        .padding(.horizontal)
+
+                    heightSection
+                        .padding(.horizontal)
+
+                    medicineComplianceSection
                         .padding(.horizontal)
 
                     Spacer(minLength: 32)
@@ -509,17 +541,78 @@ struct AnalyticsView: View {
         if !petsToShow.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
-                Text("Weight Trends")
-                    .font(.headline)
+                chartSectionHeader(
+                    title: "Weight Trends",
+                    mode: $weightChartMode,
+                    showModeToggle: petsToShow.count > 1
+                )
 
-                ForEach(petsToShow) { pet in
-                    weightCard(for: pet)
+                if weightChartMode == .combined && petsToShow.count > 1 {
+                    combinedWeightChart(pets: petsToShow)
+                } else {
+                    ForEach(petsToShow) { pet in
+                        weightCard(for: pet, color: petColor(for: pet.id))
+                    }
                 }
             }
         }
     }
 
-    private func weightCard(for pet: Pet) -> some View {
+    private func combinedWeightChart(pets: [Pet]) -> some View {
+        let allEntries: [(pet: Pet, entry: WeightEntry)] = pets.flatMap { p in
+            p.weightHistory.map { (pet: p, entry: $0) }
+        }
+        let allKg = allEntries.map(\.entry.kg)
+        let minY = (allKg.min() ?? 0) * 0.92
+        let maxY = (allKg.max() ?? 1) * 1.08
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Chart {
+                ForEach(Array(pets.enumerated()), id: \.element.id) { idx, pet in
+                    let sorted = pet.weightHistory.sorted { $0.date < $1.date }
+                    ForEach(sorted) { e in
+                        LineMark(
+                            x: .value("Date", e.date),
+                            y: .value("kg", e.kg)
+                        )
+                        .foregroundStyle(by: .value("Pet", pet.name))
+                        .interpolationMethod(.catmullRom)
+                        PointMark(
+                            x: .value("Date", e.date),
+                            y: .value("kg", e.kg)
+                        )
+                        .foregroundStyle(by: .value("Pet", pet.name))
+                        .symbolSize(25)
+                    }
+                }
+            }
+            .chartForegroundStyleScale(
+                domain: pets.map(\.name),
+                range: pets.enumerated().map { petColor(at: $0.offset) }
+            )
+            .chartLegend(position: .top, alignment: .leading)
+            .chartYScale(domain: minY...maxY)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel {
+                        if let kg = v.as(Double.self) { Text("\(kg, specifier: "%.1f")").font(.caption2) }
+                    }
+                }
+            }
+            .frame(height: 180)
+        }
+        .padding(14)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func weightCard(for pet: Pet, color: Color) -> some View {
         let sorted = pet.weightHistory.sorted { $0.date < $1.date }
         let diff   = sorted.last!.kg - sorted.first!.kg
         let minY   = (sorted.map(\.kg).min() ?? 0) * 0.92
@@ -545,7 +638,7 @@ struct AnalyticsView: View {
 
             Chart(sorted) { e in
                 LineMark(x: .value("Date", e.date), y: .value("kg", e.kg))
-                    .foregroundStyle(Color.appPink)
+                    .foregroundStyle(color)
                     .interpolationMethod(.catmullRom)
                 AreaMark(
                     x: .value("Date", e.date),
@@ -553,12 +646,12 @@ struct AnalyticsView: View {
                     yEnd: .value("kg", e.kg)
                 )
                 .foregroundStyle(LinearGradient(
-                    colors: [Color.appPink.opacity(0.25), Color.appPink.opacity(0.02)],
+                    colors: [color.opacity(0.25), color.opacity(0.02)],
                     startPoint: .top, endPoint: .bottom
                 ))
                 .interpolationMethod(.catmullRom)
                 PointMark(x: .value("Date", e.date), y: .value("kg", e.kg))
-                    .foregroundStyle(Color.appPink)
+                    .foregroundStyle(color)
                     .symbolSize(30)
             }
             .chartYScale(domain: minY...maxY)
@@ -582,6 +675,371 @@ struct AnalyticsView: View {
         }
         .padding(14)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Height trends
+
+    @ViewBuilder
+    private var heightSection: some View {
+        let petsToShow: [Pet] = {
+            if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
+                return p.heightHistory.count >= 2 ? [p] : []
+            }
+            return viewModel.pets.filter { $0.heightHistory.count >= 2 }
+        }()
+
+        if !petsToShow.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Divider()
+                chartSectionHeader(
+                    title: "Height Trends",
+                    mode: $heightChartMode,
+                    showModeToggle: petsToShow.count > 1
+                )
+
+                if heightChartMode == .combined && petsToShow.count > 1 {
+                    combinedHeightChart(pets: petsToShow)
+                } else {
+                    ForEach(petsToShow) { pet in
+                        heightCard(for: pet, color: petColor(for: pet.id))
+                    }
+                }
+            }
+        }
+    }
+
+    private func combinedHeightChart(pets: [Pet]) -> some View {
+        let allCm = pets.flatMap { $0.heightHistory.map(\.cm) }
+        let minY = (allCm.min() ?? 0) * 0.92
+        let maxY = (allCm.max() ?? 1) * 1.08
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Chart {
+                ForEach(Array(pets.enumerated()), id: \.element.id) { idx, pet in
+                    let sorted = pet.heightHistory.sorted { $0.date < $1.date }
+                    ForEach(sorted) { e in
+                        LineMark(
+                            x: .value("Date", e.date),
+                            y: .value("cm", e.cm)
+                        )
+                        .foregroundStyle(by: .value("Pet", pet.name))
+                        .interpolationMethod(.catmullRom)
+                        PointMark(
+                            x: .value("Date", e.date),
+                            y: .value("cm", e.cm)
+                        )
+                        .foregroundStyle(by: .value("Pet", pet.name))
+                        .symbolSize(25)
+                    }
+                }
+            }
+            .chartForegroundStyleScale(
+                domain: pets.map(\.name),
+                range: pets.enumerated().map { petColor(at: $0.offset) }
+            )
+            .chartLegend(position: .top, alignment: .leading)
+            .chartYScale(domain: minY...maxY)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel {
+                        if let cm = v.as(Double.self) { Text("\(cm, specifier: "%.0f") cm").font(.caption2) }
+                    }
+                }
+            }
+            .frame(height: 180)
+        }
+        .padding(14)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func heightCard(for pet: Pet, color: Color) -> some View {
+        let sorted = pet.heightHistory.sorted { $0.date < $1.date }
+        let diff   = sorted.last!.cm - sorted.first!.cm
+        let minY   = (sorted.map(\.cm).min() ?? 0) * 0.92
+        let maxY   = (sorted.map(\.cm).max() ?? 1) * 1.08
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                if viewModel.pets.count > 1 {
+                    PetAvatarView(pet: pet, size: 26)
+                    Text(pet.name).font(.subheadline.bold())
+                }
+                Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .foregroundStyle(diff >= 0 ? .orange : .green)
+                    Text(String(format: "%+.1f cm", diff))
+                        .foregroundStyle(diff >= 0 ? .orange : .green)
+                    Text("· \(sorted.last!.cm, specifier: "%.0f") cm now")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.caption.bold())
+            }
+
+            Chart(sorted) { e in
+                LineMark(x: .value("Date", e.date), y: .value("cm", e.cm))
+                    .foregroundStyle(color)
+                    .interpolationMethod(.catmullRom)
+                AreaMark(
+                    x: .value("Date", e.date),
+                    yStart: .value("Min", minY),
+                    yEnd: .value("cm", e.cm)
+                )
+                .foregroundStyle(LinearGradient(
+                    colors: [color.opacity(0.25), color.opacity(0.02)],
+                    startPoint: .top, endPoint: .bottom
+                ))
+                .interpolationMethod(.catmullRom)
+                PointMark(x: .value("Date", e.date), y: .value("cm", e.cm))
+                    .foregroundStyle(color)
+                    .symbolSize(30)
+            }
+            .chartYScale(domain: minY...maxY)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel {
+                        if let cm = v.as(Double.self) {
+                            Text("\(cm, specifier: "%.0f")").font(.caption2)
+                        }
+                    }
+                }
+            }
+            .frame(height: 150)
+        }
+        .padding(14)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Medicine compliance
+
+    private struct MedicineCompliancePoint: Identifiable {
+        let id = UUID()
+        let date: Date
+        let petName: String
+        let petID: UUID
+        let accepted: Int
+        let total: Int
+        var rate: Double { total > 0 ? Double(accepted) / Double(total) : 0 }
+    }
+
+    private func medicineCompliance(for pet: Pet) -> [MedicineCompliancePoint] {
+        let medItems = viewModel.scheduleItems.filter { $0.pet.id == pet.id && $0.isMedicineEvent }
+        guard !medItems.isEmpty else { return [] }
+
+        switch selectedRange {
+        case .day:
+            let todayItems = medItems.filter { calendar.isDateInToday($0.time) }
+            guard !todayItems.isEmpty else { return [] }
+            let accepted = todayItems.filter { $0.medicineAccepted == true }.count
+            return [MedicineCompliancePoint(
+                date: calendar.startOfDay(for: .now),
+                petName: pet.name, petID: pet.id,
+                accepted: accepted, total: todayItems.count
+            )]
+
+        case .week:
+            return (0..<7).reversed().compactMap { offset -> MedicineCompliancePoint? in
+                guard let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: .now)) else { return nil }
+                let items = medItems.filter { calendar.isDate($0.time, inSameDayAs: day) }
+                guard !items.isEmpty else { return nil }
+                return MedicineCompliancePoint(
+                    date: day, petName: pet.name, petID: pet.id,
+                    accepted: items.filter { $0.medicineAccepted == true }.count,
+                    total: items.count
+                )
+            }
+
+        case .month:
+            // Group by week
+            return (0..<4).reversed().compactMap { weekOffset -> MedicineCompliancePoint? in
+                guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -weekOffset, to: calendar.startOfDay(for: .now)),
+                      let weekEnd   = calendar.date(byAdding: .day, value: 7, to: weekStart)
+                else { return nil }
+                let items = medItems.filter { $0.time >= weekStart && $0.time < weekEnd }
+                guard !items.isEmpty else { return nil }
+                return MedicineCompliancePoint(
+                    date: weekStart, petName: pet.name, petID: pet.id,
+                    accepted: items.filter { $0.medicineAccepted == true }.count,
+                    total: items.count
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var medicineComplianceSection: some View {
+        let petsWithMeds: [Pet] = {
+            if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
+                let hasMeds = viewModel.scheduleItems.contains { $0.pet.id == p.id && $0.isMedicineEvent }
+                return hasMeds ? [p] : []
+            }
+            return viewModel.pets.filter { pet in
+                viewModel.scheduleItems.contains { $0.pet.id == pet.id && $0.isMedicineEvent }
+            }
+        }()
+
+        if !petsWithMeds.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Divider()
+                chartSectionHeader(
+                    title: "Medicine Compliance",
+                    mode: $medicineChartMode,
+                    showModeToggle: petsWithMeds.count > 1
+                )
+
+                if medicineChartMode == .combined && petsWithMeds.count > 1 {
+                    combinedMedicineChart(pets: petsWithMeds)
+                } else {
+                    ForEach(petsWithMeds) { pet in
+                        medicineCard(for: pet, color: petColor(for: pet.id))
+                    }
+                }
+            }
+        }
+    }
+
+    private func combinedMedicineChart(pets: [Pet]) -> some View {
+        let allPoints = pets.flatMap { medicineCompliance(for: $0) }
+
+        return VStack(alignment: .leading, spacing: 8) {
+            if allPoints.isEmpty {
+                emptyPlaceholder(icon: "pill.fill", text: "No medicine events in this period.")
+            } else {
+                Chart(allPoints) { p in
+                    BarMark(
+                        x: .value("Date", p.date, unit: selectedRange == .month ? .weekOfYear : .day),
+                        y: .value("Rate", p.rate)
+                    )
+                    .foregroundStyle(by: .value("Pet", p.petName))
+                    .position(by: .value("Pet", p.petName))
+                    .cornerRadius(4)
+                }
+                .chartForegroundStyleScale(
+                    domain: pets.map(\.name),
+                    range: pets.enumerated().map { petColor(at: $0.offset) }
+                )
+                .chartLegend(position: .top, alignment: .leading)
+                .chartYScale(domain: 0...1)
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: selectedRange == .week ? .day : .weekOfYear, count: 1)) { _ in
+                        AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
+                        AxisValueLabel(
+                            format: selectedRange == .month
+                                ? .dateTime.month(.abbreviated).day()
+                                : .dateTime.weekday(.abbreviated)
+                        ).font(.caption2)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: [0, 0.5, 1.0]) { v in
+                        AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
+                        AxisValueLabel {
+                            if let d = v.as(Double.self) { Text("\(Int(d * 100))%").font(.caption2) }
+                        }
+                    }
+                }
+                .frame(height: 180)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func medicineCard(for pet: Pet, color: Color) -> some View {
+        let points = medicineCompliance(for: pet)
+        let avg = points.isEmpty ? 0.0 : points.map(\.rate).reduce(0, +) / Double(points.count)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                if viewModel.pets.count > 1 {
+                    PetAvatarView(pet: pet, size: 26)
+                    Text(pet.name).font(.subheadline.bold())
+                }
+                Spacer()
+                Text("\(Int(avg * 100))% avg compliance")
+                    .font(.caption.bold())
+                    .foregroundStyle(rateColor(avg))
+            }
+
+            if points.isEmpty {
+                Text("No medicine events in this period.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else {
+                Chart(points) { p in
+                    BarMark(
+                        x: .value("Date", p.date, unit: selectedRange == .month ? .weekOfYear : .day),
+                        y: .value("Rate", p.rate)
+                    )
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [color, color.opacity(0.6)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .cornerRadius(4)
+                }
+                .chartYScale(domain: 0...1)
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: selectedRange == .week ? .day : .weekOfYear, count: 1)) { _ in
+                        AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
+                        AxisValueLabel(
+                            format: selectedRange == .month
+                                ? .dateTime.month(.abbreviated).day()
+                                : .dateTime.weekday(.abbreviated)
+                        ).font(.caption2)
+                    }
+                }
+                .chartYAxis {
+                    AxisMarks(position: .leading, values: [0, 0.5, 1.0]) { v in
+                        AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
+                        AxisValueLabel {
+                            if let d = v.as(Double.self) { Text("\(Int(d * 100))%").font(.caption2) }
+                        }
+                    }
+                }
+                .frame(height: 140)
+            }
+        }
+        .padding(14)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Shared chart section header
+
+    private func chartSectionHeader(
+        title: String,
+        mode: Binding<ChartDisplayMode>,
+        showModeToggle: Bool
+    ) -> some View {
+        HStack {
+            Text(title).font(.headline)
+            Spacer()
+            if showModeToggle {
+                Picker("", selection: mode) {
+                    ForEach(ChartDisplayMode.allCases, id: \.self) { m in
+                        Text(m.rawValue).tag(m)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 160)
+            }
+        }
     }
 
     // MARK: - Helpers

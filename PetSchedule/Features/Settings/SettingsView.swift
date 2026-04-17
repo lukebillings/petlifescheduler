@@ -98,7 +98,7 @@ struct SettingsView: View {
                     Button {
                         if let scene = UIApplication.shared.connectedScenes
                             .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
-                            SKStoreReviewController.requestReview(in: scene)
+                            AppStore.requestReview(in: scene)
                         }
                     } label: {
                         Label("Rate PetSchedule", systemImage: "star.fill")

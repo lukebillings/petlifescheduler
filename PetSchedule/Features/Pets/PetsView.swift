@@ -5,8 +5,6 @@ struct PetsView: View {
     @State private var editingPet: Pet? = nil
     @State private var showingAddPet = false
 
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
-
     var body: some View {
         NavigationStack {
             Group {
@@ -18,7 +16,7 @@ struct PetsView: View {
                     )
                 } else {
                     ScrollView {
-                        LazyVGrid(columns: columns, spacing: 16) {
+                        LazyVStack(spacing: 16) {
                             ForEach(viewModel.pets) { pet in
                                 PetCard(pet: pet)
                                     .onTapGesture { editingPet = pet }
@@ -64,40 +62,35 @@ private struct PetCard: View {
     let pet: Pet
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Animal illustration area
+        HStack(spacing: 16) {
             Group {
                 if let data = pet.photoData, let uiImage = UIImage(data: data) {
                     Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFill()
-                        .aspectRatio(1, contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 } else {
                     Image(pet.animalType.placeholderImage)
                         .resizable()
                         .scaledToFill()
-                        .aspectRatio(1, contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
                 }
             }
+            .frame(width: 72, height: 72)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
 
-            // Info row
-            VStack(spacing: 2) {
-                Text(pet.name)
-                    .font(.callout.bold())
-                    .foregroundStyle(.primary)
+            Text(pet.name)
+                .font(.title3.bold())
+                .foregroundStyle(.primary)
 
-                if let age = pet.age {
-                    Text(age)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .padding(.top, 10)
-            .padding(.bottom, 4)
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .font(.caption.bold())
+                .foregroundStyle(.tertiary)
         }
-        .contentShape(Rectangle())
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
+        .contentShape(RoundedRectangle(cornerRadius: 20))
     }
 }
 

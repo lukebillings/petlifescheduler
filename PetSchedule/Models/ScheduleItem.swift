@@ -33,6 +33,8 @@ struct ScheduleItem: Identifiable {
     var isCompleted: Bool
     var isAllDay: Bool
     var isBirthday: Bool
+    /// nil = not yet answered, true = pet took the medicine, false = pet did not
+    var medicineAccepted: Bool?
 
     init(
         id: UUID = UUID(),
@@ -44,7 +46,8 @@ struct ScheduleItem: Identifiable {
         pet: Pet,
         isCompleted: Bool = false,
         isAllDay: Bool = false,
-        isBirthday: Bool = false
+        isBirthday: Bool = false,
+        medicineAccepted: Bool? = nil
     ) {
         self.id = id
         self.time = time
@@ -56,6 +59,12 @@ struct ScheduleItem: Identifiable {
         self.isCompleted = isCompleted
         self.isAllDay = isAllDay
         self.isBirthday = isBirthday
+        self.medicineAccepted = medicineAccepted
+    }
+
+    var isMedicineEvent: Bool {
+        let n = activityName.lowercased()
+        return n.contains("medic") || n.contains("tablet") || n.contains("pill")
     }
 
     var timeString: String {

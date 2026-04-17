@@ -3,12 +3,14 @@ import SwiftUI
 struct ScheduleView: View {
     @Bindable var viewModel: HomeViewModel
     @State private var showingAddEvent = false
+    @State private var hideCompleted = false
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    // My pets
+            VStack(alignment: .leading, spacing: 0) {
+                // ── Sticky header (never scrolls) ─────────────────────────────────
+                VStack(alignment: .leading, spacing: 0) {
+                    // My Pets row
                     VStack(alignment: .leading, spacing: 14) {
                         Text("My pets")
                             .font(.title2.bold())
@@ -44,8 +46,9 @@ struct ScheduleView: View {
                         }
                         .scrollClipDisabled()
                     }
+                    .padding(.top, 20)
 
-                    // List / Calendar picker
+                    // View mode picker
                     Picker("View", selection: $viewModel.selectedView) {
                         ForEach(HomeViewModel.ViewMode.allCases, id: \.self) { mode in
                             Text(mode.rawValue).tag(mode)
@@ -53,33 +56,98 @@ struct ScheduleView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
+                    .padding(.top, 16)
 
-                    // Content
-                    switch viewModel.selectedView {
-                    case .list:
-                        ScheduleListView(viewModel: viewModel)
-                    case .calendar:
-                        CalendarScheduleView(viewModel: viewModel)
+                    // Today header (list mode only)
+                    if viewModel.selectedView == .list {
+                        HStack(alignment: .center, spacing: 10) {
+                            Text("Today")
+                                .font(.title3.bold())
+
+                            Text(Date.now.formatted(.dateTime.month(.abbreviated).day()))
+                                .font(.caption.bold())
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(.blue, in: Capsule())
+
+                            Spacer()
+
+                            Button { showingAddEvent = true } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "plus")
+                                        .font(.caption.bold())
+                                    Text("Event")
+                                        .font(.caption.bold())
+                                }
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.appPink, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                withAnimation(.spring(duration: 0.25)) {
+                                    hideCompleted.toggle()
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: hideCompleted ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                                        .font(.body.bold())
+                                    Text(hideCompleted ? "Pending" : "All")
+                                        .font(.caption.bold())
+                                }
+                                .foregroundStyle(hideCompleted ? Color.appPink : .secondary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(hideCompleted ? Color.appPink.opacity(0.12) : Color(.secondarySystemBackground))
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 20)
+                        .padding(.bottom, 8)
                     }
-
-                    Spacer(minLength: 100)
                 }
-                .padding(.top, 20)
+                .background(Color(.systemBackground))
+
+                // ── Scrollable: events only ───────────────────────────────────────
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        switch viewModel.selectedView {
+                        case .list:
+                            ScheduleListView(viewModel: viewModel, hideCompleted: $hideCompleted)
+                        case .calendar:
+                            CalendarScheduleView(viewModel: viewModel)
+                        }
+                        Spacer(minLength: 100)
+                    }
+                }
+
+                // FAB for calendar mode only
+                if viewModel.selectedView == .calendar {
+                    HStack {
+                        Spacer()
+                        Button {
+                            showingAddEvent = true
+                        } label: {
+                            Label("Add Event", systemImage: "plus")
+                                .font(.body.bold())
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 14)
+                        }
+                        .foregroundStyle(.white)
+                        .glassEffect(.regular.tint(.appPink).interactive(), in: Capsule())
+                        Spacer()
+                    }
+                    .padding(.bottom, 16)
+                }
             }
             .toolbar(.hidden, for: .navigationBar)
-            .overlay(alignment: .bottom) {
-                Button {
-                    showingAddEvent = true
-                } label: {
-                    Label("Add Event", systemImage: "plus")
-                        .font(.body.bold())
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 14)
-                }
-                .foregroundStyle(.white)
-                .glassEffect(.regular.tint(.appPink).interactive(), in: Capsule())
-                .padding(.bottom, 16)
-            }
             .sheet(isPresented: $showingAddEvent) {
                 AddEventSheet(viewModel: viewModel)
             }

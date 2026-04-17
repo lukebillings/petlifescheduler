@@ -3,7 +3,7 @@ import AudioToolbox
 
 struct ScheduleListView: View {
     @Bindable var viewModel: HomeViewModel
-    @State private var hideCompleted = false
+    @Binding var hideCompleted: Bool
     @State private var editingItem: ScheduleItem? = nil
     @State private var viewingPet: Pet? = nil
     @State private var confettiTrigger = 0
@@ -36,42 +36,6 @@ struct ScheduleListView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // ── Header ────────────────────────────────────────────────────────
-            HStack(alignment: .center, spacing: 10) {
-                Text("Today")
-                    .font(.title3.bold())
-
-                Text(Date.now.formatted(.dateTime.month(.abbreviated).day()))
-                    .font(.caption.bold())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(.blue, in: Capsule())
-
-                Spacer()
-
-                Button {
-                    withAnimation(.spring(duration: 0.25)) {
-                        hideCompleted.toggle()
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: hideCompleted ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                            .font(.body.bold())
-                        Text(hideCompleted ? "Pending" : "All")
-                            .font(.caption.bold())
-                    }
-                    .foregroundStyle(hideCompleted ? Color.appPink : .secondary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule()
-                            .fill(hideCompleted ? Color.appPink.opacity(0.12) : Color(.secondarySystemBackground))
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-
             if displayedItems.isEmpty {
                 HStack {
                     Spacer()
@@ -119,6 +83,9 @@ struct ScheduleListView: View {
                                 editingItem = item
                             } onPetTap: {
                                 viewingPet = item.pet
+                            } onMedicineAccept: { accepted in
+                                viewModel.setMedicineAccepted(accepted, for: item)
+                                HapticManager.notification(.success)
                             }
                             .opacity(isPast ? 0.45 : 1.0)
                             .saturation(isPast ? 0.4 : 1.0)
@@ -134,6 +101,7 @@ struct ScheduleListView: View {
             }
         }
         .padding(.horizontal)
+        .padding(.top, 8)
         .onReceive(timer) { t in now = t }
         .sheet(item: $editingItem) { item in
             EditEventSheet(viewModel: viewModel, item: item)
@@ -227,6 +195,6 @@ private struct BirthdayRowView: View {
 }
 
 #Preview {
-    ScheduleListView(viewModel: HomeViewModel.preview)
+    ScheduleListView(viewModel: HomeViewModel.preview, hideCompleted: .constant(false))
         .padding(.top)
 }

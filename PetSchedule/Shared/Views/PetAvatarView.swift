@@ -19,7 +19,6 @@ struct PetAvatarView: View {
         }
         .frame(width: size, height: size)
         .clipShape(Circle())
-        .shadow(color: (glowColor ?? Color.appPink).opacity(0.5), radius: 12, y: 4)
     }
 }
 

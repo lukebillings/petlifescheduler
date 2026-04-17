@@ -119,6 +119,8 @@ struct CalendarScheduleView: View {
                                     editingItem = item
                                 } onPetTap: {
                                     viewingPet = item.pet
+                                } onMedicineAccept: { accepted in
+                                    viewModel.setMedicineAccepted(accepted, for: item)
                                 }
                             }
                         }

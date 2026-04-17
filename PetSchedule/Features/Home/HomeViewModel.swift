@@ -72,9 +72,18 @@ final class HomeViewModel {
             WeightEntry(date: daysAgo(6),  kg: 4.1),
             WeightEntry(date: daysAgo(1),  kg: 4.0),
         ]
+        let maxHeights: [HeightEntry] = [
+            HeightEntry(date: daysAgo(14), cm: 57.0),
+            HeightEntry(date: daysAgo(7),  cm: 57.5),
+            HeightEntry(date: daysAgo(0),  cm: 58.0),
+        ]
+        let lunaHeights: [HeightEntry] = [
+            HeightEntry(date: daysAgo(12), cm: 24.0),
+            HeightEntry(date: daysAgo(4),  cm: 24.2),
+        ]
 
-        let max  = Pet(name: "Max",  animalType: .dog,  weightHistory: maxWeights)
-        let luna = Pet(name: "Luna", animalType: .cat,  weightHistory: lunaWeights)
+        let max  = Pet(name: "Max",  animalType: .dog,  weightHistory: maxWeights,  heightHistory: maxHeights)
+        let luna = Pet(name: "Luna", animalType: .cat,  weightHistory: lunaWeights, heightHistory: lunaHeights)
         let nemo = Pet(name: "Nemo", animalType: .fish)
         vm.pets = [max, luna, nemo]
 
@@ -88,7 +97,8 @@ final class HomeViewModel {
             items.append(ScheduleItem(time: at(d, hour: 8),  activityName: "Eat",      pet: max,  isCompleted: past))
             items.append(ScheduleItem(time: at(d, hour: 18), activityName: "Eat",      pet: max,  isCompleted: past))
             if (13 + d) % 2 == 0 {
-                items.append(ScheduleItem(time: at(d, hour: 9), activityName: "Medicine", pet: max, isCompleted: past))
+                let accepted: Bool? = past ? ((13 + d) % 3 != 0 ? true : false) : nil
+                items.append(ScheduleItem(time: at(d, hour: 9), activityName: "Medicine", pet: max, isCompleted: past, medicineAccepted: accepted))
             }
 
             // Luna — regular feedings with occasional miss; weekly groom
@@ -181,6 +191,11 @@ final class HomeViewModel {
     func toggleCompletion(for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         scheduleItems[index].isCompleted.toggle()
+    }
+
+    func setMedicineAccepted(_ accepted: Bool, for item: ScheduleItem) {
+        guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
+        scheduleItems[index].medicineAccepted = accepted
     }
 
     // MARK: - Pet filter
