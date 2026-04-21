@@ -70,7 +70,7 @@ struct ScheduleItem: Identifiable {
     var timeString: String {
         if isAllDay { return "All day" }
         let f = DateFormatter()
-        f.dateFormat = "ha"
+        f.dateFormat = TimeFormat.current.dateFormat
         let start = f.string(from: time).lowercased()
         if let end = endTime {
             return "\(start) – \(f.string(from: end).lowercased())"

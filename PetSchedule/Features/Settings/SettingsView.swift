@@ -8,6 +8,13 @@ struct SettingsView: View {
     @AppStorage("remindersEnabled") private var remindersEnabled = false
     @AppStorage("reminderMinutes") private var reminderMinutes = 10
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
+    @AppStorage("timeFormat")  private var timeFormatRaw  = "12h"
+    @AppStorage("weightUnit")  private var weightUnitRaw  = "kg"
+    @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
+
+    private var timeFormat:  TimeFormat  { TimeFormat(rawValue: timeFormatRaw)   ?? .twelveHour }
+    private var weightUnit:  WeightUnit  { WeightUnit(rawValue: weightUnitRaw)   ?? .kg }
+    private var heightUnit:  HeightUnit  { HeightUnit(rawValue: heightUnitRaw)   ?? .cm }
 
     @State private var showingResetConfirm = false
     @State private var customMinutes: Int = 15
@@ -91,7 +98,32 @@ struct SettingsView: View {
                         Label("Haptic feedback", systemImage: "iphone.radiowaves.left.and.right")
                     }
                     .tint(Color.appPink)
+                }
 
+                Section("Units") {
+                    Picker(selection: $timeFormatRaw) {
+                        ForEach([TimeFormat.twelveHour, .twentyFourHour], id: \.rawValue) { fmt in
+                            Text(fmt.pickerLabel).tag(fmt.rawValue)
+                        }
+                    } label: {
+                        Label("Clock", systemImage: "clock")
+                    }
+
+                    Picker(selection: $weightUnitRaw) {
+                        ForEach([WeightUnit.kg, .stone], id: \.rawValue) { unit in
+                            Text(unit.pickerLabel).tag(unit.rawValue)
+                        }
+                    } label: {
+                        Label("Weight", systemImage: "scalemass")
+                    }
+
+                    Picker(selection: $heightUnitRaw) {
+                        ForEach([HeightUnit.cm, .imperial], id: \.rawValue) { unit in
+                            Text(unit.pickerLabel).tag(unit.rawValue)
+                        }
+                    } label: {
+                        Label("Height", systemImage: "ruler")
+                    }
                 }
 
                 Section("Rate Us") {

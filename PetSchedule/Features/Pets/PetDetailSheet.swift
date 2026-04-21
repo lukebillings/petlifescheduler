@@ -23,6 +23,12 @@ struct PetDetailSheet: View {
     @State private var vetDetails: VetDetails
     @State private var documents: [PetDocument]
 
+    @AppStorage("weightUnit") private var weightUnitRaw = "kg"
+    @AppStorage("heightUnit") private var heightUnitRaw = "cm"
+
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .kg }
+    private var heightUnit: HeightUnit { HeightUnit(rawValue: heightUnitRaw) ?? .cm }
+
     // Documents
     @State private var showingDocumentPicker = false
     @State private var documentPickerError: String? = nil
@@ -252,7 +258,7 @@ struct PetDetailSheet: View {
                             TextField("0.0", text: $weightInput)
                                 .keyboardType(.decimalPad)
                                 .frame(maxWidth: .infinity)
-                            Text("kg")
+                            Text(weightUnit.label)
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.horizontal, 12)
@@ -263,10 +269,10 @@ struct PetDetailSheet: View {
                             .labelsHidden()
 
                         Button {
-                            guard let kg = Double(weightInput.replacingOccurrences(of: ",", with: ".")),
-                                  kg > 0 else { return }
+                            guard let val = Double(weightInput.replacingOccurrences(of: ",", with: ".")),
+                                  val > 0 else { return }
                             withAnimation(.spring(duration: 0.3)) {
-                                weightHistory.append(WeightEntry(date: weightDate, kg: kg))
+                                weightHistory.append(WeightEntry(date: weightDate, kg: weightUnit.toKg(val)))
                                 weightHistory.sort { $0.date < $1.date }
                             }
                             weightInput = ""
@@ -280,14 +286,14 @@ struct PetDetailSheet: View {
                     }
 
                     if weightHistory.count >= 2 {
-                        WeightChartView(entries: weightHistory)
+                        WeightChartView(entries: weightHistory, unit: weightUnit)
                             .frame(height: 180)
                             .padding(.vertical, 8)
                     } else if !weightHistory.isEmpty {
                         HStack {
                             Image(systemName: "scalemass.fill")
                                 .foregroundStyle(Color.appPink)
-                            Text("Latest: \(weightHistory.last!.kg, specifier: "%.1f") kg")
+                            Text("Latest: \(weightUnit.formatValue(weightHistory.last!.kg))")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -309,7 +315,7 @@ struct PetDetailSheet: View {
                             Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
                                 .foregroundStyle(diff >= 0 ? .orange : .green)
                                 .font(.caption.bold())
-                            Text(String(format: "%+.1f kg since first log", diff))
+                            Text("\(weightUnit.formatChange(diff)) since first log")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -331,7 +337,7 @@ struct PetDetailSheet: View {
                             TextField("0.0", text: $heightInput)
                                 .keyboardType(.decimalPad)
                                 .frame(maxWidth: .infinity)
-                            Text("cm")
+                            Text(heightUnit.inputLabel)
                                 .foregroundStyle(.secondary)
                         }
                         .padding(.horizontal, 12)
@@ -342,10 +348,10 @@ struct PetDetailSheet: View {
                             .labelsHidden()
 
                         Button {
-                            guard let cm = Double(heightInput.replacingOccurrences(of: ",", with: ".")),
-                                  cm > 0 else { return }
+                            guard let val = Double(heightInput.replacingOccurrences(of: ",", with: ".")),
+                                  val > 0 else { return }
                             withAnimation(.spring(duration: 0.3)) {
-                                heightHistory.append(HeightEntry(date: heightDate, cm: cm))
+                                heightHistory.append(HeightEntry(date: heightDate, cm: heightUnit.toCm(val)))
                                 heightHistory.sort { $0.date < $1.date }
                             }
                             heightInput = ""
@@ -359,14 +365,14 @@ struct PetDetailSheet: View {
                     }
 
                     if heightHistory.count >= 2 {
-                        HeightChartView(entries: heightHistory)
+                        HeightChartView(entries: heightHistory, unit: heightUnit)
                             .frame(height: 180)
                             .padding(.vertical, 8)
                     } else if !heightHistory.isEmpty {
                         HStack {
                             Image(systemName: "ruler.fill")
                                 .foregroundStyle(Color.appPink)
-                            Text("Latest: \(heightHistory.last!.cm, specifier: "%.1f") cm")
+                            Text("Latest: \(heightUnit.formatValue(heightHistory.last!.cm))")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -388,7 +394,7 @@ struct PetDetailSheet: View {
                             Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
                                 .foregroundStyle(diff >= 0 ? .orange : .green)
                                 .font(.caption.bold())
-                            Text(String(format: "%+.1f cm since first log", diff))
+                            Text("\(heightUnit.formatChange(diff)) since first log")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
@@ -503,16 +509,19 @@ struct PetDetailSheet: View {
 
 private struct WeightChartView: View {
     let entries: [WeightEntry]
+    let unit: WeightUnit
 
     private var sorted: [WeightEntry] { entries.sorted { $0.date < $1.date } }
-    private var minY: Double { (sorted.map(\.kg).min() ?? 0) * 0.92 }
-    private var maxY: Double { (sorted.map(\.kg).max() ?? 1) * 1.08 }
+    private var displayValues: [Double] { sorted.map { unit.displayValue(fromKg: $0.kg) } }
+    private var minY: Double { (displayValues.min() ?? 0) * 0.92 }
+    private var maxY: Double { (displayValues.max() ?? 1) * 1.08 }
 
     var body: some View {
         Chart(sorted) { entry in
+            let y = unit.displayValue(fromKg: entry.kg)
             LineMark(
                 x: .value("Date", entry.date),
-                y: .value("kg", entry.kg)
+                y: .value(unit.label, y)
             )
             .foregroundStyle(Color.appPink)
             .interpolationMethod(.catmullRom)
@@ -520,7 +529,7 @@ private struct WeightChartView: View {
             AreaMark(
                 x: .value("Date", entry.date),
                 yStart: .value("Min", minY),
-                yEnd: .value("kg", entry.kg)
+                yEnd: .value(unit.label, y)
             )
             .foregroundStyle(
                 LinearGradient(
@@ -532,7 +541,7 @@ private struct WeightChartView: View {
 
             PointMark(
                 x: .value("Date", entry.date),
-                y: .value("kg", entry.kg)
+                y: .value(unit.label, y)
             )
             .foregroundStyle(Color.appPink)
             .symbolSize(30)
@@ -549,8 +558,8 @@ private struct WeightChartView: View {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
                 AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
                 AxisValueLabel {
-                    if let kg = value.as(Double.self) {
-                        Text("\(kg, specifier: "%.1f")")
+                    if let v = value.as(Double.self) {
+                        Text(String(format: "%.1f", v))
                             .font(.caption2)
                     }
                 }
@@ -561,16 +570,19 @@ private struct WeightChartView: View {
 
 private struct HeightChartView: View {
     let entries: [HeightEntry]
+    let unit: HeightUnit
 
     private var sorted: [HeightEntry] { entries.sorted { $0.date < $1.date } }
-    private var minY: Double { (sorted.map(\.cm).min() ?? 0) * 0.92 }
-    private var maxY: Double { (sorted.map(\.cm).max() ?? 1) * 1.08 }
+    private var displayValues: [Double] { sorted.map { unit.displayValue(fromCm: $0.cm) } }
+    private var minY: Double { (displayValues.min() ?? 0) * 0.92 }
+    private var maxY: Double { (displayValues.max() ?? 1) * 1.08 }
 
     var body: some View {
         Chart(sorted) { entry in
+            let y = unit.displayValue(fromCm: entry.cm)
             LineMark(
                 x: .value("Date", entry.date),
-                y: .value("cm", entry.cm)
+                y: .value(unit.inputLabel, y)
             )
             .foregroundStyle(Color.appPink)
             .interpolationMethod(.catmullRom)
@@ -578,7 +590,7 @@ private struct HeightChartView: View {
             AreaMark(
                 x: .value("Date", entry.date),
                 yStart: .value("Min", minY),
-                yEnd: .value("cm", entry.cm)
+                yEnd: .value(unit.inputLabel, y)
             )
             .foregroundStyle(
                 LinearGradient(
@@ -590,7 +602,7 @@ private struct HeightChartView: View {
 
             PointMark(
                 x: .value("Date", entry.date),
-                y: .value("cm", entry.cm)
+                y: .value(unit.inputLabel, y)
             )
             .foregroundStyle(Color.appPink)
             .symbolSize(30)
@@ -607,8 +619,8 @@ private struct HeightChartView: View {
             AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
                 AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
                 AxisValueLabel {
-                    if let cm = value.as(Double.self) {
-                        Text("\(cm, specifier: "%.1f")")
+                    if let v = value.as(Double.self) {
+                        Text(String(format: "%.1f", v))
                             .font(.caption2)
                     }
                 }

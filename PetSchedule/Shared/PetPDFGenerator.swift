@@ -125,8 +125,9 @@ enum PetPDFGenerator {
             // ── Weight History ────────────────────────────────────────────────
             if !pet.weightHistory.isEmpty {
                 drawSection("Weight History")
+                let wUnit = WeightUnit.current
                 let sorted = pet.weightHistory.sorted { $0.date < $1.date }
-                let rows = sorted.map { "\($0.date.formatted(date: .abbreviated, time: .omitted))   \(String(format: "%.1f kg", $0.kg))" }
+                let rows = sorted.map { "\($0.date.formatted(date: .abbreviated, time: .omitted))   \(wUnit.formatValue($0.kg))" }
                 drawBody(rows.joined(separator: "\n"))
                 y += 4
             }
@@ -134,8 +135,9 @@ enum PetPDFGenerator {
             // ── Height History ────────────────────────────────────────────────
             if !pet.heightHistory.isEmpty {
                 drawSection("Height History")
+                let hUnit = HeightUnit.current
                 let sorted = pet.heightHistory.sorted { $0.date < $1.date }
-                let rows = sorted.map { "\($0.date.formatted(date: .abbreviated, time: .omitted))   \(String(format: "%.1f cm", $0.cm))" }
+                let rows = sorted.map { "\($0.date.formatted(date: .abbreviated, time: .omitted))   \(hUnit.formatValue($0.cm))" }
                 drawBody(rows.joined(separator: "\n"))
                 y += 4
             }

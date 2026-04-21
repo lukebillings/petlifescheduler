@@ -58,6 +58,15 @@ struct AnalyticsView: View {
     @State private var heightChartMode: ChartDisplayMode = .combined
     @State private var medicineChartMode: ChartDisplayMode = .combined
 
+    @AppStorage("weightUnit") private var weightUnitRaw = "kg"
+    @AppStorage("heightUnit") private var heightUnitRaw = "cm"
+
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .kg }
+    private var heightUnit: HeightUnit { HeightUnit(rawValue: heightUnitRaw) ?? .cm }
+
+    @State private var showingMedicineLog = false
+    @State private var medicineLogPet: Pet? = nil
+
     private let calendar = Calendar.current
 
     // MARK: - Derived data
@@ -319,6 +328,13 @@ struct AnalyticsView: View {
             .navigationTitle("Analytics")
             .navigationBarTitleDisplayMode(.large)
         }
+        .sheet(isPresented: $showingMedicineLog) {
+            MedicineLogSheet(
+                viewModel: viewModel,
+                petFilter: medicineLogPet,
+                showPetNames: viewModel.pets.count > 1
+            )
+        }
     }
 
     // MARK: - Pet filter bar
@@ -559,12 +575,9 @@ struct AnalyticsView: View {
     }
 
     private func combinedWeightChart(pets: [Pet]) -> some View {
-        let allEntries: [(pet: Pet, entry: WeightEntry)] = pets.flatMap { p in
-            p.weightHistory.map { (pet: p, entry: $0) }
-        }
-        let allKg = allEntries.map(\.entry.kg)
-        let minY = (allKg.min() ?? 0) * 0.92
-        let maxY = (allKg.max() ?? 1) * 1.08
+        let allDisplayValues: [Double] = pets.flatMap { $0.weightHistory.map { weightUnit.displayValue(fromKg: $0.kg) } }
+        let minY = (allDisplayValues.min() ?? 0) * 0.92
+        let maxY = (allDisplayValues.max() ?? 1) * 1.08
 
         return VStack(alignment: .leading, spacing: 8) {
             Chart {
@@ -573,13 +586,13 @@ struct AnalyticsView: View {
                     ForEach(sorted) { e in
                         LineMark(
                             x: .value("Date", e.date),
-                            y: .value("kg", e.kg)
+                            y: .value(weightUnit.label, weightUnit.displayValue(fromKg: e.kg))
                         )
                         .foregroundStyle(by: .value("Pet", pet.name))
                         .interpolationMethod(.catmullRom)
                         PointMark(
                             x: .value("Date", e.date),
-                            y: .value("kg", e.kg)
+                            y: .value(weightUnit.label, weightUnit.displayValue(fromKg: e.kg))
                         )
                         .foregroundStyle(by: .value("Pet", pet.name))
                         .symbolSize(25)
@@ -602,11 +615,26 @@ struct AnalyticsView: View {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
                     AxisValueLabel {
-                        if let kg = v.as(Double.self) { Text("\(kg, specifier: "%.1f")").font(.caption2) }
+                        if let v = v.as(Double.self) { Text(String(format: "%.1f", v)).font(.caption2) }
                     }
                 }
             }
             .frame(height: 180)
+
+            Divider().padding(.top, 4)
+            ForEach(pets) { pet in
+                if viewModel.pets.count > 1 {
+                    HStack(spacing: 6) {
+                        PetAvatarView(pet: pet, size: 18)
+                        Text(pet.name).font(.caption.bold())
+                    }
+                    .padding(.top, 8)
+                }
+                historyTable(
+                    rows: pet.weightHistory.sorted { $0.date > $1.date }
+                        .map { (date: $0.date, value: weightUnit.formatValue($0.kg)) }
+                )
+            }
         }
         .padding(14)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
@@ -615,8 +643,9 @@ struct AnalyticsView: View {
     private func weightCard(for pet: Pet, color: Color) -> some View {
         let sorted = pet.weightHistory.sorted { $0.date < $1.date }
         let diff   = sorted.last!.kg - sorted.first!.kg
-        let minY   = (sorted.map(\.kg).min() ?? 0) * 0.92
-        let maxY   = (sorted.map(\.kg).max() ?? 1) * 1.08
+        let displayValues = sorted.map { weightUnit.displayValue(fromKg: $0.kg) }
+        let minY   = (displayValues.min() ?? 0) * 0.92
+        let maxY   = (displayValues.max() ?? 1) * 1.08
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -628,29 +657,30 @@ struct AnalyticsView: View {
                 HStack(spacing: 4) {
                     Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .foregroundStyle(diff >= 0 ? .orange : .green)
-                    Text(String(format: "%+.1f kg", diff))
+                    Text(weightUnit.formatChange(diff))
                         .foregroundStyle(diff >= 0 ? .orange : .green)
-                    Text("· \(sorted.last!.kg, specifier: "%.1f") kg now")
+                    Text("· \(weightUnit.formatValue(sorted.last!.kg)) now")
                         .foregroundStyle(.secondary)
                 }
                 .font(.caption.bold())
             }
 
             Chart(sorted) { e in
-                LineMark(x: .value("Date", e.date), y: .value("kg", e.kg))
+                let y = weightUnit.displayValue(fromKg: e.kg)
+                LineMark(x: .value("Date", e.date), y: .value(weightUnit.label, y))
                     .foregroundStyle(color)
                     .interpolationMethod(.catmullRom)
                 AreaMark(
                     x: .value("Date", e.date),
                     yStart: .value("Min", minY),
-                    yEnd: .value("kg", e.kg)
+                    yEnd: .value(weightUnit.label, y)
                 )
                 .foregroundStyle(LinearGradient(
                     colors: [color.opacity(0.25), color.opacity(0.02)],
                     startPoint: .top, endPoint: .bottom
                 ))
                 .interpolationMethod(.catmullRom)
-                PointMark(x: .value("Date", e.date), y: .value("kg", e.kg))
+                PointMark(x: .value("Date", e.date), y: .value(weightUnit.label, y))
                     .foregroundStyle(color)
                     .symbolSize(30)
             }
@@ -665,13 +695,18 @@ struct AnalyticsView: View {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
                     AxisValueLabel {
-                        if let kg = v.as(Double.self) {
-                            Text("\(kg, specifier: "%.1f")").font(.caption2)
+                        if let v = v.as(Double.self) {
+                            Text(String(format: "%.1f", v)).font(.caption2)
                         }
                     }
                 }
             }
             .frame(height: 150)
+
+            Divider().padding(.top, 4)
+            historyTable(
+                rows: sorted.reversed().map { (date: $0.date, value: weightUnit.formatValue($0.kg)) }
+            )
         }
         .padding(14)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
@@ -709,9 +744,9 @@ struct AnalyticsView: View {
     }
 
     private func combinedHeightChart(pets: [Pet]) -> some View {
-        let allCm = pets.flatMap { $0.heightHistory.map(\.cm) }
-        let minY = (allCm.min() ?? 0) * 0.92
-        let maxY = (allCm.max() ?? 1) * 1.08
+        let allDisplayValues: [Double] = pets.flatMap { $0.heightHistory.map { heightUnit.displayValue(fromCm: $0.cm) } }
+        let minY = (allDisplayValues.min() ?? 0) * 0.92
+        let maxY = (allDisplayValues.max() ?? 1) * 1.08
 
         return VStack(alignment: .leading, spacing: 8) {
             Chart {
@@ -720,13 +755,13 @@ struct AnalyticsView: View {
                     ForEach(sorted) { e in
                         LineMark(
                             x: .value("Date", e.date),
-                            y: .value("cm", e.cm)
+                            y: .value(heightUnit.inputLabel, heightUnit.displayValue(fromCm: e.cm))
                         )
                         .foregroundStyle(by: .value("Pet", pet.name))
                         .interpolationMethod(.catmullRom)
                         PointMark(
                             x: .value("Date", e.date),
-                            y: .value("cm", e.cm)
+                            y: .value(heightUnit.inputLabel, heightUnit.displayValue(fromCm: e.cm))
                         )
                         .foregroundStyle(by: .value("Pet", pet.name))
                         .symbolSize(25)
@@ -749,11 +784,26 @@ struct AnalyticsView: View {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
                     AxisValueLabel {
-                        if let cm = v.as(Double.self) { Text("\(cm, specifier: "%.0f") cm").font(.caption2) }
+                        if let v = v.as(Double.self) { Text(String(format: "%.0f \(heightUnit.inputLabel)", v)).font(.caption2) }
                     }
                 }
             }
             .frame(height: 180)
+
+            Divider().padding(.top, 4)
+            ForEach(pets) { pet in
+                if viewModel.pets.count > 1 {
+                    HStack(spacing: 6) {
+                        PetAvatarView(pet: pet, size: 18)
+                        Text(pet.name).font(.caption.bold())
+                    }
+                    .padding(.top, 8)
+                }
+                historyTable(
+                    rows: pet.heightHistory.sorted { $0.date > $1.date }
+                        .map { (date: $0.date, value: heightUnit.formatValue($0.cm)) }
+                )
+            }
         }
         .padding(14)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
@@ -762,8 +812,9 @@ struct AnalyticsView: View {
     private func heightCard(for pet: Pet, color: Color) -> some View {
         let sorted = pet.heightHistory.sorted { $0.date < $1.date }
         let diff   = sorted.last!.cm - sorted.first!.cm
-        let minY   = (sorted.map(\.cm).min() ?? 0) * 0.92
-        let maxY   = (sorted.map(\.cm).max() ?? 1) * 1.08
+        let displayValues = sorted.map { heightUnit.displayValue(fromCm: $0.cm) }
+        let minY   = (displayValues.min() ?? 0) * 0.92
+        let maxY   = (displayValues.max() ?? 1) * 1.08
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -775,29 +826,30 @@ struct AnalyticsView: View {
                 HStack(spacing: 4) {
                     Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
                         .foregroundStyle(diff >= 0 ? .orange : .green)
-                    Text(String(format: "%+.1f cm", diff))
+                    Text(heightUnit.formatChange(diff))
                         .foregroundStyle(diff >= 0 ? .orange : .green)
-                    Text("· \(sorted.last!.cm, specifier: "%.0f") cm now")
+                    Text("· \(heightUnit.formatValue(sorted.last!.cm)) now")
                         .foregroundStyle(.secondary)
                 }
                 .font(.caption.bold())
             }
 
             Chart(sorted) { e in
-                LineMark(x: .value("Date", e.date), y: .value("cm", e.cm))
+                let y = heightUnit.displayValue(fromCm: e.cm)
+                LineMark(x: .value("Date", e.date), y: .value(heightUnit.inputLabel, y))
                     .foregroundStyle(color)
                     .interpolationMethod(.catmullRom)
                 AreaMark(
                     x: .value("Date", e.date),
                     yStart: .value("Min", minY),
-                    yEnd: .value("cm", e.cm)
+                    yEnd: .value(heightUnit.inputLabel, y)
                 )
                 .foregroundStyle(LinearGradient(
                     colors: [color.opacity(0.25), color.opacity(0.02)],
                     startPoint: .top, endPoint: .bottom
                 ))
                 .interpolationMethod(.catmullRom)
-                PointMark(x: .value("Date", e.date), y: .value("cm", e.cm))
+                PointMark(x: .value("Date", e.date), y: .value(heightUnit.inputLabel, y))
                     .foregroundStyle(color)
                     .symbolSize(30)
             }
@@ -812,13 +864,18 @@ struct AnalyticsView: View {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
                     AxisValueLabel {
-                        if let cm = v.as(Double.self) {
-                            Text("\(cm, specifier: "%.0f")").font(.caption2)
+                        if let v = v.as(Double.self) {
+                            Text(String(format: "%.0f", v)).font(.caption2)
                         }
                     }
                 }
             }
             .frame(height: 150)
+
+            Divider().padding(.top, 4)
+            historyTable(
+                rows: sorted.reversed().map { (date: $0.date, value: heightUnit.formatValue($0.cm)) }
+            )
         }
         .padding(14)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
@@ -902,17 +959,23 @@ struct AnalyticsView: View {
                 )
 
                 if medicineChartMode == .combined && petsWithMeds.count > 1 {
-                    combinedMedicineChart(pets: petsWithMeds)
+                    combinedMedicineChart(pets: petsWithMeds) {
+                        medicineLogPet = nil
+                        showingMedicineLog = true
+                    }
                 } else {
                     ForEach(petsWithMeds) { pet in
-                        medicineCard(for: pet, color: petColor(for: pet.id))
+                        medicineCard(for: pet, color: petColor(for: pet.id)) {
+                            medicineLogPet = pet
+                            showingMedicineLog = true
+                        }
                     }
                 }
             }
         }
     }
 
-    private func combinedMedicineChart(pets: [Pet]) -> some View {
+    private func combinedMedicineChart(pets: [Pet], onViewLog: @escaping () -> Void) -> some View {
         let allPoints = pets.flatMap { medicineCompliance(for: $0) }
 
         return VStack(alignment: .leading, spacing: 8) {
@@ -953,13 +1016,27 @@ struct AnalyticsView: View {
                     }
                 }
                 .frame(height: 180)
+
+                Button {
+                    onViewLog()
+                } label: {
+                    HStack {
+                        Spacer()
+                        Label("View Full Log", systemImage: "list.bullet.clipboard")
+                            .font(.caption.bold())
+                            .foregroundStyle(Color.appPink)
+                        Spacer()
+                    }
+                    .padding(.vertical, 6)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(14)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    private func medicineCard(for pet: Pet, color: Color) -> some View {
+    private func medicineCard(for pet: Pet, color: Color, onViewLog: @escaping () -> Void) -> some View {
         let points = medicineCompliance(for: pet)
         let avg = points.isEmpty ? 0.0 : points.map(\.rate).reduce(0, +) / Double(points.count)
 
@@ -1014,6 +1091,20 @@ struct AnalyticsView: View {
                     }
                 }
                 .frame(height: 140)
+
+                Button {
+                    onViewLog()
+                } label: {
+                    HStack {
+                        Spacer()
+                        Label("View Full Log", systemImage: "list.bullet.clipboard")
+                            .font(.caption.bold())
+                            .foregroundStyle(Color.appPink)
+                        Spacer()
+                    }
+                    .padding(.vertical, 6)
+                }
+                .buttonStyle(.plain)
             }
         }
         .padding(14)
@@ -1044,6 +1135,38 @@ struct AnalyticsView: View {
 
     // MARK: - Helpers
 
+    /// Renders a two-column (Date | Value) history table used for weight and height cards.
+    private func historyTable(rows: [(date: Date, value: String)]) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Date")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("Value")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 5)
+
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                Divider()
+                HStack {
+                    Text(row.date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Text(row.value)
+                        .font(.caption.bold())
+                        .foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 5)
+            }
+        }
+    }
+
     private func rateColor(_ rate: Double) -> Color {
         rate >= 0.8 ? .green : rate >= 0.5 ? .orange : .red
     }
@@ -1064,6 +1187,152 @@ struct AnalyticsView: View {
             Spacer()
         }
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - Medicine Log Sheet
+
+struct MedicineLogSheet: View {
+    let viewModel: HomeViewModel
+    let petFilter: Pet?
+    let showPetNames: Bool
+
+    @AppStorage("timeFormat") private var timeFormatRaw = "12h"
+    @Environment(\.dismiss) private var dismiss
+
+    private var timeFormat: TimeFormat { TimeFormat(rawValue: timeFormatRaw) ?? .twelveHour }
+
+    private var medicineItems: [ScheduleItem] {
+        viewModel.scheduleItems
+            .filter { $0.isMedicineEvent }
+            .filter { petFilter == nil || $0.pet.id == petFilter?.id }
+            .sorted { $0.time > $1.time }
+    }
+
+    private var groupedByDay: [(date: Date, items: [ScheduleItem])] {
+        let cal = Calendar.current
+        let grouped = Dictionary(grouping: medicineItems) { cal.startOfDay(for: $0.time) }
+        return grouped
+            .map { (date: $0.key, items: $0.value.sorted { $0.time < $1.time }) }
+            .sorted { $0.date > $1.date }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if medicineItems.isEmpty {
+                    ContentUnavailableView(
+                        "No Medicine Events",
+                        systemImage: "pill.fill",
+                        description: Text("No medicine events have been logged yet.")
+                    )
+                } else {
+                    List {
+                        ForEach(groupedByDay, id: \.date) { group in
+                            Section {
+                                ForEach(group.items) { item in
+                                    MedicineLogRow(item: item, showPetName: showPetNames, timeFormat: timeFormat)
+                                }
+                            } header: {
+                                Text(group.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
+                                    .font(.subheadline.bold())
+                                    .foregroundStyle(.primary)
+                                    .textCase(.none)
+                            }
+                        }
+                    }
+                    .listStyle(.insetGrouped)
+                }
+            }
+            .navigationTitle(petFilter.map { "\($0.name)'s Medicine Log" } ?? "Medicine Log")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .fontWeight(.semibold)
+                }
+            }
+        }
+    }
+}
+
+private struct MedicineLogRow: View {
+    let item: ScheduleItem
+    let showPetName: Bool
+    let timeFormat: TimeFormat
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(statusColor.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Image(systemName: statusIconName)
+                    .font(.body.bold())
+                    .foregroundStyle(statusColor)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 4) {
+                    Text(item.activityName)
+                        .font(.subheadline.bold())
+                    if showPetName {
+                        Text("· \(item.pet.name)")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                if !item.description.isEmpty {
+                    Text(item.description)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text(timeLabel)
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+
+            Spacer()
+
+            Text(statusText)
+                .font(.caption.bold())
+                .foregroundStyle(statusColor)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(statusColor.opacity(0.12), in: Capsule())
+        }
+        .padding(.vertical, 2)
+    }
+
+    private var timeLabel: String {
+        guard !item.isAllDay else { return "All day" }
+        let f = DateFormatter()
+        f.dateFormat = timeFormat.dateFormat
+        return f.string(from: item.time).lowercased()
+    }
+
+    private var statusColor: Color {
+        switch item.medicineAccepted {
+        case true:  return .green
+        case false: return .red
+        case nil:   return item.isCompleted ? .orange : Color(.tertiaryLabel)
+        }
+    }
+
+    private var statusIconName: String {
+        switch item.medicineAccepted {
+        case true:  return "checkmark"
+        case false: return "xmark"
+        case nil:   return item.isCompleted ? "checkmark.circle" : "clock"
+        }
+    }
+
+    private var statusText: String {
+        switch item.medicineAccepted {
+        case true:  return "Taken"
+        case false: return "Skipped"
+        case nil:   return item.isCompleted ? "Done" : "Pending"
+        }
     }
 }
 

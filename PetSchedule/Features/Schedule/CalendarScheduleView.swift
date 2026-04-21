@@ -84,23 +84,9 @@ struct CalendarScheduleView: View {
             // Items for selected date
             let selectedItems = viewModel.items(for: viewModel.selectedCalendarDate)
             VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text(viewModel.selectedCalendarDate.formatted(.dateTime.weekday(.wide).month().day()))
-                        .font(.headline)
-                    Spacer()
-                    Button {
-                        showingAddEvent = true
-                    } label: {
-                        Label("Add Event", systemImage: "plus")
-                            .font(.caption.bold())
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .foregroundStyle(.white)
-                            .background(Color.appPink, in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(.horizontal)
+                Text(viewModel.selectedCalendarDate.formatted(.dateTime.weekday(.wide).month().day()))
+                    .font(.headline)
+                    .padding(.horizontal)
 
                 if selectedItems.isEmpty {
                     ContentUnavailableView(
