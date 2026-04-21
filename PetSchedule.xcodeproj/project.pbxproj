@@ -3,11 +3,14 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		0CE83C345B35DF235C3FC674 /* PetDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */; };
+		11B47882BF4C76FA955FA604 /* PetPDFGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217BD314318A028856956D09 /* PetPDFGenerator.swift */; };
+		13B3F254B52D23745C8D53FF /* MeasurementSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */; };
+		173431B9CD75A007C1033DF0 /* PetDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D7C7CA23C1B382C04FEADEF /* PetDocument.swift */; };
 		1862AADE2B4859F822063446 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3FD342A675248F7267C680 /* Pet.swift */; };
 		19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */; };
 		223A36163E699597848BCD3A /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91838FB176EEFF031E2CD16 /* ConfettiView.swift */; };
@@ -21,11 +24,9 @@
 		7C6341ED2574F5ED3378E189 /* AddEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3327F274E84078B38862BEED /* AddEventSheet.swift */; };
 		845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 004BEB5D563AD507764446BB /* Assets.xcassets */; };
 		855DDBBC929D3FF621EB9976 /* HeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */; };
+		85C6FCBBEFD03F516B9F94A4 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870B6B2E15C92C0C03ADDEF6 /* AnalyticsView.swift */; };
 		8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5C7586D9735ADDB5C9842C /* HomeView.swift */; };
-		AA11BB22CC33DD44EE55FF01 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11BB22CC33DD44EE55FF02 /* AnalyticsView.swift */; };
-		B3C7E9A24F1D5086C2B3E4D7 /* PetDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1F2E3D4C5B6A7980F1E2D3C /* PetDocument.swift */; };
 		D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */; };
-		D4E5F6A7B8C9D0E1F2A3B4C5 /* PetPDFGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F6A7B8C9D0E1F2A3B4C5D6 /* PetPDFGenerator.swift */; };
 		D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */; };
 		D72C7128A019801C00BF8732 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
 		D7497F803AB294807D80630D /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */; };
@@ -42,17 +43,19 @@
 		12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetailSheet.swift; sourceTree = "<group>"; };
 		1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
 		2109911DE712C5453FC5D026 /* AnimalType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnimalType.swift; sourceTree = "<group>"; };
+		217BD314318A028856956D09 /* PetPDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetPDFGenerator.swift; sourceTree = "<group>"; };
 		21A63243C759BB8D063AF92A /* ScheduleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleListView.swift; sourceTree = "<group>"; };
 		3327F274E84078B38862BEED /* AddEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEventSheet.swift; sourceTree = "<group>"; };
 		3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarScheduleView.swift; sourceTree = "<group>"; };
 		4A5C7586D9735ADDB5C9842C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementSettings.swift; sourceTree = "<group>"; };
 		5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetAvatarView.swift; sourceTree = "<group>"; };
 		65728BE60D7A10B782998709 /* PetScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleApp.swift; sourceTree = "<group>"; };
+		6D7C7CA23C1B382C04FEADEF /* PetDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDocument.swift; sourceTree = "<group>"; };
+		870B6B2E15C92C0C03ADDEF6 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsView.swift; sourceTree = "<group>"; };
 		8C629F5BF9352863F3F86CEF /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		9AF10EE3C14C2123427C6898 /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
-		A1F2E3D4C5B6A7980F1E2D3C /* PetDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDocument.swift; sourceTree = "<group>"; };
-		AA11BB22CC33DD44EE55FF02 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
 		B91838FB176EEFF031E2CD16 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 		C426C7BD93CA490A97C5D60E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -60,16 +63,15 @@
 		DD3FD342A675248F7267C680 /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
 		E228C28C3910BD1ACD24EAD9 /* ScheduleRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRowView.swift; sourceTree = "<group>"; };
 		E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeightEntry.swift; sourceTree = "<group>"; };
-		E5F6A7B8C9D0E1F2A3B4C5D6 /* PetPDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetPDFGenerator.swift; sourceTree = "<group>"; };
 		EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntry.swift; sourceTree = "<group>"; };
-		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		0308B8A05C78834394D5131C /* Features */ = {
 			isa = PBXGroup;
 			children = (
-				AA11BB22CC33DD44EE55FF03 /* Analytics */,
+				BEEA9CE8F5302B8BD19A2C49 /* Analytics */,
 				F0C471B52A56DBE9A768AC24 /* Home */,
 				B309AB633975C5D36865C320 /* Onboarding */,
 				AC407893160D80816D7BCA76 /* Pets */,
@@ -126,7 +128,8 @@
 			children = (
 				082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */,
 				1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */,
-				E5F6A7B8C9D0E1F2A3B4C5D6 /* PetPDFGenerator.swift */,
+				4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */,
+				217BD314318A028856956D09 /* PetPDFGenerator.swift */,
 				46B5109A87B29D224A344EA1 /* Views */,
 			);
 			path = Shared;
@@ -138,14 +141,6 @@
 				47825ECA808711CF71706F2A /* PetSchedule */,
 				2D74B71F20FFB495BE5C5E86 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		AA11BB22CC33DD44EE55FF03 /* Analytics */ = {
-			isa = PBXGroup;
-			children = (
-				AA11BB22CC33DD44EE55FF02 /* AnalyticsView.swift */,
-			);
-			path = Analytics;
 			sourceTree = "<group>";
 		};
 		AC407893160D80816D7BCA76 /* Pets */ = {
@@ -165,6 +160,14 @@
 			path = Onboarding;
 			sourceTree = "<group>";
 		};
+		BEEA9CE8F5302B8BD19A2C49 /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+				870B6B2E15C92C0C03ADDEF6 /* AnalyticsView.swift */,
+			);
+			path = Analytics;
+			sourceTree = "<group>";
+		};
 		C1809A53A5C37C66B48FAAFE /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -179,7 +182,7 @@
 				2109911DE712C5453FC5D026 /* AnimalType.swift */,
 				E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */,
 				DD3FD342A675248F7267C680 /* Pet.swift */,
-				A1F2E3D4C5B6A7980F1E2D3C /* PetDocument.swift */,
+				6D7C7CA23C1B382C04FEADEF /* PetDocument.swift */,
 				CED9087F17B21DC83D342723 /* ScheduleItem.swift */,
 				EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */,
 			);
@@ -231,7 +234,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 1430;
 			};
 			buildConfigurationList = 61C35A43BB6ED4A8FF7E83CE /* Build configuration list for PBXProject "PetSchedule" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -243,6 +246,7 @@
 			);
 			mainGroup = 8540F915B73F12C9DB2CCCA7;
 			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -267,8 +271,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AA11BB22CC33DD44EE55FF01 /* AnalyticsView.swift in Sources */,
 				7C6341ED2574F5ED3378E189 /* AddEventSheet.swift in Sources */,
+				85C6FCBBEFD03F516B9F94A4 /* AnalyticsView.swift in Sources */,
 				4B02216A6044074925DA1D5F /* AnimalType.swift in Sources */,
 				D72C7128A019801C00BF8732 /* AppColors.swift in Sources */,
 				D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */,
@@ -278,12 +282,13 @@
 				855DDBBC929D3FF621EB9976 /* HeightEntry.swift in Sources */,
 				8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */,
 				19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */,
+				13B3F254B52D23745C8D53FF /* MeasurementSettings.swift in Sources */,
 				E344CC248B2F9819D2ABAB82 /* OnboardingView.swift in Sources */,
 				1862AADE2B4859F822063446 /* Pet.swift in Sources */,
 				6E04C1751D6C0A38AAA95B08 /* PetAvatarView.swift in Sources */,
-				B3C7E9A24F1D5086C2B3E4D7 /* PetDocument.swift in Sources */,
-				D4E5F6A7B8C9D0E1F2A3B4C5 /* PetPDFGenerator.swift in Sources */,
 				0CE83C345B35DF235C3FC674 /* PetDetailSheet.swift in Sources */,
+				173431B9CD75A007C1033DF0 /* PetDocument.swift in Sources */,
+				11B47882BF4C76FA955FA604 /* PetPDFGenerator.swift in Sources */,
 				627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */,
 				D7497F803AB294807D80630D /* PetsView.swift in Sources */,
 				3B7BE9095CD18A9921E2F7DD /* ScheduleItem.swift in Sources */,
@@ -358,10 +363,8 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = 66VA8628J7;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -382,7 +385,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -424,10 +426,8 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = 66VA8628J7;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -441,7 +441,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
