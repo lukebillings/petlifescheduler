@@ -5,6 +5,7 @@ struct CalendarScheduleView: View {
     @State private var showingAddEvent = false
     @State private var editingItem: ScheduleItem? = nil
     @State private var viewingPet: Pet? = nil
+    @State private var confettiTrigger = 0
 
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 0), count: 7)
@@ -100,7 +101,13 @@ struct CalendarScheduleView: View {
                         VStack(spacing: 12) {
                             ForEach(selectedItems) { item in
                                 ScheduleRowView(item: item) {
+                                    let wasCompleted = item.isCompleted
                                     viewModel.toggleCompletion(for: item)
+                                    if !wasCompleted {
+                                    HapticManager.playCompletion()
+                                    HapticManager.notification(.success)
+                                        confettiTrigger += 1
+                                    }
                                 } onTap: {
                                     editingItem = item
                                 } onPetTap: {
@@ -114,6 +121,7 @@ struct CalendarScheduleView: View {
                     .padding(.horizontal)
                 }
             }
+            .overlay(ConfettiView(trigger: confettiTrigger).allowsHitTesting(false))
         }
         .sheet(isPresented: $showingAddEvent) {
             AddEventSheet(viewModel: viewModel, prefilledDate: viewModel.selectedCalendarDate)

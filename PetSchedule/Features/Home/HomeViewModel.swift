@@ -61,6 +61,8 @@ final class HomeViewModel {
         }
 
         let maxWeights: [WeightEntry] = [
+            WeightEntry(date: daysAgo(28), kg: 11.8),
+            WeightEntry(date: daysAgo(21), kg: 12.1),
             WeightEntry(date: daysAgo(14), kg: 12.4),
             WeightEntry(date: daysAgo(10), kg: 12.6),
             WeightEntry(date: daysAgo(6),  kg: 12.5),
@@ -68,49 +70,99 @@ final class HomeViewModel {
             WeightEntry(date: daysAgo(0),  kg: 13.1),
         ]
         let lunaWeights: [WeightEntry] = [
+            WeightEntry(date: daysAgo(25), kg: 4.4),
+            WeightEntry(date: daysAgo(18), kg: 4.3),
             WeightEntry(date: daysAgo(12), kg: 4.2),
             WeightEntry(date: daysAgo(6),  kg: 4.1),
             WeightEntry(date: daysAgo(1),  kg: 4.0),
         ]
+        let nemoWeights: [WeightEntry] = [
+            WeightEntry(date: daysAgo(20), kg: 0.08),
+            WeightEntry(date: daysAgo(10), kg: 0.09),
+            WeightEntry(date: daysAgo(0),  kg: 0.10),
+        ]
         let maxHeights: [HeightEntry] = [
+            HeightEntry(date: daysAgo(28), cm: 56.0),
             HeightEntry(date: daysAgo(14), cm: 57.0),
             HeightEntry(date: daysAgo(7),  cm: 57.5),
             HeightEntry(date: daysAgo(0),  cm: 58.0),
         ]
         let lunaHeights: [HeightEntry] = [
+            HeightEntry(date: daysAgo(25), cm: 23.5),
             HeightEntry(date: daysAgo(12), cm: 24.0),
             HeightEntry(date: daysAgo(4),  cm: 24.2),
         ]
+        let nemoHeights: [HeightEntry] = [
+            HeightEntry(date: daysAgo(20), cm: 7.5),
+            HeightEntry(date: daysAgo(10), cm: 8.0),
+            HeightEntry(date: daysAgo(0),  cm: 8.5),
+        ]
 
-        let max  = Pet(name: "Max",  animalType: .dog,  weightHistory: maxWeights,  heightHistory: maxHeights)
-        let luna = Pet(name: "Luna", animalType: .cat,  weightHistory: lunaWeights, heightHistory: lunaHeights)
-        let nemo = Pet(name: "Nemo", animalType: .fish)
+        let max  = Pet(
+            name: "Max",  animalType: .dog,
+            dateOfBirth: cal.date(from: DateComponents(year: 2021, month: 3, day: 15)),
+            weightHistory: maxWeights, heightHistory: maxHeights,
+            notes: "Neutered. Allergic to chicken. Currently on Metacam for joint pain.",
+            vetDetails: VetDetails(organisation: "Riverside Vets", address: "12 River Lane, London", email: "info@riversidevets.co.uk", phone: "020 7946 0123")
+        )
+        let luna = Pet(
+            name: "Luna", animalType: .cat,
+            dateOfBirth: cal.date(from: DateComponents(year: 2020, month: 8, day: 22)),
+            weightHistory: lunaWeights, heightHistory: lunaHeights,
+            notes: "Indoor cat. On Prednisolone for mild asthma. Needs inhaler twice daily.",
+            vetDetails: VetDetails(organisation: "City Cat Clinic", address: "7 Park Street, Manchester", email: "hello@citycatclinic.co.uk", phone: "0161 234 5678")
+        )
+        let nemo = Pet(
+            name: "Nemo", animalType: .fish,
+            dateOfBirth: cal.date(from: DateComponents(year: 2023, month: 1, day: 10)),
+            weightHistory: nemoWeights, heightHistory: nemoHeights,
+            notes: "Betta fish. Treated with API Fin & Body Cure every 5 days for minor fin rot."
+        )
         vm.pets = [max, luna, nemo]
 
         var items: [ScheduleItem] = []
 
-        for d in -13...0 {
+        for d in -29...0 {
             let past = d < 0
 
-            // Max — walks completed days -13..-4 then stopped (triggers gap insight)
+            // Max — walks completed days -29..-4 then stopped (triggers gap insight)
             items.append(ScheduleItem(time: at(d, hour: 8),  activityName: "Walk",     pet: max,  isCompleted: d <= -4))
             items.append(ScheduleItem(time: at(d, hour: 8),  activityName: "Eat",      pet: max,  isCompleted: past))
             items.append(ScheduleItem(time: at(d, hour: 18), activityName: "Eat",      pet: max,  isCompleted: past))
-            if (13 + d) % 2 == 0 {
-                let accepted: Bool? = past ? ((13 + d) % 3 != 0 ? true : false) : nil
-                items.append(ScheduleItem(time: at(d, hour: 9), activityName: "Medicine", pet: max, isCompleted: past, medicineAccepted: accepted))
-            }
+            // Max — Metacam daily
+            let maxAccepted: Bool? = past ? ((29 + d) % 7 != 0 ? true : false) : nil
+            items.append(ScheduleItem(
+                time: at(d, hour: 9), activityName: "Metacam (medicine)", pet: max,
+                isCompleted: maxAccepted != nil, medicineAccepted: maxAccepted
+            ))
 
-            // Luna — regular feedings with occasional miss; weekly groom
-            let lunaFed = past && (13 + d) % 7 != 3
+            // Luna — feedings with occasional miss; weekly groom
+            let lunaFed = past && (29 + d) % 7 != 3
             items.append(ScheduleItem(time: at(d, hour: 7),  activityName: "Feed",    pet: luna, isCompleted: lunaFed))
             items.append(ScheduleItem(time: at(d, hour: 19), activityName: "Feed",    pet: luna, isCompleted: lunaFed))
-            if (13 + d) % 7 == 0 {
+            if (29 + d) % 7 == 0 {
                 items.append(ScheduleItem(time: at(d, hour: 14), activityName: "Grooming", pet: luna, isCompleted: past))
             }
+            // Luna — Prednisolone inhaler twice daily
+            let lunaInhalerTaken: Bool? = past ? ((29 + d) % 5 != 2 ? true : false) : nil
+            items.append(ScheduleItem(
+                time: at(d, hour: 8), activityName: "Prednisolone (medicine)", pet: luna,
+                isCompleted: lunaInhalerTaken != nil, medicineAccepted: lunaInhalerTaken
+            ))
+            items.append(ScheduleItem(
+                time: at(d, hour: 20), activityName: "Prednisolone (medicine)", pet: luna,
+                isCompleted: lunaInhalerTaken != nil, medicineAccepted: lunaInhalerTaken
+            ))
 
-            // Nemo — daily feeding, always done
+            // Nemo — feeding always done; medication every 3 days
             items.append(ScheduleItem(time: at(d, hour: 9), activityName: "Feed Nemo", pet: nemo, isCompleted: true))
+            if (29 + d) % 3 == 0 {
+                let nemoAccepted: Bool? = past ? true : nil
+                items.append(ScheduleItem(
+                    time: at(d, hour: 10), activityName: "Fin & Body medicine", pet: nemo,
+                    isCompleted: nemoAccepted != nil, medicineAccepted: nemoAccepted
+                ))
+            }
         }
 
         vm.scheduleItems = items

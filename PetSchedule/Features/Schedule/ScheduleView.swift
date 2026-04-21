@@ -57,6 +57,9 @@ struct ScheduleView: View {
                     .pickerStyle(.segmented)
                     .padding(.horizontal)
                     .padding(.top, 16)
+                    .onChange(of: viewModel.selectedView) {
+                        HapticManager.impact(.light)
+                    }
 
                     // Today header (list mode only)
                     if viewModel.selectedView == .list {
@@ -112,6 +115,29 @@ struct ScheduleView: View {
                         .padding(.top, 20)
                         .padding(.bottom, 8)
                     }
+
+                    // Calendar header — + Event button (calendar mode only)
+                    if viewModel.selectedView == .calendar {
+                        HStack {
+                            Spacer()
+                            Button { showingAddEvent = true } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "plus")
+                                        .font(.caption.bold())
+                                    Text("Event")
+                                        .font(.caption.bold())
+                                }
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.appPink, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.horizontal)
+                        .padding(.top, 16)
+                        .padding(.bottom, 4)
+                    }
                 }
                 .background(Color(.systemBackground))
 
@@ -128,28 +154,14 @@ struct ScheduleView: View {
                     }
                 }
 
-                // FAB for calendar mode only
-                if viewModel.selectedView == .calendar {
-                    HStack {
-                        Spacer()
-                        Button {
-                            showingAddEvent = true
-                        } label: {
-                            Label("Add Event", systemImage: "plus")
-                                .font(.body.bold())
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 14)
-                        }
-                        .foregroundStyle(.white)
-                        .glassEffect(.regular.tint(.appPink).interactive(), in: Capsule())
-                        Spacer()
-                    }
-                    .padding(.bottom, 16)
-                }
+
             }
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingAddEvent) {
-                AddEventSheet(viewModel: viewModel)
+                AddEventSheet(
+                    viewModel: viewModel,
+                    prefilledDate: viewModel.selectedView == .calendar ? viewModel.selectedCalendarDate : nil
+                )
             }
         }
     }

@@ -30,15 +30,6 @@ private struct DayCompletion: Identifiable {
     var isEmpty: Bool   { total == 0 }
 }
 
-private struct ActivityStat: Identifiable {
-    let id        = UUID()
-    let name:      String
-    let icon:      String
-    let completed: Int
-    let total:     Int
-    var rate: Double { total > 0 ? Double(completed) / Double(total) : 0 }
-}
-
 private struct Insight: Identifiable {
     enum Tone { case positive, warning }
     let id      = UUID()
@@ -112,48 +103,6 @@ struct AnalyticsView: View {
         let active = completionByDay.filter { !$0.isEmpty }
         guard !active.isEmpty else { return 0 }
         return active.map(\.rate).reduce(0, +) / Double(active.count)
-    }
-
-    private static let activityCategories: [(name: String, icon: String, keywords: [String])] = [
-        ("Walk & Run",   "figure.walk",          ["walk", "run"]),
-        ("Feeding",      "fork.knife",            ["feed", "meal", "food", "eat"]),
-        ("Water",        "drop.fill",             ["water", "drink"]),
-        ("Medicine",     "pill.fill",             ["medic", "tablet", "pill"]),
-        ("Grooming",     "bubbles.and.sparkles",  ["groom", "bath", "wash", "brush", "comb"]),
-        ("Play",         "tennisball.fill",       ["play", "toy"]),
-        ("Vet & Health", "stethoscope",           ["vet", "doctor", "health"]),
-        ("Sleep & Rest", "moon.zzz.fill",         ["sleep", "nap", "rest"]),
-        ("Training",     "star.fill",             ["train", "trick"]),
-        ("Other",        "pawprint.fill",         []),
-    ]
-
-    private var activityStats: [ActivityStat] {
-        var pool = rangeItems
-        var result: [ActivityStat] = []
-        for (i, cat) in Self.activityCategories.enumerated() {
-            let isOther = i == Self.activityCategories.count - 1
-            let matched: [ScheduleItem]
-            if isOther {
-                matched = pool
-            } else {
-                matched = pool.filter { item in
-                    let n = item.activityName.lowercased()
-                    return cat.keywords.contains { n.contains($0) }
-                }
-                pool.removeAll { item in
-                    let n = item.activityName.lowercased()
-                    return cat.keywords.contains { n.contains($0) }
-                }
-            }
-            guard !matched.isEmpty else { continue }
-            result.append(ActivityStat(
-                name: cat.name,
-                icon: cat.icon,
-                completed: matched.filter(\.isCompleted).count,
-                total: matched.count
-            ))
-        }
-        return result.sorted { $0.total > $1.total }
     }
 
     private var insights: [Insight] {
@@ -306,12 +255,6 @@ struct AnalyticsView: View {
                     completionSection
                         .padding(.horizontal)
 
-                    if !activityStats.isEmpty {
-                        Divider().padding(.horizontal)
-                        activitySection
-                            .padding(.horizontal)
-                    }
-
                     weightSection
                         .padding(.horizontal)
 
@@ -329,11 +272,7 @@ struct AnalyticsView: View {
             .navigationBarTitleDisplayMode(.large)
         }
         .sheet(isPresented: $showingMedicineLog) {
-            MedicineLogSheet(
-                viewModel: viewModel,
-                petFilter: medicineLogPet,
-                showPetNames: viewModel.pets.count > 1
-            )
+            MedicineLogSheet(viewModel: viewModel, petFilter: medicineLogPet)
         }
     }
 
@@ -399,15 +338,22 @@ struct AnalyticsView: View {
 
     // MARK: - Summary stats row
 
-    private var summaryRow: some View {
-        let total      = rangeItems.count
-        let done       = rangeItems.filter(\.isCompleted).count
-        let activeDays = completionByDay.filter { !$0.isEmpty }.count
+    private var completionRateCaption: String {
+        // Two short lines fit narrow columns; avoids single-line truncation ("…").
+        switch selectedRange {
+        case .day:   return "Today's\nscheduled tasks completed"
+        case .week:  return "This week's\nscheduled tasks completed"
+        case .month: return "This month's\nscheduled tasks completed"
+        }
+    }
 
-        return HStack(spacing: 10) {
-            miniStat(value: "\(Int(overallRate * 100))%", label: "Avg completion", accent: rateColor(overallRate))
-            miniStat(value: "\(done)/\(total)",           label: "Events done",    accent: .primary)
-            miniStat(value: "\(activeDays)d",             label: "Active days",    accent: .blue)
+    private var summaryRow: some View {
+        let total = rangeItems.count
+        let done  = rangeItems.filter(\.isCompleted).count
+
+        return HStack(alignment: .top, spacing: 10) {
+            miniStat(value: "\(Int(overallRate * 100))%", label: completionRateCaption, accent: rateColor(overallRate))
+            miniStat(value: "\(done)/\(total)",           label: "Tasks done / scheduled", accent: .primary)
         }
     }
 
@@ -419,8 +365,13 @@ struct AnalyticsView: View {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+                .lineLimit(5)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(14)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
@@ -496,50 +447,6 @@ struct AnalyticsView: View {
                 .frame(height: 160)
                 .padding(.vertical, 4)
             }
-        }
-    }
-
-    // MARK: - Activity breakdown
-
-    private var activitySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Activity Breakdown")
-                .font(.headline)
-
-            VStack(spacing: 10) {
-                ForEach(activityStats.prefix(8)) { stat in
-                    HStack(spacing: 12) {
-                        Image(systemName: stat.icon)
-                            .font(.subheadline)
-                            .foregroundStyle(Color.appPink)
-                            .frame(width: 22)
-
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text(stat.name)
-                                    .font(.subheadline)
-                                Spacer()
-                                Text("\(stat.completed)/\(stat.total)")
-                                    .font(.caption.bold())
-                                    .foregroundStyle(.secondary)
-                            }
-                            GeometryReader { geo in
-                                ZStack(alignment: .leading) {
-                                    Capsule()
-                                        .fill(Color(.tertiarySystemFill))
-                                        .frame(height: 6)
-                                    Capsule()
-                                        .fill(rateColor(stat.rate))
-                                        .frame(width: max(0, geo.size.width * stat.rate), height: 6)
-                                }
-                            }
-                            .frame(height: 6)
-                        }
-                    }
-                }
-            }
-            .padding(14)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
         }
     }
 
@@ -909,10 +816,11 @@ struct AnalyticsView: View {
             )]
 
         case .week:
+            // Always emit all 7 days so the line spans the full x-axis.
+            // Days with no scheduled medicine are shown at 0% to keep the line continuous.
             return (0..<7).reversed().compactMap { offset -> MedicineCompliancePoint? in
                 guard let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: .now)) else { return nil }
                 let items = medItems.filter { calendar.isDate($0.time, inSameDayAs: day) }
-                guard !items.isEmpty else { return nil }
                 return MedicineCompliancePoint(
                     date: day, petName: pet.name, petID: pet.id,
                     accepted: items.filter { $0.medicineAccepted == true }.count,
@@ -921,8 +829,8 @@ struct AnalyticsView: View {
             }
 
         case .month:
-            // Group by week
-            return (0..<4).reversed().compactMap { weekOffset -> MedicineCompliancePoint? in
+            // Group by week — 5 windows to fill a 30-day range.
+            return (0..<5).reversed().compactMap { weekOffset -> MedicineCompliancePoint? in
                 guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -weekOffset, to: calendar.startOfDay(for: .now)),
                       let weekEnd   = calendar.date(byAdding: .day, value: 7, to: weekStart)
                 else { return nil }
@@ -982,14 +890,21 @@ struct AnalyticsView: View {
             if allPoints.isEmpty {
                 emptyPlaceholder(icon: "pill.fill", text: "No medicine events in this period.")
             } else {
-                Chart(allPoints) { p in
-                    BarMark(
-                        x: .value("Date", p.date, unit: selectedRange == .month ? .weekOfYear : .day),
-                        y: .value("Rate", p.rate)
-                    )
-                    .foregroundStyle(by: .value("Pet", p.petName))
-                    .position(by: .value("Pet", p.petName))
-                    .cornerRadius(4)
+                Chart {
+                    ForEach(allPoints) { p in
+                        LineMark(
+                            x: .value("Date", p.date),
+                            y: .value("Rate", p.rate)
+                        )
+                        .foregroundStyle(by: .value("Pet", p.petName))
+                        .interpolationMethod(.catmullRom)
+                        PointMark(
+                            x: .value("Date", p.date),
+                            y: .value("Rate", p.rate)
+                        )
+                        .foregroundStyle(by: .value("Pet", p.petName))
+                        .symbolSize(25)
+                    }
                 }
                 .chartForegroundStyleScale(
                     domain: pets.map(\.name),
@@ -998,12 +913,12 @@ struct AnalyticsView: View {
                 .chartLegend(position: .top, alignment: .leading)
                 .chartYScale(domain: 0...1)
                 .chartXAxis {
-                    AxisMarks(values: .stride(by: selectedRange == .week ? .day : .weekOfYear, count: 1)) { _ in
+                    AxisMarks(values: .automatic(desiredCount: selectedRange == .week ? 7 : 4)) { _ in
                         AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
                         AxisValueLabel(
                             format: selectedRange == .month
                                 ? .dateTime.month(.abbreviated).day()
-                                : .dateTime.weekday(.abbreviated)
+                                : .dateTime.month(.abbreviated).day()
                         ).font(.caption2)
                     }
                 }
@@ -1059,27 +974,34 @@ struct AnalyticsView: View {
                     .padding(.vertical, 8)
             } else {
                 Chart(points) { p in
-                    BarMark(
-                        x: .value("Date", p.date, unit: selectedRange == .month ? .weekOfYear : .day),
+                    AreaMark(
+                        x: .value("Date", p.date),
+                        yStart: .value("Min", 0.0),
+                        yEnd: .value("Rate", p.rate)
+                    )
+                    .foregroundStyle(LinearGradient(
+                        colors: [color.opacity(0.25), color.opacity(0.03)],
+                        startPoint: .top, endPoint: .bottom
+                    ))
+                    .interpolationMethod(.catmullRom)
+                    LineMark(
+                        x: .value("Date", p.date),
                         y: .value("Rate", p.rate)
                     )
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [color, color.opacity(0.6)],
-                            startPoint: .top, endPoint: .bottom
-                        )
+                    .foregroundStyle(color)
+                    .interpolationMethod(.catmullRom)
+                    PointMark(
+                        x: .value("Date", p.date),
+                        y: .value("Rate", p.rate)
                     )
-                    .cornerRadius(4)
+                    .foregroundStyle(color)
+                    .symbolSize(30)
                 }
                 .chartYScale(domain: 0...1)
                 .chartXAxis {
-                    AxisMarks(values: .stride(by: selectedRange == .week ? .day : .weekOfYear, count: 1)) { _ in
+                    AxisMarks(values: .automatic(desiredCount: selectedRange == .week ? 7 : 4)) { _ in
                         AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
-                        AxisValueLabel(
-                            format: selectedRange == .month
-                                ? .dateTime.month(.abbreviated).day()
-                                : .dateTime.weekday(.abbreviated)
-                        ).font(.caption2)
+                        AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
                     }
                 }
                 .chartYAxis {
@@ -1090,7 +1012,7 @@ struct AnalyticsView: View {
                         }
                     }
                 }
-                .frame(height: 140)
+                .frame(height: 150)
 
                 Button {
                     onViewLog()
@@ -1194,27 +1116,62 @@ struct AnalyticsView: View {
 
 struct MedicineLogSheet: View {
     let viewModel: HomeViewModel
-    let petFilter: Pet?
-    let showPetNames: Bool
+    /// Initial pet selection when the sheet opens (`nil` = all pets).
+    private let petFilter: Pet?
+
+    @State private var selectedPetID: UUID?
 
     @AppStorage("timeFormat") private var timeFormatRaw = "12h"
     @Environment(\.dismiss) private var dismiss
 
+    private let cal = Calendar.current
     private var timeFormat: TimeFormat { TimeFormat(rawValue: timeFormatRaw) ?? .twelveHour }
+
+    init(viewModel: HomeViewModel, petFilter: Pet?) {
+        self.viewModel = viewModel
+        self.petFilter = petFilter
+        _selectedPetID = State(initialValue: petFilter?.id)
+    }
+
+    /// Pets that have at least one medicine event in the schedule.
+    private var petsWithMedicine: [Pet] {
+        viewModel.pets.filter { pet in
+            viewModel.scheduleItems.contains { $0.pet.id == pet.id && $0.isMedicineEvent }
+        }
+    }
+
+    private var showPetNameOnRows: Bool {
+        selectedPetID == nil && petsWithMedicine.count > 1
+    }
 
     private var medicineItems: [ScheduleItem] {
         viewModel.scheduleItems
             .filter { $0.isMedicineEvent }
-            .filter { petFilter == nil || $0.pet.id == petFilter?.id }
+            .filter { selectedPetID == nil || $0.pet.id == selectedPetID }
             .sorted { $0.time > $1.time }
     }
 
-    private var groupedByDay: [(date: Date, items: [ScheduleItem])] {
-        let cal = Calendar.current
+    /// All days from the earliest medicine event to today, newest first.
+    /// Days with no events are included so the user can see the full history.
+    private var allDays: [(date: Date, items: [ScheduleItem])] {
+        guard let firstDate = medicineItems.map({ cal.startOfDay(for: $0.time) }).min() else { return [] }
+        let today = cal.startOfDay(for: .now)
         let grouped = Dictionary(grouping: medicineItems) { cal.startOfDay(for: $0.time) }
-        return grouped
-            .map { (date: $0.key, items: $0.value.sorted { $0.time < $1.time }) }
-            .sorted { $0.date > $1.date }
+
+        var result: [(date: Date, items: [ScheduleItem])] = []
+        var current = today
+        while current >= firstDate {
+            result.append((date: current, items: (grouped[current] ?? []).sorted { $0.time < $1.time }))
+            current = cal.date(byAdding: .day, value: -1, to: current) ?? current.addingTimeInterval(-86400)
+        }
+        return result
+    }
+
+    private var navigationTitle: String {
+        if let id = selectedPetID, let name = viewModel.pets.first(where: { $0.id == id })?.name {
+            return "\(name)'s Medicine Log"
+        }
+        return "Medicine Log"
     }
 
     var body: some View {
@@ -1227,24 +1184,26 @@ struct MedicineLogSheet: View {
                         description: Text("No medicine events have been logged yet.")
                     )
                 } else {
-                    List {
-                        ForEach(groupedByDay, id: \.date) { group in
-                            Section {
-                                ForEach(group.items) { item in
-                                    MedicineLogRow(item: item, showPetName: showPetNames, timeFormat: timeFormat)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 0) {
+                            if petsWithMedicine.count > 1 {
+                                medicineLogPetPicker
+                                    .padding(.bottom, 16)
+                            }
+
+                            LazyVStack(alignment: .leading, spacing: 20) {
+                                ForEach(allDays, id: \.date) { group in
+                                    medicineDayCard(group: group)
                                 }
-                            } header: {
-                                Text(group.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-                                    .font(.subheadline.bold())
-                                    .foregroundStyle(.primary)
-                                    .textCase(.none)
                             }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                     }
-                    .listStyle(.insetGrouped)
+                    .background(Color(.systemGroupedBackground))
                 }
             }
-            .navigationTitle(petFilter.map { "\($0.name)'s Medicine Log" } ?? "Medicine Log")
+            .navigationTitle(navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -1252,6 +1211,90 @@ struct MedicineLogSheet: View {
                         .fontWeight(.semibold)
                 }
             }
+        }
+    }
+
+    private var medicineLogPetPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                let allSelected = selectedPetID == nil
+                Button {
+                    HapticManager.impact(.light)
+                    withAnimation(.spring(duration: 0.25)) { selectedPetID = nil }
+                } label: {
+                    Text("All pets")
+                        .font(.subheadline.bold())
+                        .foregroundStyle(allSelected ? .white : .primary)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(allSelected ? Color.appPink : Color(.secondarySystemGroupedBackground), in: Capsule())
+                }
+                .buttonStyle(.plain)
+
+                ForEach(petsWithMedicine) { pet in
+                    let sel = selectedPetID == pet.id
+                    Button {
+                        HapticManager.impact(.light)
+                        withAnimation(.spring(duration: 0.25)) {
+                            selectedPetID = sel ? nil : pet.id
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            PetAvatarView(pet: pet, size: 28)
+                            Text(pet.name)
+                                .font(.subheadline.bold())
+                                .foregroundStyle(sel ? .white : .primary)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(sel ? Color.appPink : Color(.secondarySystemGroupedBackground), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 4)
+        }
+        .scrollClipDisabled()
+    }
+
+    private func medicineDayCard(group: (date: Date, items: [ScheduleItem])) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(group.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
+                .font(.subheadline.bold())
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 0) {
+                if group.items.isEmpty {
+                    HStack {
+                        Text("No medicine scheduled")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Text("—")
+                            .font(.caption.bold())
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                } else {
+                    ForEach(Array(group.items.enumerated()), id: \.element.id) { index, item in
+                        MedicineLogRow(
+                            item: item,
+                            showPetName: showPetNameOnRows,
+                            timeFormat: timeFormat
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+
+                        if index < group.items.count - 1 {
+                            Divider()
+                                .padding(.leading, 64)
+                        }
+                    }
+                }
+            }
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }
 }
@@ -1329,8 +1372,8 @@ private struct MedicineLogRow: View {
 
     private var statusText: String {
         switch item.medicineAccepted {
-        case true:  return "Taken"
-        case false: return "Skipped"
+        case true:  return "Yes — taken"
+        case false: return "No — skipped"
         case nil:   return item.isCompleted ? "Done" : "Pending"
         }
     }

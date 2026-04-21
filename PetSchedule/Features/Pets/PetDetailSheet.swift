@@ -9,8 +9,7 @@ struct PetDetailSheet: View {
     @State private var name: String
     @State private var animalType: AnimalType
     @State private var customAnimalType: String
-    @State private var dateOfBirth: Date
-    @State private var hasDOB: Bool
+    @State private var dateOfBirth: Date?
     @State private var photoData: Data?
     @State private var photoItem: PhotosPickerItem? = nil
     @State private var weightHistory: [WeightEntry]
@@ -49,8 +48,7 @@ struct PetDetailSheet: View {
         _name             = State(initialValue: pet?.name ?? "")
         _animalType       = State(initialValue: pet?.animalType ?? .dog)
         _customAnimalType = State(initialValue: pet?.customAnimalType ?? "")
-        _dateOfBirth      = State(initialValue: pet?.dateOfBirth ?? Calendar.current.date(byAdding: .year, value: -1, to: .now) ?? .now)
-        _hasDOB           = State(initialValue: pet?.dateOfBirth != nil)
+        _dateOfBirth      = State(initialValue: pet?.dateOfBirth)
         _photoData        = State(initialValue: pet?.photoData)
         _weightHistory    = State(initialValue: pet?.weightHistory ?? [])
         _heightHistory    = State(initialValue: pet?.heightHistory ?? [])
@@ -85,9 +83,14 @@ struct PetDetailSheet: View {
                         Spacer()
                     }
                     .padding(.vertical, 8)
+                } header: {
+                    sectionHeader(
+                        "Photo",
+                        subtitle: "Optional picture so your pet is easy to recognise in lists and reminders."
+                    )
                 }
 
-                Section("Details") {
+                Section {
                     TextField("Name", text: $name)
 
                     Picker("Animal type", selection: $animalType) {
@@ -100,11 +103,21 @@ struct PetDetailSheet: View {
                     if animalType == .other {
                         TextField("e.g. Guinea pig, Gecko…", text: $customAnimalType)
                     }
+                } header: {
+                    sectionHeader(
+                        "Details",
+                        subtitle: "Your pet's name and type—the basics used everywhere in the app."
+                    )
                 }
 
-                Section("Notes") {
+                Section {
                     TextField("Allergies, vet info, behaviour tips…", text: $notes, axis: .vertical)
                         .lineLimit(4...10)
+                } header: {
+                    sectionHeader(
+                        "Notes",
+                        subtitle: "Free-form notes—allergies, behaviour, care tips, or anything else to remember."
+                    )
                 }
 
                 Section {
@@ -166,7 +179,7 @@ struct PetDetailSheet: View {
                             let currentPet = Pet(
                                 id: petID, name: name, animalType: animalType,
                                 customAnimalType: animalType == .other ? customAnimalType : nil,
-                                dateOfBirth: hasDOB ? dateOfBirth : nil,
+                                dateOfBirth: dateOfBirth,
                                 photoData: photoData,
                                 weightHistory: weightHistory,
                                 heightHistory: heightHistory,
@@ -198,7 +211,11 @@ struct PetDetailSheet: View {
                     .disabled(isGeneratingPDF)
 
                 } header: {
-                    Label("Vet Details", systemImage: "stethoscope")
+                    sectionHeaderWithLabel(
+                        title: "Vet Details",
+                        systemImage: "stethoscope",
+                        subtitle: "Your clinic's name, address, phone, and email for quick contact and sharing."
+                    )
                 }
 
                 // ── Documents ──────────────────────────────────────────────
@@ -249,41 +266,60 @@ struct PetDetailSheet: View {
                             .foregroundStyle(.secondary)
                     }
                 } header: {
-                    Label("Documents", systemImage: "folder.fill")
+                    sectionHeaderWithLabel(
+                        title: "Documents",
+                        systemImage: "folder.fill",
+                        subtitle: "Attach files such as lab results, vaccination records, or insurance—kept on this device."
+                    )
                 }
 
-                Section("Weight") {
-                    HStack(spacing: 12) {
-                        HStack(spacing: 6) {
-                            TextField("0.0", text: $weightInput)
-                                .keyboardType(.decimalPad)
-                                .frame(maxWidth: .infinity)
-                            Text(weightUnit.label)
+                Section {
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Add a new weight reading")
+                                .font(.subheadline.weight(.semibold))
+                            Text("Enter the weight and the date it was taken, then tap + to save.")
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+                            HStack(spacing: 12) {
+                                HStack(spacing: 6) {
+                                    TextField("0.0", text: $weightInput)
+                                        .keyboardType(.decimalPad)
+                                        .frame(maxWidth: .infinity)
+                                    Text(weightUnit.label)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
 
-                        DatePicker("", selection: $weightDate, in: ...Date.now, displayedComponents: .date)
-                            .labelsHidden()
+                                DatePicker("", selection: $weightDate, in: ...Date.now, displayedComponents: .date)
+                                    .labelsHidden()
 
-                        Button {
-                            guard let val = Double(weightInput.replacingOccurrences(of: ",", with: ".")),
-                                  val > 0 else { return }
-                            withAnimation(.spring(duration: 0.3)) {
-                                weightHistory.append(WeightEntry(date: weightDate, kg: weightUnit.toKg(val)))
-                                weightHistory.sort { $0.date < $1.date }
+                                Button {
+                                    guard let val = Double(weightInput.replacingOccurrences(of: ",", with: ".")),
+                                          val > 0 else { return }
+                                    withAnimation(.spring(duration: 0.3)) {
+                                        weightHistory.append(WeightEntry(date: weightDate, kg: weightUnit.toKg(val)))
+                                        weightHistory.sort { $0.date < $1.date }
+                                    }
+                                    weightInput = ""
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(Color.appPink)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(weightInput.isEmpty)
                             }
-                            weightInput = ""
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(Color.appPink)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(weightInput.isEmpty)
-                    }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+
+                        if !weightHistory.isEmpty {
+                            Divider()
+                        }
 
                     if weightHistory.count >= 2 {
                         WeightChartView(entries: weightHistory, unit: weightUnit)
@@ -329,40 +365,61 @@ struct PetDetailSheet: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    }
+                } header: {
+                    sectionHeader(
+                        "Weight",
+                        subtitle: "Enter a value and date to build a history—charts appear after two or more entries."
+                    )
                 }
 
-                Section("Height") {
-                    HStack(spacing: 12) {
-                        HStack(spacing: 6) {
-                            TextField("0.0", text: $heightInput)
-                                .keyboardType(.decimalPad)
-                                .frame(maxWidth: .infinity)
-                            Text(heightUnit.inputLabel)
+                Section {
+                    VStack(alignment: .leading, spacing: 14) {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Add a new height reading")
+                                .font(.subheadline.weight(.semibold))
+                            Text("Enter the height and the date it was taken, then tap + to save.")
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+                            HStack(spacing: 12) {
+                                HStack(spacing: 6) {
+                                    TextField("0.0", text: $heightInput)
+                                        .keyboardType(.decimalPad)
+                                        .frame(maxWidth: .infinity)
+                                    Text(heightUnit.inputLabel)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
 
-                        DatePicker("", selection: $heightDate, in: ...Date.now, displayedComponents: .date)
-                            .labelsHidden()
+                                DatePicker("", selection: $heightDate, in: ...Date.now, displayedComponents: .date)
+                                    .labelsHidden()
 
-                        Button {
-                            guard let val = Double(heightInput.replacingOccurrences(of: ",", with: ".")),
-                                  val > 0 else { return }
-                            withAnimation(.spring(duration: 0.3)) {
-                                heightHistory.append(HeightEntry(date: heightDate, cm: heightUnit.toCm(val)))
-                                heightHistory.sort { $0.date < $1.date }
+                                Button {
+                                    guard let val = Double(heightInput.replacingOccurrences(of: ",", with: ".")),
+                                          val > 0 else { return }
+                                    withAnimation(.spring(duration: 0.3)) {
+                                        heightHistory.append(HeightEntry(date: heightDate, cm: heightUnit.toCm(val)))
+                                        heightHistory.sort { $0.date < $1.date }
+                                    }
+                                    heightInput = ""
+                                } label: {
+                                    Image(systemName: "plus.circle.fill")
+                                        .font(.title2)
+                                        .foregroundStyle(Color.appPink)
+                                }
+                                .buttonStyle(.plain)
+                                .disabled(heightInput.isEmpty)
                             }
-                            heightInput = ""
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title2)
-                                .foregroundStyle(Color.appPink)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(heightInput.isEmpty)
-                    }
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+
+                        if !heightHistory.isEmpty {
+                            Divider()
+                        }
 
                     if heightHistory.count >= 2 {
                         HeightChartView(entries: heightHistory, unit: heightUnit)
@@ -408,25 +465,47 @@ struct PetDetailSheet: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    }
+                } header: {
+                    sectionHeader(
+                        "Height",
+                        subtitle: "Measure and log with a date to track growth or size changes over time."
+                    )
                 }
 
-                Section("Birthday") {
-                    Toggle("Add date of birth", isOn: $hasDOB.animation())
-                    if hasDOB {
+                Section {
+                    if let dob = dateOfBirth {
                         DatePicker(
                             "Date of birth",
-                            selection: $dateOfBirth,
+                            selection: Binding(
+                                get: { dob },
+                                set: { dateOfBirth = $0 }
+                            ),
                             in: ...Date.now,
                             displayedComponents: .date
                         )
-                        HStack {
-                            Image(systemName: "birthday.cake.fill")
-                                .foregroundStyle(Color.appPink)
-                            Text(calculatedAge)
-                                .foregroundStyle(.secondary)
+                        Button("Remove date of birth", role: .destructive) {
+                            dateOfBirth = nil
                         }
-                        .font(.subheadline)
+                    } else {
+                        Button {
+                            dateOfBirth = Calendar.current.date(byAdding: .year, value: -1, to: .now) ?? .now
+                        } label: {
+                            HStack {
+                                Text("Date of birth")
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                Text("—")
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
                     }
+                } header: {
+                    sectionHeader(
+                        "Birthday",
+                        subtitle: "Optional—used for birthday reminders on your schedule when you add a date."
+                    )
                 }
             }
             .navigationTitle(isNew ? "New Pet" : name.trimmingCharacters(in: .whitespaces).isEmpty ? "Edit Pet" : name)
@@ -452,7 +531,7 @@ struct PetDetailSheet: View {
                             name: name.trimmingCharacters(in: .whitespaces),
                             animalType: animalType,
                             customAnimalType: animalType == .other ? customAnimalType.trimmingCharacters(in: .whitespaces) : nil,
-                            dateOfBirth: hasDOB ? dateOfBirth : nil,
+                            dateOfBirth: dateOfBirth,
                             photoData: photoData,
                             weightHistory: weightHistory,
                             heightHistory: heightHistory,
@@ -480,31 +559,36 @@ struct PetDetailSheet: View {
         return url
     }
 
-    private var calculatedAge: String {
-        let components = Calendar.current.dateComponents([.year, .month, .day], from: dateOfBirth, to: .now)
-        let years = components.year ?? 0
-        let months = components.month ?? 0
-        if years > 0 {
-            return months > 0
-                ? "\(years) yr\(years == 1 ? "" : "s"), \(months) mo — \(ageLabel)"
-                : "\(years) yr\(years == 1 ? "" : "s") old — \(ageLabel)"
-        } else if months > 0 {
-            return "\(months) month\(months == 1 ? "" : "s") old — \(ageLabel)"
+    @ViewBuilder
+    private func sectionHeader(_ title: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        let days = components.day ?? 0
-        return days > 0 ? "\(days) day\(days == 1 ? "" : "s") old" : "Born today"
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .textCase(nil)
     }
 
-    private var ageLabel: String {
-        let components = Calendar.current.dateComponents([.year], from: dateOfBirth, to: .now)
-        let years = components.year ?? 0
-        switch years {
-        case 0..<2:   return "puppy/kitten"
-        case 2..<7:   return "young adult"
-        case 7..<11:  return "adult"
-        default:      return "senior"
+    @ViewBuilder
+    private func sectionHeaderWithLabel(title: String, systemImage: String, subtitle: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(subtitle)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .textCase(nil)
     }
+
 }
 
 private struct WeightChartView: View {

@@ -142,9 +142,48 @@ enum PetPDFGenerator {
                 y += 4
             }
 
+            // ── Medicine Compliance ───────────────────────────────────────────
+            let medItems = scheduleItems
+                .filter { $0.pet.id == pet.id && $0.isMedicineEvent }
+                .sorted { $0.time > $1.time }
+                .prefix(30)
+            if !medItems.isEmpty {
+                drawSection("Medicine Compliance")
+
+                // Compliance summary line
+                let total    = medItems.count
+                let taken    = medItems.filter { $0.medicineAccepted == true }.count
+                let skipped  = medItems.filter { $0.medicineAccepted == false }.count
+                let pending  = medItems.filter { $0.medicineAccepted == nil }.count
+                let pctStr   = total > 0 ? "\(Int(Double(taken) / Double(total) * 100))%" : "N/A"
+                drawBody("Overall: \(pctStr) compliance (\(taken) taken, \(skipped) skipped, \(pending) pending)")
+
+                // Per-day rows
+                let cal = Calendar.current
+                let grouped = Dictionary(grouping: medItems) { cal.startOfDay(for: $0.time) }
+                let days = grouped.keys.sorted { $0 > $1 }
+                var logLines: [String] = []
+                for day in days {
+                    let dayItems = grouped[day]!.sorted { $0.time < $1.time }
+                    for item in dayItems {
+                        let dateStr = day.formatted(date: .abbreviated, time: .omitted)
+                        let timeStr = item.isAllDay ? "All day" : item.time.formatted(date: .omitted, time: .shortened)
+                        let status: String
+                        switch item.medicineAccepted {
+                        case true:  status = "Yes — taken"
+                        case false: status = "No — skipped"
+                        case nil:   status = item.isCompleted ? "Done" : "Pending"
+                        }
+                        logLines.append("\(dateStr)  \(timeStr)  \(item.activityName)  →  \(status)")
+                    }
+                }
+                drawBody(logLines.joined(separator: "\n"))
+                y += 4
+            }
+
             // ── Recent Schedule ───────────────────────────────────────────────
             let recent = scheduleItems
-                .filter { $0.pet.id == pet.id }
+                .filter { $0.pet.id == pet.id && !$0.isMedicineEvent }
                 .sorted { $0.time > $1.time }
                 .prefix(10)
             if !recent.isEmpty {

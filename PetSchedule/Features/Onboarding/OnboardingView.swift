@@ -16,6 +16,7 @@ struct OnboardingView: View {
     @State private var triggerPhotoPicker = false
     @State private var activityName = "Walk"
     @State private var activityTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: .now) ?? .now
+    @State private var paywallPlan: Step5Paywall.Plan = .yearly
 
     private let totalSteps = 5
 
@@ -41,7 +42,7 @@ struct OnboardingView: View {
                     Step4Notifications()
                         .transition(slideTransition)
                 case 4:
-                    Step5Paywall(pet: previewPet, onSkip: { step = 5 })
+                    Step5Paywall(pet: previewPet, selectedPlan: $paywallPlan, onSkip: { step = 5 })
                         .transition(slideTransition)
                 case 5:
                     Step6OfferPaywall(
@@ -139,7 +140,7 @@ struct OnboardingView: View {
         switch step {
         case 1: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 3: return "Enable Notifications"
-        case 4: return "Continue"
+        case 4: return paywallPlan == .yearly ? "Start My 7-Day Free Trial" : "Continue"
         case 5: return "Claim 50% Off Your 1st Year"
         default: return "Continue"
         }
@@ -497,8 +498,8 @@ private struct Step4Notifications: View {
 
 private struct Step5Paywall: View {
     let pet: Pet
+    @Binding var selectedPlan: Plan
     let onSkip: () -> Void
-    @State private var selectedPlan: Plan = .yearly
 
     enum Plan { case monthly, yearly }
 
@@ -547,14 +548,16 @@ private struct Step5Paywall: View {
                                 planTitle: "Yearly",
                                 price: "£49.99",
                                 billingPeriodPhrase: "per year",
-                                equivalentDetail: "≈ £4.17/mo",
+                                equivalentDetail: "≈ £4.17 per month",
+                                weeklyDetail: "≈ £0.96 per week",
+                                trialBadge: "7-day free trial",
                                 isSelected: selectedPlan == .yearly
                             ) { selectedPlan = .yearly }
                             PlanCard(
                                 planTitle: "Monthly",
                                 price: "£9.99",
                                 billingPeriodPhrase: "per month",
-                                equivalentDetail: nil,
+                                weeklyDetail: "≈ £2.31 per week",
                                 isSelected: selectedPlan == .monthly
                             ) { selectedPlan = .monthly }
                         }
@@ -606,7 +609,7 @@ private struct PaywallSubscriptionFooter: View {
                 .foregroundStyle(.secondary)
                 .buttonStyle(.plain)
 
-            Text("Payment will be charged to your Apple Account at confirmation of purchase. Subscriptions auto-renew until cancelled. Manage or cancel in Account Settings · Subscriptions at least 24 hours before the current period ends. If you cancel, you keep access until the end of the billing period.")
+            Text("7-day free trial available on the Yearly plan. Payment will be charged to your Apple Account at the end of the trial period. Subscriptions auto-renew until cancelled. Manage or cancel in Account Settings · Subscriptions at least 24 hours before the current period ends. If you cancel, you keep access until the end of the billing period.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -646,56 +649,99 @@ private struct PlanCard: View {
     let price: String
     /// Completes the price line, e.g. "per year" — same font size as `price`
     let billingPeriodPhrase: String
-    /// Optional average (yearly plans); shown on the same line as price when set
+    /// Optional monthly equivalent, e.g. "≈ £4.17 per month"
     let equivalentDetail: String?
+    /// Optional weekly equivalent, e.g. "≈ £0.96 per week"
+    let weeklyDetail: String?
+    /// Optional badge shown above the card, e.g. "7-day free trial"
+    let trialBadge: String?
     let isSelected: Bool
     let onTap: () -> Void
+
+    init(
+        planTitle: String,
+        price: String,
+        billingPeriodPhrase: String,
+        equivalentDetail: String? = nil,
+        weeklyDetail: String? = nil,
+        trialBadge: String? = nil,
+        isSelected: Bool,
+        onTap: @escaping () -> Void
+    ) {
+        self.planTitle = planTitle
+        self.price = price
+        self.billingPeriodPhrase = billingPeriodPhrase
+        self.equivalentDetail = equivalentDetail
+        self.weeklyDetail = weeklyDetail
+        self.trialBadge = trialBadge
+        self.isSelected = isSelected
+        self.onTap = onTap
+    }
 
     private var priceLineAccessibility: String {
         "\(price) \(billingPeriodPhrase)"
         + (equivalentDetail.map { ", \($0)" } ?? "")
+        + (weeklyDetail.map { ", \($0)" } ?? "")
     }
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(alignment: .center, spacing: 12) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.title3)
-                    .foregroundStyle(isSelected ? Color.appPink : Color(.systemGray4))
-                    .accessibilityHidden(true)
+        VStack(alignment: .leading, spacing: 4) {
+            if let trialBadge {
+                Text(trialBadge.uppercased())
+                    .font(.caption2.bold())
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.appPink, in: Capsule())
+                    .padding(.leading, 4)
+            }
 
-                Text(planTitle)
-                    .font(.headline.bold())
-                    .lineLimit(1)
+            Button(action: onTap) {
+                HStack(alignment: .center, spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(isSelected ? Color.appPink : Color(.systemGray4))
+                        .accessibilityHidden(true)
 
-                Spacer(minLength: 8)
-
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text("\(price) \(billingPeriodPhrase)")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.primary)
+                    Text(planTitle)
+                        .font(.headline.bold())
                         .lineLimit(1)
-                    if let equivalentDetail {
-                        Text(equivalentDetail)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+
+                    Spacer(minLength: 8)
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(price) \(billingPeriodPhrase)")
+                            .font(.headline.weight(.semibold))
+                            .foregroundStyle(.primary)
                             .lineLimit(1)
+                        if let equivalentDetail {
+                            Text(equivalentDetail)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                        if let weeklyDetail {
+                            Text(weeklyDetail)
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                                .lineLimit(1)
+                        }
                     }
                 }
+                .padding(.horizontal, 18)
+                .padding(.vertical, 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color(.secondarySystemBackground))
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(isSelected ? Color.appPink : Color.clear, lineWidth: 2))
+                )
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.secondarySystemBackground))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(isSelected ? Color.appPink : Color.clear, lineWidth: 2))
-            )
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(planTitle). \(priceLineAccessibility)")
+            .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+            .animation(.spring(duration: 0.2), value: isSelected)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(planTitle). \(priceLineAccessibility)")
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .animation(.spring(duration: 0.2), value: isSelected)
     }
 }
 
@@ -785,7 +831,7 @@ private struct Step6OfferPaywall: View {
                             planTitle: "Yearly",
                             firstTermPrice: "£24.99",
                             firstTermPhrase: "(1st year)",
-                            equivalentDetail: "≈ £2.08/mo"
+                            equivalentDetail: "≈ £2.08 per month · £0.48 per week"
                         )
 
                         HStack(spacing: 6) {

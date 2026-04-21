@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage("remindersEnabled") private var remindersEnabled = false
     @AppStorage("reminderMinutes") private var reminderMinutes = 10
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
+    @AppStorage("soundEffectsEnabled") private var soundEffectsEnabled = true
     @AppStorage("timeFormat")  private var timeFormatRaw  = "12h"
     @AppStorage("weightUnit")  private var weightUnitRaw  = "kg"
     @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
@@ -96,6 +97,11 @@ struct SettingsView: View {
                 Section("App") {
                     Toggle(isOn: $hapticsEnabled) {
                         Label("Haptic feedback", systemImage: "iphone.radiowaves.left.and.right")
+                    }
+                    .tint(Color.appPink)
+
+                    Toggle(isOn: $soundEffectsEnabled) {
+                        Label("Sound effects", systemImage: "speaker.wave.2.fill")
                     }
                     .tint(Color.appPink)
                 }

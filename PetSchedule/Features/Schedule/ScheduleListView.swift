@@ -1,5 +1,4 @@
 import SwiftUI
-import AudioToolbox
 
 struct ScheduleListView: View {
     @Bindable var viewModel: HomeViewModel
@@ -75,7 +74,7 @@ struct ScheduleListView: View {
                                 let wasCompleted = item.isCompleted
                                 viewModel.toggleCompletion(for: item)
                                 if !wasCompleted {
-                                    AudioServicesPlaySystemSound(1322)
+                                    HapticManager.playCompletion()
                                     HapticManager.notification(.success)
                                     confettiTrigger += 1
                                 }
