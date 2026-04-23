@@ -196,6 +196,7 @@ struct OnboardingView: View {
                 viewModel.scheduleItems.append(
                     ScheduleItem(time: activityTime, activityName: activityName, pet: pet)
                 )
+                viewModel.syncWidgetSchedule()
             }
         case 3:
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
@@ -219,6 +220,7 @@ struct OnboardingView: View {
     }
 
     private func completeOnboarding() {
+        viewModel.syncWidgetSchedule()
         onComplete()
     }
 }

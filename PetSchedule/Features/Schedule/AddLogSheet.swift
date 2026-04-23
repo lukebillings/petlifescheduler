@@ -144,6 +144,7 @@ struct AddLogSheet: View {
                                 attachmentImageData: attachmentImageData
                             )
                         )
+                        viewModel.syncWidgetSchedule()
                         dismiss()
                     }
                     .fontWeight(.semibold)

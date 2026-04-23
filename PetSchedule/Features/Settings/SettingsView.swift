@@ -114,6 +114,9 @@ struct SettingsView: View {
                     } label: {
                         Label("Clock", systemImage: "clock")
                     }
+                    .onChange(of: timeFormatRaw) { _, _ in
+                        viewModel.syncWidgetSchedule()
+                    }
 
                     Picker(selection: $weightUnitRaw) {
                         ForEach([WeightUnit.kg, .stone], id: \.rawValue) { unit in

@@ -35,6 +35,11 @@
 		E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C426C7BD93CA490A97C5D60E /* SettingsView.swift */; };
 		E92F4B81D406413472DFCEDF /* ScheduleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A63243C759BB8D063AF92A /* ScheduleListView.swift */; };
 		F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */; };
+		F86A00D102A14D00A2000001 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
+		F86A00D102A14D00A2000002 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
+		F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */; };
+		F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */; };
+		F86A00D102A14D00A2000005 /* PetScheduleWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -67,6 +72,12 @@
 		E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeightEntry.swift; sourceTree = "<group>"; };
 		EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntry.swift; sourceTree = "<group>"; };
 		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleWidgetShared.swift; sourceTree = "<group>"; };
+		F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleWidget.swift; sourceTree = "<group>"; };
+		F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayEventsWidget.swift; sourceTree = "<group>"; };
+		F86A00D102A14D00A1000005 /* PetSchedule.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetSchedule.entitlements; sourceTree = "<group>"; };
+		F86A00D102A14D00A1000006 /* PetScheduleWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetScheduleWidget.entitlements; sourceTree = "<group>"; };
+		F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PetScheduleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -101,6 +112,7 @@
 			isa = PBXGroup;
 			children = (
 				FC2894989A3CB71EAFB3E03A /* PetSchedule.app */,
+				F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -118,6 +130,7 @@
 			isa = PBXGroup;
 			children = (
 				65728BE60D7A10B782998709 /* PetScheduleApp.swift */,
+				F86A00D102A14D00A1000005 /* PetSchedule.entitlements */,
 				0308B8A05C78834394D5131C /* Features */,
 				F00B36DCECDD7ECBC5E826E0 /* Models */,
 				F1D3613CB6688AAF07B6877A /* Resources */,
@@ -133,15 +146,27 @@
 				1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */,
 				4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */,
 				217BD314318A028856956D09 /* PetPDFGenerator.swift */,
+				F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */,
 				46B5109A87B29D224A344EA1 /* Views */,
 			);
 			path = Shared;
+			sourceTree = "<group>";
+		};
+		F86A00D102A14D00A3000009 /* PetScheduleWidget */ = {
+			isa = PBXGroup;
+			children = (
+				F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */,
+				F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */,
+				F86A00D102A14D00A1000006 /* PetScheduleWidget.entitlements */,
+			);
+			path = PetScheduleWidget;
 			sourceTree = "<group>";
 		};
 		8540F915B73F12C9DB2CCCA7 = {
 			isa = PBXGroup;
 			children = (
 				47825ECA808711CF71706F2A /* PetSchedule */,
+				F86A00D102A14D00A3000009 /* PetScheduleWidget */,
 				2D74B71F20FFB495BE5C5E86 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -218,10 +243,12 @@
 			buildPhases = (
 				ED50AF7A1675914A8CF3A8BF /* Sources */,
 				C0085798E0CAB7E4A85DB2BC /* Resources */,
+				F86A00D102A14D00A3000006 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				F86A00D102A14D00A3000008 /* PBXTargetDependency */,
 			);
 			name = PetSchedule;
 			packageProductDependencies = (
@@ -230,7 +257,56 @@
 			productReference = FC2894989A3CB71EAFB3E03A /* PetSchedule.app */;
 			productType = "com.apple.product-type.application";
 		};
+		F86A00D102A14D00A3000002 /* PetScheduleWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F86A00D102A14D00A3000003 /* Build configuration list for PBXNativeTarget "PetScheduleWidgetExtension" */;
+			buildPhases = (
+				F86A00D102A14D00A3000001 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PetScheduleWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = PetScheduleWidgetExtension;
+			productReference = F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXContainerItemProxy section */
+		F86A00D102A14D00A3000007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5EB89DE4DC41388DEAC4BDF8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F86A00D102A14D00A3000002;
+			remoteInfo = PetScheduleWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F86A00D102A14D00A3000006 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F86A00D102A14D00A2000005 /* PetScheduleWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F86A00D102A14D00A3000008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F86A00D102A14D00A3000002 /* PetScheduleWidgetExtension */;
+			targetProxy = F86A00D102A14D00A3000007 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		5EB89DE4DC41388DEAC4BDF8 /* Project object */ = {
@@ -253,6 +329,7 @@
 			projectRoot = "";
 			targets = (
 				44F6DA2C68AEB125D3167B79 /* PetSchedule */,
+				F86A00D102A14D00A3000002 /* PetScheduleWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -269,6 +346,16 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		F86A00D102A14D00A3000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F86A00D102A14D00A2000002 /* ScheduleWidgetShared.swift in Sources */,
+				F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */,
+				F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		ED50AF7A1675914A8CF3A8BF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -300,6 +387,7 @@
 				2E00AC531EA5D3BC68C52653 /* ScheduleView.swift in Sources */,
 				E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */,
 				F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */,
+				F86A00D102A14D00A2000001 /* ScheduleWidgetShared.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -311,6 +399,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PetSchedule/PetSchedule.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 66VA8628J7;
@@ -457,6 +546,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = PetSchedule/PetSchedule.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 66VA8628J7;
@@ -478,9 +568,72 @@
 			};
 			name = Release;
 		};
+		F86A00D102A14D00A3000004 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = PetScheduleWidget/PetScheduleWidget.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 66VA8628J7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PetScheduleWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Today;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lukebillings.PetSchedule.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F86A00D102A14D00A3000005 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = PetScheduleWidget/PetScheduleWidget.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 66VA8628J7;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PetScheduleWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Today;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.lukebillings.PetSchedule.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		F86A00D102A14D00A3000003 /* Build configuration list for PBXNativeTarget "PetScheduleWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F86A00D102A14D00A3000004 /* Debug */,
+				F86A00D102A14D00A3000005 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		0EDFF62B5F5CFB15C8C18BFD /* Build configuration list for PBXNativeTarget "PetSchedule" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

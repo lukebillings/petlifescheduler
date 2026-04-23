@@ -1,4 +1,6 @@
 import SwiftUI
+import UIKit
+import WidgetKit
 
 @Observable
 final class HomeViewModel {
@@ -206,6 +208,7 @@ final class HomeViewModel {
         selectedPet = nil
         selectedView = .list
         selectedCalendarDate = .now
+        syncWidgetSchedule()
     }
 
     // MARK: - Birthday events
@@ -272,6 +275,7 @@ final class HomeViewModel {
     func toggleCompletion(for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         scheduleItems[index].isCompleted.toggle()
+        syncWidgetSchedule()
     }
 
     /// Stores yes/no for medicine, feed, and water (`ScheduleItem.complianceKind`).
@@ -279,6 +283,7 @@ final class HomeViewModel {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         scheduleItems[index].medicineAccepted = accepted
         scheduleItems[index].isCompleted = true
+        syncWidgetSchedule()
     }
 
     // MARK: - Pet filter
@@ -291,6 +296,7 @@ final class HomeViewModel {
 
     func addPet(_ pet: Pet) {
         pets.append(pet)
+        syncWidgetSchedule()
     }
 
     func updatePet(_ pet: Pet) {
@@ -299,11 +305,75 @@ final class HomeViewModel {
         for i in scheduleItems.indices where scheduleItems[i].pet.id == pet.id {
             scheduleItems[i].pet = pet
         }
+        syncWidgetSchedule()
     }
 
     func deletePet(_ pet: Pet) {
         pets.removeAll { $0.id == pet.id }
         scheduleItems.removeAll { $0.pet.id == pet.id }
         if selectedPet?.id == pet.id { selectedPet = nil }
+        syncWidgetSchedule()
+    }
+
+    // MARK: - Home screen widget
+
+    private static func widgetDTO(from item: ScheduleItem) -> WidgetScheduleEventDTO {
+        WidgetScheduleEventDTO(
+            id: item.id,
+            time: item.time,
+            isAllDay: item.isAllDay,
+            activityName: item.activityName,
+            petName: item.pet.name,
+            isCompleted: item.isCompleted,
+            petPhotoJPEGData: widgetPetThumbnailJPEG(from: item.pet.photoData),
+            activitySystemImage: item.activityIcon,
+            petSystemImage: item.pet.animalType.systemImage,
+            isQuickLog: item.quickLogKind.map { _ in true }
+        )
+    }
+
+    /// Small JPEG for the widget extension (keeps App Group payload bounded).
+    private static func widgetPetThumbnailJPEG(from photoData: Data?, maxSide: CGFloat = 128, maxBytes: Int = 48_000) -> Data? {
+        guard let photoData, let image = UIImage(data: photoData) else { return nil }
+        let w = image.size.width
+        let h = image.size.height
+        guard w > 0, h > 0 else { return nil }
+        let scale = min(1, min(maxSide / w, maxSide / h))
+        let target = CGSize(width: (w * scale).rounded(.down), height: (h * scale).rounded(.down))
+        guard target.width >= 1, target.height >= 1 else { return nil }
+        let renderer = UIGraphicsImageRenderer(size: target)
+        let scaled = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: target))
+        }
+        var quality: CGFloat = 0.82
+        var data = scaled.jpegData(compressionQuality: quality)
+        while let d = data, d.count > maxBytes, quality > 0.28 {
+            quality -= 0.12
+            data = scaled.jpegData(compressionQuality: quality)
+        }
+        return data
+    }
+
+    /// Writes today’s schedule into the App Group and asks WidgetKit to refresh.
+    func syncWidgetSchedule() {
+        let cal = Calendar.current
+        let today = Date()
+        let regular = scheduleItems.filter { cal.isDateInToday($0.time) }
+        let birthdays = pets.compactMap { birthdayItem(for: $0, on: today) }
+        let merged = (birthdays + regular).sorted { $0.time < $1.time }
+        let totalToday = merged.count
+        let upcoming = merged.filter { !$0.isCompleted }
+        let nextTwo = Array(upcoming.prefix(2))
+        let tf24 = TimeFormat.current == .twentyFourHour
+        let dtos = nextTwo.map { Self.widgetDTO(from: $0) }
+        ScheduleWidgetShared.savePayload(
+            WidgetSchedulePayload(
+                updatedAt: Date(),
+                timeFormat24h: tf24,
+                totalTodayEventCount: totalToday,
+                events: dtos
+            )
+        )
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

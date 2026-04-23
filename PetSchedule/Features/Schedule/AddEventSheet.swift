@@ -119,6 +119,7 @@ struct AddEventSheet: View {
                                 pet: pet
                             )
                         )
+                        viewModel.syncWidgetSchedule()
                         dismiss()
                     }
                     .fontWeight(.semibold)

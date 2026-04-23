@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Bindable var viewModel: HomeViewModel
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView {
@@ -19,6 +20,12 @@ struct HomeView: View {
             }
         }
         .tint(.appPink)
+        .onAppear { viewModel.syncWidgetSchedule() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background || phase == .inactive {
+                viewModel.syncWidgetSchedule()
+            }
+        }
     }
 }
 

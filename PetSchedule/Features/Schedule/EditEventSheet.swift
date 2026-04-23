@@ -101,6 +101,7 @@ struct EditEventSheet: View {
                 Section {
                     Button(role: .destructive) {
                         viewModel.scheduleItems.removeAll { $0.id == item.id }
+                        viewModel.syncWidgetSchedule()
                         dismiss()
                     } label: {
                         Label("Delete Event", systemImage: "trash")
@@ -127,6 +128,7 @@ struct EditEventSheet: View {
                             viewModel.scheduleItems[idx].quickLogKind = item.quickLogKind
                             viewModel.scheduleItems[idx].attachmentImageData = attachmentImageData
                         }
+                        viewModel.syncWidgetSchedule()
                         dismiss()
                     }
                     .fontWeight(.semibold)
