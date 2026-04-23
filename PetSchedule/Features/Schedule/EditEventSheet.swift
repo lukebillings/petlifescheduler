@@ -13,7 +13,8 @@ struct EditEventSheet: View {
     @State private var repeatRule: RepeatRule
     @State private var customActivity: Bool
 
-    private let commonActivities = ["Walk", "Eat", "Sleep", "Play", "Vet", "Groom", "Medicine"]
+    private let commonActivities = ["Walk", "Feed", "Give water", "Sleep", "Play", "Vet", "Groom", "Give Medication"]
+    private static let legacyPresetNames: Set<String> = ["Eat", "Medicine"]
 
     init(viewModel: HomeViewModel, item: ScheduleItem) {
         self.viewModel = viewModel
@@ -24,7 +25,8 @@ struct EditEventSheet: View {
         _hasEndTime      = State(initialValue: item.endTime != nil)
         _endTime         = State(initialValue: item.endTime ?? Calendar.current.date(byAdding: .hour, value: 1, to: item.time) ?? item.time)
         _repeatRule      = State(initialValue: item.repeatRule)
-        _customActivity  = State(initialValue: !["Walk","Eat","Sleep","Play","Vet","Groom","Medicine"].contains(item.activityName))
+        let presets = Set(commonActivities).union(Self.legacyPresetNames)
+        _customActivity  = State(initialValue: !presets.contains(item.activityName))
     }
 
     var body: some View {

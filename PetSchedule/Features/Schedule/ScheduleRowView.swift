@@ -38,8 +38,9 @@ struct ScheduleRowView: View {
 
             Spacer()
 
-            if item.isMedicineEvent {
-                MedicineAcceptancePill(
+            if let kind = item.complianceKind {
+                CareCompliancePill(
+                    kind: kind,
                     accepted: item.medicineAccepted,
                     onAccept: { onMedicineAccept?(true) },
                     onDecline: { onMedicineAccept?(false) }
@@ -64,9 +65,10 @@ struct ScheduleRowView: View {
     }
 }
 
-// MARK: - Medicine Acceptance Pill
+// MARK: - Care compliance (medicine, feed, water)
 
-private struct MedicineAcceptancePill: View {
+private struct CareCompliancePill: View {
+    let kind: ScheduleComplianceKind
     let accepted: Bool?
     let onAccept: () -> Void
     let onDecline: () -> Void
@@ -74,11 +76,10 @@ private struct MedicineAcceptancePill: View {
     var body: some View {
         Group {
             if let accepted {
-                // Already answered — show result badge
                 HStack(spacing: 4) {
                     Image(systemName: accepted ? "checkmark" : "xmark")
                         .font(.caption2.bold())
-                    Text(accepted ? "Taken" : "Skipped")
+                    Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
                         .font(.caption2.bold())
                 }
                 .foregroundStyle(accepted ? Color.green : Color.red)
@@ -93,46 +94,31 @@ private struct MedicineAcceptancePill: View {
                         .stroke(accepted ? Color.green.opacity(0.35) : Color.red.opacity(0.35), lineWidth: 1)
                 )
             } else {
-                // Unanswered — show Accept? prompt with yes/no
-                HStack(spacing: 0) {
-                    Text("Accept?")
+                VStack(alignment: .center, spacing: 6) {
+                    Text(kind.compliancePrompt)
                         .font(.caption2.bold())
                         .foregroundStyle(.secondary)
-                        .padding(.leading, 8)
-                        .padding(.trailing, 6)
 
-                    Divider()
-                        .frame(height: 18)
+                    HStack(spacing: 10) {
+                        Button(action: onAccept) {
+                            Image(systemName: "checkmark")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 26, height: 26)
+                                .background(Color.green, in: Circle())
+                        }
+                        .buttonStyle(.plain)
 
-                    Button(action: onAccept) {
-                        Image(systemName: "checkmark")
-                            .font(.caption2.bold())
-                            .foregroundStyle(.white)
-                            .frame(width: 26, height: 26)
-                            .background(Color.green, in: Circle())
+                        Button(action: onDecline) {
+                            Image(systemName: "xmark")
+                                .font(.caption2.bold())
+                                .foregroundStyle(.white)
+                                .frame(width: 26, height: 26)
+                                .background(Color.red, in: Circle())
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
-                    .padding(.horizontal, 4)
-
-                    Button(action: onDecline) {
-                        Image(systemName: "xmark")
-                            .font(.caption2.bold())
-                            .foregroundStyle(.white)
-                            .frame(width: 26, height: 26)
-                            .background(Color.red, in: Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .padding(.trailing, 4)
                 }
-                .padding(.vertical, 4)
-                .background(
-                    Capsule()
-                        .fill(Color(.secondarySystemBackground))
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(Color(.separator).opacity(0.5), lineWidth: 1)
-                )
             }
         }
         .animation(.spring(duration: 0.25), value: accepted)
@@ -143,9 +129,11 @@ private struct MedicineAcceptancePill: View {
     let pet = Pet(name: "Max", animalType: .dog)
     VStack(spacing: 12) {
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Walk", pet: pet, isCompleted: true)) {}
-        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medicine", pet: pet)) {}
-        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medicine", pet: pet, medicineAccepted: true)) {}
-        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medicine", pet: pet, medicineAccepted: false)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet, medicineAccepted: true)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet, medicineAccepted: false)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Feed", pet: pet)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give water", pet: pet, medicineAccepted: true)) {}
     }
     .padding()
 }

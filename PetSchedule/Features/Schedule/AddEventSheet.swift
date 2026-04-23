@@ -14,7 +14,7 @@ struct AddEventSheet: View {
     @State private var repeatRule: RepeatRule = .never
     @State private var customActivity = false
 
-    private let commonActivities = ["Walk", "Eat", "Sleep", "Play", "Vet", "Groom", "Medicine"]
+    private let commonActivities = ["Walk", "Feed", "Give water", "Sleep", "Play", "Vet", "Groom", "Give Medication"]
 
     var body: some View {
         NavigationStack {

@@ -48,16 +48,7 @@ struct OnboardingView: View {
                     Step5Paywall(
                         pet: previewPet,
                         products: subscriptionProducts,
-                        selectedPlan: $paywallPlan,
-                        onSkip: { step = 5 }
-                    )
-                    .transition(slideTransition)
-                case 5:
-                    Step6OfferPaywall(
-                        pet: previewPet,
-                        products: subscriptionProducts,
-                        onSkip: { withAnimation { step = 4 } },
-                        onExpire: { withAnimation { step = 4 } }
+                        selectedPlan: $paywallPlan
                     )
                     .transition(slideTransition)
                 default:
@@ -84,18 +75,13 @@ struct OnboardingView: View {
                     Color.clear.frame(height: 20)
                 }
 
-                // Hide progress dots on offer step
-                if step < 5 {
-                    HStack(spacing: 8) {
-                        ForEach(0..<totalSteps, id: \.self) { i in
-                            Capsule()
-                                .fill(i == step ? Color.appPink : Color.gray.opacity(0.25))
-                                .frame(width: i == step ? 20 : 8, height: 8)
-                                .animation(.spring(duration: 0.3), value: step)
-                        }
+                HStack(spacing: 8) {
+                    ForEach(0..<totalSteps, id: \.self) { i in
+                        Capsule()
+                            .fill(i == step ? Color.appPink : Color.gray.opacity(0.25))
+                            .frame(width: i == step ? 20 : 8, height: 8)
+                            .animation(.spring(duration: 0.3), value: step)
                     }
-                } else {
-                    Color.clear.frame(height: 8)
                 }
 
                 Button(action: advance) {
@@ -143,6 +129,11 @@ struct OnboardingView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
         }
+        .onChange(of: step) { _, newStep in
+            if newStep == 4 {
+                Task { await subscriptionProducts.refresh() }
+            }
+        }
     }
 
     private var buttonLabel: String {
@@ -153,12 +144,6 @@ struct OnboardingView: View {
             if paywallPlan == .yearly,
                subscriptionProducts.yearlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial {
                 return "Start My 7-Day Free Trial"
-            }
-            return "Continue"
-        case 5:
-            if let intro = subscriptionProducts.yearlyProduct?.subscription?.introductoryOffer,
-               intro.paymentMode == Product.SubscriptionOffer.PaymentMode.payAsYouGo {
-                return "Claim first-year offer"
             }
             return "Continue"
         default: return "Continue"
@@ -201,7 +186,7 @@ struct OnboardingView: View {
             }
         case 3:
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
-        case 4, 5:
+        case 4:
             completeOnboarding()
             return
         default:
@@ -234,18 +219,19 @@ private struct Step1AddPet: View {
 
     @State private var showOtherAlert = false
     @State private var otherDraft = ""
+    @FocusState private var isNameFieldFocused: Bool
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 32) {
-                    ZStack {
-                        Image(animalType.placeholderImage)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 140, height: 140)
-                            .clipShape(Circle())
-                    }
-                    .animation(.spring(duration: 0.3), value: animalType)
+                ZStack {
+                    Image(animalType.placeholderImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 140, height: 140)
+                        .clipShape(Circle())
+                }
+                .animation(.spring(duration: 0.3), value: animalType)
                 .padding(.top, 48)
 
                 VStack(spacing: 10) {
@@ -298,12 +284,19 @@ private struct Step1AddPet: View {
                         .font(.subheadline.bold())
                         .foregroundStyle(.secondary)
                     TextField("e.g. Buddy, Luna, Max…", text: $petName)
+                        .textFieldStyle(.plain)
+                        .textInputAutocapitalization(.words)
+                        .autocorrectionDisabled()
+                        .focused($isNameFieldFocused)
+                        .submitLabel(.continue)
                         .padding()
                         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
                 }
                 .padding(.horizontal, 28)
             }
         }
+        // Avoid dismissing the keyboard on small scroll movements while typing (`.immediately` is very aggressive).
+        .scrollDismissesKeyboard(.interactively)
         .alert("What type of pet?", isPresented: $showOtherAlert) {
             TextField("e.g. Guinea pig, Gecko…", text: $otherDraft)
             Button("Done") {
@@ -402,7 +395,7 @@ private struct Step3AddSchedule: View {
     @Binding var activityName: String
     @Binding var activityTime: Date
 
-    private let activities = ["Walk", "Eat", "Sleep", "Play", "Medicine"]
+    private let activities = ["Walk", "Feed", "Give water", "Sleep", "Play", "Give Medication"]
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -519,7 +512,6 @@ private struct Step5Paywall: View {
     let pet: Pet
     var products: SubscriptionProductLoader
     @Binding var selectedPlan: Plan
-    let onSkip: () -> Void
 
     enum Plan { case monthly, yearly }
 
@@ -586,9 +578,6 @@ private struct Step5Paywall: View {
                 .padding(.bottom, 4)
                 .background(Color(.systemBackground))
         }
-        .overlay(alignment: .topTrailing) {
-            PaywallCloseButton(action: onSkip)
-        }
     }
 
     @ViewBuilder
@@ -625,11 +614,15 @@ private struct PaywallYearlyCard: View {
         return "Yearly"
     }
 
-    private var subtitleText: String {
+    private var yearSubtitleLeading: String {
         if hasFreeTrial {
-            return "After the trial, renews yearly at \(yearly.displayPrice) per year"
+            return "After the trial, renews at"
         }
-        return "Renews at \(yearly.displayPrice) per year"
+        return "Renews at"
+    }
+
+    private var accessibilitySubtitle: String {
+        "\(yearSubtitleLeading) \(yearly.displayPrice) per year"
     }
 
     var body: some View {
@@ -638,10 +631,16 @@ private struct PaywallYearlyCard: View {
                 Text(titleText)
                     .font(.title2.bold())
                     .multilineTextAlignment(.leading)
-                Text(subtitleText)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.leading)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(yearSubtitleLeading)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 8)
+                    Text("\(yearly.displayPrice) per year")
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(18)
@@ -650,13 +649,13 @@ private struct PaywallYearlyCard: View {
                     .fill(Color(.secondarySystemBackground))
                     .overlay(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(isSelected ? Color.paywallGold : Color.clear, lineWidth: 2)
+                            .stroke(isSelected ? Color.appPink : Color.clear, lineWidth: 2)
                     )
             )
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(titleText). \(subtitleText)")
+        .accessibilityLabel("\(titleText). \(accessibilitySubtitle)")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
@@ -674,7 +673,7 @@ private struct PaywallMonthlyCard: View {
                     .font(.headline.bold())
                 Spacer(minLength: 8)
                 Text("\(displayPrice) per month")
-                    .font(.body)
+                    .font(.subheadline)
                     .foregroundStyle(.primary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -739,42 +738,18 @@ private struct HGroupBenefits: View {
     }
 }
 
-/// Dismiss control on top of paywall content (overlay beats ScrollView hit testing) with a proper 44pt target.
-private struct PaywallCloseButton: View {
-    let action: () -> Void
-
-    var body: some View {
-        Button {
-            HapticManager.impact(.light)
-            action()
-        } label: {
-            Image(systemName: "xmark")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(Color(.systemGray3))
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Close")
-        .padding(.top, 8)
-        .padding(.trailing, 16)
-    }
-}
-
 /// Restore, subscription disclosure, and legal links — pinned below scroll content so it stays visible above the onboarding bottom bar.
 private struct PaywallSubscriptionFooter: View {
-    /// `nil` while subscription products are loading (defaults to copy that mentions a free trial on Yearly, same as before).
+    /// `nil` while loading: uses trial-style disclosure until product metadata resolves.
     var includeFreeTrialMention: Bool? = nil
 
     private var disclosureText: String {
-        let body = "Payment will be charged to your Apple Account at the end of the trial period. Subscriptions auto-renew until cancelled. Manage or cancel in Account Settings · Subscriptions at least 24 hours before the current period ends. If you cancel, you keep access until the end of the billing period."
+        let trialBody = "Payment will be charged to your Apple Account at the end of the trial period. Subscriptions auto-renew until cancelled. Manage or cancel in Account Settings · Subscriptions at least 24 hours before the current period ends. If you cancel, you keep access until the end of the billing period."
         let noTrialBody = "Payment will be charged to your Apple Account at the start of the subscription period. Subscriptions auto-renew until cancelled. Manage or cancel in Account Settings · Subscriptions at least 24 hours before the current period ends. If you cancel, you keep access until the end of the billing period."
 
         switch includeFreeTrialMention {
-        case .none:
-            return "7-day free trial available on the Yearly plan. " + body
-        case .some(true):
-            return "7-day free trial available on the Yearly plan. " + body
+        case .none, .some(true):
+            return trialBody
         case .some(false):
             return noTrialBody
         }
@@ -807,204 +782,6 @@ private struct PaywallSubscriptionFooter: View {
     }
 }
 
-private struct BenefitRow: View {
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(Color.appPink)
-                .font(.body)
-            Text(text)
-                .font(.subheadline)
-                .foregroundStyle(.primary)
-        }
-    }
-}
-
-// MARK: - Step 6: Offer Paywall
-
-private struct Step6OfferPaywall: View {
-    let pet: Pet
-    var products: SubscriptionProductLoader
-    let onSkip: () -> Void
-    let onExpire: () -> Void
-
-    @State private var secondsLeft = 60
-    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-
-    private let benefits: [(icon: String, color: Color, label: String)] = [
-        ("calendar.badge.clock", .appPink,  "All your pets"),
-        ("bell.badge.fill",      .orange,   "Smart reminders"),
-        ("hand.thumbsup.fill",   .cyan,     "No ads"),
-    ]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 28) {
-                    Spacer().frame(height: 24)
-
-                    Text("Get started today!")
-                        .font(.largeTitle.bold())
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 28)
-
-                    // Countdown timer
-                    HStack(spacing: 10) {
-                        ZStack {
-                            Circle()
-                                .stroke(Color.gray.opacity(0.15), lineWidth: 3)
-                            Circle()
-                                .trim(from: 0, to: CGFloat(secondsLeft) / 60.0)
-                                .stroke(Color.appPink, style: StrokeStyle(lineWidth: 3, lineCap: .round))
-                                .rotationEffect(.degrees(-90))
-                                .animation(.linear(duration: 1), value: secondsLeft)
-                            Text("\(secondsLeft)")
-                                .font(.system(size: 13, weight: .bold, design: .monospaced))
-                                .foregroundStyle(Color.appPink)
-                        }
-                        .frame(width: 40, height: 40)
-
-                        Text("Offer expires in \(secondsLeft)s")
-                            .font(.subheadline.bold())
-                            .foregroundStyle(secondsLeft <= 10 ? Color.red : Color.appPink)
-                            .animation(.default, value: secondsLeft)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
-                    .background(Color.appPink.opacity(0.08), in: Capsule())
-                    .onReceive(ticker) { _ in
-                        if secondsLeft > 0 { secondsLeft -= 1 } else { onExpire() }
-                    }
-
-                    HGroupBenefits(benefits: benefits)
-
-                    // First-year + renewal: prices from App Store Connect (intro + standard)
-                    Group {
-                        if products.isLoading {
-                            HStack {
-                                Spacer()
-                                ProgressView("Loading offer…")
-                                Spacer()
-                            }
-                            .padding(.vertical, 24)
-                        } else if products.loadError != nil {
-                            VStack(spacing: 8) {
-                                Text("Couldn’t load offer")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Button("Try again") {
-                                    Task { await products.refresh() }
-                                }
-                                .font(.subheadline.bold())
-                            }
-                            .padding(.vertical, 16)
-                        } else {
-                            offerPricingBlock
-                        }
-                    }
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 8)
-                }
-            }
-
-            PaywallSubscriptionFooter(
-                includeFreeTrialMention: products.isLoading
-                    ? nil
-                    : (products.yearlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial)
-            )
-                .padding(.horizontal, 28)
-                .padding(.top, 8)
-                .padding(.bottom, 4)
-                .background(Color(.systemBackground))
-        }
-        .overlay(alignment: .topTrailing) {
-            PaywallCloseButton(action: onSkip)
-        }
-    }
-
-    @ViewBuilder
-    private var offerPricingBlock: some View {
-        if let y = products.yearlyProduct, let intro = y.subscription?.introductoryOffer,
-           intro.paymentMode == Product.SubscriptionOffer.PaymentMode.payAsYouGo {
-            payAsYouGoBlock(y: y, intro: intro)
-        } else if let y = products.yearlyProduct {
-            VStack(alignment: .trailing, spacing: 10) {
-                PromoPlanCard(
-                    planTitle: "Yearly",
-                    firstTermPrice: y.displayPrice,
-                    firstTermPhrase: "per year",
-                    equivalentDetail: "≈ \(y.petSchedulePriceDividing(by: 12)) per month · ≈ \(y.petSchedulePriceDividing(by: 52)) per week"
-                )
-            }
-        } else {
-            Text("No subscription data available")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity)
-        }
-    }
-
-    private func payAsYouGoBlock(y: Product, intro: Product.SubscriptionOffer) -> some View {
-        let perMonth = intro.petScheduleFormattedPriceDividing(by: 12, matching: y)
-        let perWeek = intro.petScheduleFormattedPriceDividing(by: 52, matching: y)
-        return VStack(alignment: .trailing, spacing: 10) {
-            PromoPlanCard(
-                planTitle: "Yearly",
-                firstTermPrice: intro.displayPrice,
-                firstTermPhrase: petScheduleIntroPeriodPhrase(intro.period),
-                equivalentDetail: "≈ \(perMonth) per month · ≈ \(perWeek) per week"
-            )
-            HStack(spacing: 6) {
-                Text("Then")
-                    .foregroundStyle(.secondary)
-                Text("\(y.displayPrice) / year")
-                    .foregroundStyle(.primary)
-            }
-            .font(.subheadline.weight(.semibold))
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.horizontal, 4)
-        }
-    }
-}
-
-/// Offer card: intro price + equivalent monthly inside the bordered box.
-/// Renewal pricing sits outside, below the card.
-private struct PromoPlanCard: View {
-    let planTitle: String
-    let firstTermPrice: String
-    let firstTermPhrase: String
-    let equivalentDetail: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .center, spacing: 12) {
-                Text(planTitle)
-                    .font(.headline.bold())
-                    .lineLimit(1)
-                Spacer(minLength: 8)
-                Text("\(firstTermPrice) \(firstTermPhrase)")
-                    .font(.headline.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .lineLimit(1)
-            }
-            Text(equivalentDetail)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .padding(18)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(.secondarySystemBackground))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.appPink, lineWidth: 2))
-        )
-        .accessibilityElement(children: .combine)
-    }
-}
-
 // MARK: - App Store subscription products (StoreKit 2)
 
 enum PetScheduleSubscriptionProductID {
@@ -1017,12 +794,11 @@ enum PetScheduleSubscriptionProductID {
 final class SubscriptionProductLoader {
     private(set) var yearlyProduct: Product?
     private(set) var monthlyProduct: Product?
-    private(set) var isLoading = true
+    private(set) var isLoading = false
     private(set) var loadError: Error?
 
-    init() {
-        Task { await refresh() }
-    }
+    /// No work on init — `refresh()` when user reaches the paywall so early steps don’t re-render from StoreKit.
+    init() {}
 
     func refresh() async {
         isLoading = true
@@ -1041,33 +817,7 @@ final class SubscriptionProductLoader {
     }
 }
 
-private extension Product {
-    /// Formats a share of this product’s price using the same currency rules as `displayPrice`.
-    func petSchedulePriceDividing(by divisor: Decimal) -> String {
-        let v = price / divisor
-        return v.formatted(priceFormatStyle)
-    }
-}
-
-private extension Product.SubscriptionOffer {
-    /// Formats a share of the offer price using the parent product’s storefront format style.
-    func petScheduleFormattedPriceDividing(by divisor: Decimal, matching product: Product) -> String {
-        let v = price / divisor
-        return v.formatted(product.priceFormatStyle)
-    }
-}
-
-fileprivate func petScheduleIntroPeriodPhrase(_ period: Product.SubscriptionPeriod) -> String {
-    let v = period.value
-    switch period.unit {
-    case .day: return v == 1 ? "(1st day)" : "(\(v) days)"
-    case .week: return v == 1 ? "(1st week)" : "(\(v) weeks)"
-    case .month: return v == 1 ? "(1st month)" : "(\(v) months)"
-    case .year: return v == 1 ? "(1st year)" : "(\(v) years)"
-    @unknown default: return "(intro)"
-    }
-}
-
+// The Xcode Canvas preview often does not connect the software keyboard; run the app in Simulator (▶) to type in text fields, or use an Interactive Live preview.
 #Preview {
     OnboardingView(viewModel: HomeViewModel()) {}
 }

@@ -250,11 +250,6 @@ struct AnalyticsView: View {
                     insightsSection
                         .padding(.horizontal)
 
-                    Divider().padding(.horizontal)
-
-                    completionSection
-                        .padding(.horizontal)
-
                     weightSection
                         .padding(.horizontal)
 
@@ -404,52 +399,6 @@ struct AnalyticsView: View {
         }
     }
 
-    // MARK: - Completion rate chart
-
-    private var completionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Daily Completion Rate")
-                .font(.headline)
-
-            if completionByDay.allSatisfy(\.isEmpty) {
-                emptyPlaceholder(icon: "chart.bar", text: "No scheduled events in this period.")
-            } else {
-                Chart(completionByDay) { day in
-                    BarMark(
-                        x: .value("Day",  day.date, unit: .day),
-                        y: .value("Rate", day.isEmpty ? 0 : day.rate)
-                    )
-                    .foregroundStyle(
-                        day.isEmpty
-                            ? AnyShapeStyle(Color(.tertiarySystemFill))
-                            : AnyShapeStyle(rateColor(day.rate).gradient)
-                    )
-                    .cornerRadius(4)
-                }
-                .chartYScale(domain: 0...1)
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .day, count: selectedRange == .week ? 1 : 5)) { _ in
-                        AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
-                        AxisValueLabel(format: .dateTime.month(.abbreviated).day())
-                            .font(.caption2)
-                    }
-                }
-                .chartYAxis {
-                    AxisMarks(position: .leading, values: [0, 0.5, 1.0]) { v in
-                        AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
-                        AxisValueLabel {
-                            if let d = v.as(Double.self) {
-                                Text("\(Int(d * 100))%").font(.caption2)
-                            }
-                        }
-                    }
-                }
-                .frame(height: 160)
-                .padding(.vertical, 4)
-            }
-        }
-    }
-
     // MARK: - Weight trends
 
     @ViewBuilder
@@ -485,6 +434,7 @@ struct AnalyticsView: View {
         let allDisplayValues: [Double] = pets.flatMap { $0.weightHistory.map { weightUnit.displayValue(fromKg: $0.kg) } }
         let minY = (allDisplayValues.min() ?? 0) * 0.92
         let maxY = (allDisplayValues.max() ?? 1) * 1.08
+        let xAxisDates = Array(Set(pets.flatMap { $0.weightHistory.map(\.date) })).sorted()
 
         return VStack(alignment: .leading, spacing: 8) {
             Chart {
@@ -496,7 +446,7 @@ struct AnalyticsView: View {
                             y: .value(weightUnit.label, weightUnit.displayValue(fromKg: e.kg))
                         )
                         .foregroundStyle(by: .value("Pet", pet.name))
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.linear)
                         PointMark(
                             x: .value("Date", e.date),
                             y: .value(weightUnit.label, weightUnit.displayValue(fromKg: e.kg))
@@ -513,9 +463,13 @@ struct AnalyticsView: View {
             .chartLegend(position: .top, alignment: .leading)
             .chartYScale(domain: minY...maxY)
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                AxisMarks(values: xAxisDates) { value in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                    AxisValueLabel {
+                        if let d = value.as(Date.self) {
+                            Text(d, format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -576,7 +530,7 @@ struct AnalyticsView: View {
                 let y = weightUnit.displayValue(fromKg: e.kg)
                 LineMark(x: .value("Date", e.date), y: .value(weightUnit.label, y))
                     .foregroundStyle(color)
-                    .interpolationMethod(.catmullRom)
+                    .interpolationMethod(.linear)
                 AreaMark(
                     x: .value("Date", e.date),
                     yStart: .value("Min", minY),
@@ -586,16 +540,20 @@ struct AnalyticsView: View {
                     colors: [color.opacity(0.25), color.opacity(0.02)],
                     startPoint: .top, endPoint: .bottom
                 ))
-                .interpolationMethod(.catmullRom)
+                .interpolationMethod(.linear)
                 PointMark(x: .value("Date", e.date), y: .value(weightUnit.label, y))
                     .foregroundStyle(color)
                     .symbolSize(30)
             }
             .chartYScale(domain: minY...maxY)
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                AxisMarks(values: sorted.map(\.date)) { value in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                    AxisValueLabel {
+                        if let d = value.as(Date.self) {
+                            Text(d, format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -654,6 +612,7 @@ struct AnalyticsView: View {
         let allDisplayValues: [Double] = pets.flatMap { $0.heightHistory.map { heightUnit.displayValue(fromCm: $0.cm) } }
         let minY = (allDisplayValues.min() ?? 0) * 0.92
         let maxY = (allDisplayValues.max() ?? 1) * 1.08
+        let xAxisDates = Array(Set(pets.flatMap { $0.heightHistory.map(\.date) })).sorted()
 
         return VStack(alignment: .leading, spacing: 8) {
             Chart {
@@ -665,7 +624,7 @@ struct AnalyticsView: View {
                             y: .value(heightUnit.inputLabel, heightUnit.displayValue(fromCm: e.cm))
                         )
                         .foregroundStyle(by: .value("Pet", pet.name))
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.linear)
                         PointMark(
                             x: .value("Date", e.date),
                             y: .value(heightUnit.inputLabel, heightUnit.displayValue(fromCm: e.cm))
@@ -682,9 +641,13 @@ struct AnalyticsView: View {
             .chartLegend(position: .top, alignment: .leading)
             .chartYScale(domain: minY...maxY)
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                AxisMarks(values: xAxisDates) { value in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                    AxisValueLabel {
+                        if let d = value.as(Date.self) {
+                            Text(d, format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -745,7 +708,7 @@ struct AnalyticsView: View {
                 let y = heightUnit.displayValue(fromCm: e.cm)
                 LineMark(x: .value("Date", e.date), y: .value(heightUnit.inputLabel, y))
                     .foregroundStyle(color)
-                    .interpolationMethod(.catmullRom)
+                    .interpolationMethod(.linear)
                 AreaMark(
                     x: .value("Date", e.date),
                     yStart: .value("Min", minY),
@@ -755,16 +718,20 @@ struct AnalyticsView: View {
                     colors: [color.opacity(0.25), color.opacity(0.02)],
                     startPoint: .top, endPoint: .bottom
                 ))
-                .interpolationMethod(.catmullRom)
+                .interpolationMethod(.linear)
                 PointMark(x: .value("Date", e.date), y: .value(heightUnit.inputLabel, y))
                     .foregroundStyle(color)
                     .symbolSize(30)
             }
             .chartYScale(domain: minY...maxY)
             .chartXAxis {
-                AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                AxisMarks(values: sorted.map(\.date)) { value in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                    AxisValueLabel {
+                        if let d = value.as(Date.self) {
+                            Text(d, format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                        }
+                    }
                 }
             }
             .chartYAxis {
@@ -897,7 +864,7 @@ struct AnalyticsView: View {
                             y: .value("Rate", p.rate)
                         )
                         .foregroundStyle(by: .value("Pet", p.petName))
-                        .interpolationMethod(.catmullRom)
+                        .interpolationMethod(.linear)
                         PointMark(
                             x: .value("Date", p.date),
                             y: .value("Rate", p.rate)
@@ -983,13 +950,13 @@ struct AnalyticsView: View {
                         colors: [color.opacity(0.25), color.opacity(0.03)],
                         startPoint: .top, endPoint: .bottom
                     ))
-                    .interpolationMethod(.catmullRom)
+                    .interpolationMethod(.linear)
                     LineMark(
                         x: .value("Date", p.date),
                         y: .value("Rate", p.rate)
                     )
                     .foregroundStyle(color)
-                    .interpolationMethod(.catmullRom)
+                    .interpolationMethod(.linear)
                     PointMark(
                         x: .value("Date", p.date),
                         y: .value("Rate", p.rate)

@@ -46,14 +46,31 @@ struct Pet: Identifiable, Hashable {
         animalType == .other ? (customAnimalType?.capitalized ?? "Other") : animalType.displayName
     }
 
+    /// Human-readable age from `dateOfBirth` (e.g. for UI and PDFs).
     var age: String? {
         guard let dob = dateOfBirth else { return nil }
-        let components = Calendar.current.dateComponents([.year, .month], from: dob, to: .now)
-        if let years = components.year, years > 0 {
-            return "\(years) yr\(years == 1 ? "" : "s")"
-        } else if let months = components.month, months > 0 {
-            return "\(months) mo"
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: dob)
+        let end = cal.startOfDay(for: .now)
+        guard start <= end else { return nil }
+
+        let years = cal.dateComponents([.year], from: start, to: end).year ?? 0
+        if years >= 1 {
+            return years == 1 ? "1 year old" : "\(years) years old"
         }
-        return "< 1 mo"
+
+        let months = cal.dateComponents([.month], from: start, to: end).month ?? 0
+        if months >= 1 {
+            return months == 1 ? "1 month old" : "\(months) months old"
+        }
+
+        let days = cal.dateComponents([.day], from: start, to: end).day ?? 0
+        if days > 1 {
+            return "\(days) days old"
+        }
+        if days == 1 {
+            return "1 day old"
+        }
+        return "Born today"
     }
 }

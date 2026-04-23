@@ -13,9 +13,6 @@ struct PetScheduleApp: App {
 
     var body: some Scene {
         WindowGroup {
-            #if DEBUG
-            HomeView(viewModel: homeViewModel)
-            #else
             if hasCompletedOnboarding {
                 HomeView(viewModel: homeViewModel)
             } else {
@@ -23,7 +20,6 @@ struct PetScheduleApp: App {
                     hasCompletedOnboarding = true
                 }
             }
-            #endif
         }
     }
 }

@@ -37,7 +37,7 @@ final class HomeViewModel {
 
         vm.scheduleItems = [
             ScheduleItem(time: time(hour: 8),  activityName: "Walk",  pet: max,  isCompleted: true),
-            ScheduleItem(time: time(hour: 14), activityName: "Eat",   pet: luna, isCompleted: true),
+            ScheduleItem(time: time(hour: 14), activityName: "Feed",  pet: luna, isCompleted: true),
             ScheduleItem(time: time(hour: 22), activityName: "Sleep", pet: max),
             ScheduleItem(time: time(hour: 22), activityName: "Sleep", pet: nemo),
         ]
@@ -127,8 +127,20 @@ final class HomeViewModel {
 
             // Max — walks completed days -29..-4 then stopped (triggers gap insight)
             items.append(ScheduleItem(time: at(d, hour: 8),  activityName: "Walk",     pet: max,  isCompleted: d <= -4))
-            items.append(ScheduleItem(time: at(d, hour: 8),  activityName: "Eat",      pet: max,  isCompleted: past))
-            items.append(ScheduleItem(time: at(d, hour: 18), activityName: "Eat",      pet: max,  isCompleted: past))
+            let maxFed: Bool? = past ? ((29 + d) % 6 != 1) : nil
+            items.append(ScheduleItem(
+                time: at(d, hour: 8), activityName: "Feed", pet: max,
+                isCompleted: maxFed != nil, medicineAccepted: maxFed
+            ))
+            items.append(ScheduleItem(
+                time: at(d, hour: 18), activityName: "Feed", pet: max,
+                isCompleted: maxFed != nil, medicineAccepted: maxFed
+            ))
+            let maxWater: Bool? = past ? true : nil
+            items.append(ScheduleItem(
+                time: at(d, hour: 12), activityName: "Give water", pet: max,
+                isCompleted: maxWater != nil, medicineAccepted: maxWater
+            ))
             // Max — Metacam daily
             let maxAccepted: Bool? = past ? ((29 + d) % 7 != 0 ? true : false) : nil
             items.append(ScheduleItem(
@@ -137,9 +149,19 @@ final class HomeViewModel {
             ))
 
             // Luna — feedings with occasional miss; weekly groom
-            let lunaFed = past && (29 + d) % 7 != 3
-            items.append(ScheduleItem(time: at(d, hour: 7),  activityName: "Feed",    pet: luna, isCompleted: lunaFed))
-            items.append(ScheduleItem(time: at(d, hour: 19), activityName: "Feed",    pet: luna, isCompleted: lunaFed))
+            let lunaFed: Bool? = past ? ((29 + d) % 7 != 3) : nil
+            items.append(ScheduleItem(
+                time: at(d, hour: 7), activityName: "Feed", pet: luna,
+                isCompleted: lunaFed != nil, medicineAccepted: lunaFed
+            ))
+            items.append(ScheduleItem(
+                time: at(d, hour: 19), activityName: "Feed", pet: luna,
+                isCompleted: lunaFed != nil, medicineAccepted: lunaFed
+            ))
+            items.append(ScheduleItem(
+                time: at(d, hour: 15), activityName: "Give water", pet: luna,
+                isCompleted: past, medicineAccepted: past ? true : nil
+            ))
             if (29 + d) % 7 == 0 {
                 items.append(ScheduleItem(time: at(d, hour: 14), activityName: "Grooming", pet: luna, isCompleted: past))
             }
@@ -155,7 +177,14 @@ final class HomeViewModel {
             ))
 
             // Nemo — feeding always done; medication every 3 days
-            items.append(ScheduleItem(time: at(d, hour: 9), activityName: "Feed Nemo", pet: nemo, isCompleted: true))
+            items.append(ScheduleItem(
+                time: at(d, hour: 9), activityName: "Feed Nemo", pet: nemo,
+                isCompleted: past, medicineAccepted: past ? true : nil
+            ))
+            items.append(ScheduleItem(
+                time: at(d, hour: 16), activityName: "Give water", pet: nemo,
+                isCompleted: past, medicineAccepted: past ? true : nil
+            ))
             if (29 + d) % 3 == 0 {
                 let nemoAccepted: Bool? = past ? true : nil
                 items.append(ScheduleItem(
@@ -245,9 +274,11 @@ final class HomeViewModel {
         scheduleItems[index].isCompleted.toggle()
     }
 
+    /// Stores yes/no for medicine, feed, and water (`ScheduleItem.complianceKind`).
     func setMedicineAccepted(_ accepted: Bool, for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         scheduleItems[index].medicineAccepted = accepted
+        scheduleItems[index].isCompleted = true
     }
 
     // MARK: - Pet filter

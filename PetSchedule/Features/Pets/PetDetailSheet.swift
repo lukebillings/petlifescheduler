@@ -32,10 +32,19 @@ struct PetDetailSheet: View {
     @State private var showingDocumentPicker = false
     @State private var documentPickerError: String? = nil
 
-    // Share with Vet
+    // Export pet data (PDF)
     @State private var shareItems: [Any] = []
     @State private var showingShareSheet = false
-    @State private var isGeneratingPDF = false
+    @State private var exportPDFDocument: PetHealthPDFDocument?
+    @State private var exportPDFFilename = "Pet_HealthRecord.pdf"
+    @State private var showingPDFExporter = false
+    private enum PDFExportActivity: Equatable {
+        case idle
+        case download
+        case share
+    }
+
+    @State private var pdfExportActivity: PDFExportActivity = .idle
 
     private let petID: UUID
     private let isNew: Bool
@@ -172,49 +181,20 @@ struct PetDetailSheet: View {
                         }
                     }
 
-                    // Share with Vet — generates a PDF of the pet's full profile
                     Button {
-                        isGeneratingPDF = true
-                        Task {
-                            let currentPet = Pet(
-                                id: petID, name: name, animalType: animalType,
-                                customAnimalType: animalType == .other ? customAnimalType : nil,
-                                dateOfBirth: dateOfBirth,
-                                photoData: photoData,
-                                weightHistory: weightHistory,
-                                heightHistory: heightHistory,
-                                notes: notes,
-                                vetDetails: vetDetails,
-                                documents: documents
-                            )
-                            let pdfData = PetPDFGenerator.generate(for: currentPet)
-                            let url = FileManager.default.temporaryDirectory
-                                .appendingPathComponent("\(currentPet.name.replacingOccurrences(of: " ", with: "_"))_HealthRecord.pdf")
-                            try? pdfData.write(to: url)
-                            shareItems = [url]
-                            isGeneratingPDF = false
-                            showingShareSheet = true
-                        }
+                        copyVetDetailsToClipboard()
                     } label: {
-                        HStack {
-                            if isGeneratingPDF {
-                                ProgressView().tint(Color.appPink)
-                            } else {
-                                Image(systemName: "square.and.arrow.up")
-                                    .foregroundStyle(Color.appPink)
-                            }
-                            Text("Share with Vet")
-                                .foregroundStyle(Color.appPink)
-                                .font(.subheadline.bold())
-                        }
+                        Label("Copy Vet Details to Clipboard", systemImage: "doc.on.doc")
+                            .foregroundStyle(Color.appPink)
+                            .font(.subheadline.bold())
                     }
-                    .disabled(isGeneratingPDF)
+                    .disabled(vetDetails.organisation.isEmpty && vetDetails.phone.isEmpty && vetDetails.email.isEmpty)
 
                 } header: {
                     sectionHeaderWithLabel(
                         title: "Vet Details",
                         systemImage: "stethoscope",
-                        subtitle: "Your clinic's name, address, phone, and email for quick contact and sharing."
+                        subtitle: "Your clinic's name, address, phone, and email for quick contact."
                     )
                 }
 
@@ -274,6 +254,48 @@ struct PetDetailSheet: View {
                 }
 
                 Section {
+                    Button {
+                        downloadPetDataAsPDF()
+                    } label: {
+                        HStack {
+                            if pdfExportActivity == .download {
+                                ProgressView().tint(Color.appPink)
+                            } else {
+                                Image(systemName: "arrow.down.doc")
+                                    .foregroundStyle(Color.appPink)
+                            }
+                            Text("Download data as PDF")
+                                .foregroundStyle(Color.appPink)
+                                .font(.subheadline.bold())
+                        }
+                    }
+                    .disabled(pdfExportActivity != .idle)
+
+                    Button {
+                        sharePetDataWithVet()
+                    } label: {
+                        HStack {
+                            if pdfExportActivity == .share {
+                                ProgressView().tint(Color.appPink)
+                            } else {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundStyle(Color.appPink)
+                            }
+                            Text("Share pet data with vet")
+                                .foregroundStyle(Color.appPink)
+                                .font(.subheadline.bold())
+                        }
+                    }
+                    .disabled(pdfExportActivity != .idle)
+                } header: {
+                    sectionHeaderWithLabel(
+                        title: "Export Pet Data",
+                        systemImage: "square.and.arrow.up.on.square",
+                        subtitle: "Save a health summary PDF to Files, or share it with your vet from the share sheet."
+                    )
+                }
+
+                Section {
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Add a new weight reading")
@@ -325,6 +347,8 @@ struct PetDetailSheet: View {
                         WeightChartView(entries: weightHistory, unit: weightUnit)
                             .frame(height: 180)
                             .padding(.vertical, 8)
+
+                        weightReadingsList(entries: weightHistory, unit: weightUnit)
                     } else if !weightHistory.isEmpty {
                         HStack {
                             Image(systemName: "scalemass.fill")
@@ -425,6 +449,8 @@ struct PetDetailSheet: View {
                         HeightChartView(entries: heightHistory, unit: heightUnit)
                             .frame(height: 180)
                             .padding(.vertical, 8)
+
+                        heightReadingsList(entries: heightHistory, unit: heightUnit)
                     } else if !heightHistory.isEmpty {
                         HStack {
                             Image(systemName: "ruler.fill")
@@ -484,6 +510,12 @@ struct PetDetailSheet: View {
                             in: ...Date.now,
                             displayedComponents: .date
                         )
+                        if let age = petAgeDescription {
+                            Text(age)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         Button("Remove date of birth", role: .destructive) {
                             dateOfBirth = nil
                         }
@@ -520,6 +552,17 @@ struct PetDetailSheet: View {
                     ShareSheetView(activityItems: shareItems)
                 }
             }
+            .fileExporter(
+                isPresented: $showingPDFExporter,
+                document: exportPDFDocument,
+                contentType: .pdf,
+                defaultFilename: exportPDFFilename
+            ) { result in
+                exportPDFDocument = nil
+                if case .success = result {
+                    HapticManager.notification(.success)
+                }
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
@@ -550,7 +593,151 @@ struct PetDetailSheet: View {
     }
 
     private var previewPet: Pet {
-        Pet(id: petID, name: name.isEmpty ? "Pet" : name, animalType: animalType, customAnimalType: customAnimalType, photoData: photoData)
+        Pet(id: petID, name: name.isEmpty ? "Pet" : name, animalType: animalType, customAnimalType: customAnimalType, dateOfBirth: dateOfBirth, photoData: photoData)
+    }
+
+    /// Age string derived from the current birthday fields (updates as the user changes the date).
+    private var petAgeDescription: String? {
+        Pet(
+            id: petID,
+            name: "Pet",
+            animalType: animalType,
+            customAnimalType: animalType == .other ? customAnimalType : nil,
+            dateOfBirth: dateOfBirth
+        ).age
+    }
+
+    @ViewBuilder
+    private func weightReadingsList(entries: [WeightEntry], unit: WeightUnit) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Date")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(unit.label)
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 6)
+
+            ForEach(entries.sorted { $0.date > $1.date }) { entry in
+                Divider()
+                HStack(alignment: .firstTextBaseline) {
+                    Text(entry.date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Text(unit.formatValue(entry.kg))
+                        .font(.caption.bold())
+                        .foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 6)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    @ViewBuilder
+    private func heightReadingsList(entries: [HeightEntry], unit: HeightUnit) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Date")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text(unit.inputLabel)
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 6)
+
+            ForEach(entries.sorted { $0.date > $1.date }) { entry in
+                Divider()
+                HStack(alignment: .firstTextBaseline) {
+                    Text(entry.date.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Text(unit.formatValue(entry.cm))
+                        .font(.caption.bold())
+                        .foregroundStyle(.primary)
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 6)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.tertiarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func petSnapshotForPDF() -> Pet {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        let displayName = trimmed.isEmpty ? "Pet" : trimmed
+        return Pet(
+            id: petID,
+            name: displayName,
+            animalType: animalType,
+            customAnimalType: animalType == .other ? customAnimalType.trimmingCharacters(in: .whitespaces) : nil,
+            dateOfBirth: dateOfBirth,
+            photoData: photoData,
+            weightHistory: weightHistory,
+            heightHistory: heightHistory,
+            notes: notes,
+            vetDetails: vetDetails,
+            documents: documents
+        )
+    }
+
+    private func healthRecordPDFFilename(for pet: Pet) -> String {
+        "\(pet.name.replacingOccurrences(of: " ", with: "_"))_HealthRecord.pdf"
+    }
+
+    private func downloadPetDataAsPDF() {
+        pdfExportActivity = .download
+        Task { @MainActor in
+            let pet = petSnapshotForPDF()
+            let data = PetPDFGenerator.generate(for: pet)
+            exportPDFFilename = healthRecordPDFFilename(for: pet)
+            exportPDFDocument = PetHealthPDFDocument(pdfData: data)
+            pdfExportActivity = .idle
+            showingPDFExporter = true
+        }
+    }
+
+    private func sharePetDataWithVet() {
+        pdfExportActivity = .share
+        Task { @MainActor in
+            let pet = petSnapshotForPDF()
+            let pdfData = PetPDFGenerator.generate(for: pet)
+            let filename = healthRecordPDFFilename(for: pet)
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+            try? pdfData.write(to: url)
+            shareItems = [url]
+            pdfExportActivity = .idle
+            showingShareSheet = true
+        }
+    }
+
+    private func copyVetDetailsToClipboard() {
+        var lines: [String] = []
+        if !vetDetails.organisation.isEmpty {
+            lines.append("Vet Name: \(vetDetails.organisation)")
+        }
+        if !vetDetails.phone.isEmpty {
+            lines.append("Phone: \(vetDetails.phone)")
+        }
+        if !vetDetails.email.isEmpty {
+            lines.append("Email: \(vetDetails.email)")
+        }
+        UIPasteboard.general.string = lines.joined(separator: "\n")
+        HapticManager.notification(.success)
     }
 
     private func documentShareURL(for doc: PetDocument) -> URL {
@@ -591,6 +778,27 @@ struct PetDetailSheet: View {
 
 }
 
+private struct PetHealthPDFDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.pdf] }
+
+    var pdfData: Data
+
+    init(pdfData: Data) {
+        self.pdfData = pdfData
+    }
+
+    init(configuration: ReadConfiguration) throws {
+        guard let data = configuration.file.regularFileContents else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        pdfData = data
+    }
+
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
+        FileWrapper(regularFileWithContents: pdfData)
+    }
+}
+
 private struct WeightChartView: View {
     let entries: [WeightEntry]
     let unit: WeightUnit
@@ -608,7 +816,7 @@ private struct WeightChartView: View {
                 y: .value(unit.label, y)
             )
             .foregroundStyle(Color.appPink)
-            .interpolationMethod(.catmullRom)
+            .interpolationMethod(.linear)
 
             AreaMark(
                 x: .value("Date", entry.date),
@@ -621,7 +829,7 @@ private struct WeightChartView: View {
                     startPoint: .top, endPoint: .bottom
                 )
             )
-            .interpolationMethod(.catmullRom)
+            .interpolationMethod(.linear)
 
             PointMark(
                 x: .value("Date", entry.date),
@@ -632,10 +840,14 @@ private struct WeightChartView: View {
         }
         .chartYScale(domain: minY...maxY)
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { value in
+            AxisMarks(values: sorted.map(\.date)) { value in
                 AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                AxisValueLabel(format: .dateTime.month(.abbreviated).day())
-                    .font(.caption2)
+                AxisValueLabel {
+                    if let d = value.as(Date.self) {
+                        Text(d, format: .dateTime.month(.abbreviated).day())
+                            .font(.caption2)
+                    }
+                }
             }
         }
         .chartYAxis {
@@ -669,7 +881,7 @@ private struct HeightChartView: View {
                 y: .value(unit.inputLabel, y)
             )
             .foregroundStyle(Color.appPink)
-            .interpolationMethod(.catmullRom)
+            .interpolationMethod(.linear)
 
             AreaMark(
                 x: .value("Date", entry.date),
@@ -682,7 +894,7 @@ private struct HeightChartView: View {
                     startPoint: .top, endPoint: .bottom
                 )
             )
-            .interpolationMethod(.catmullRom)
+            .interpolationMethod(.linear)
 
             PointMark(
                 x: .value("Date", entry.date),
@@ -693,10 +905,14 @@ private struct HeightChartView: View {
         }
         .chartYScale(domain: minY...maxY)
         .chartXAxis {
-            AxisMarks(values: .automatic(desiredCount: 4)) { value in
+            AxisMarks(values: sorted.map(\.date)) { value in
                 AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                AxisValueLabel(format: .dateTime.month(.abbreviated).day())
-                    .font(.caption2)
+                AxisValueLabel {
+                    if let d = value.as(Date.self) {
+                        Text(d, format: .dateTime.month(.abbreviated).day())
+                            .font(.caption2)
+                    }
+                }
             }
         }
         .chartYAxis {

@@ -114,6 +114,7 @@ struct CalendarScheduleView: View {
                                     viewingPet = item.pet
                                 } onMedicineAccept: { accepted in
                                     viewModel.setMedicineAccepted(accepted, for: item)
+                                    HapticManager.notification(.success)
                                 }
                             }
                         }

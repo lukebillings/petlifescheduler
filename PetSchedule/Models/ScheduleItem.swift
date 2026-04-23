@@ -1,5 +1,37 @@
 import Foundation
 
+/// Tracks yes/no logging for medicine, feeding, and water (stored in `medicineAccepted`).
+enum ScheduleComplianceKind: Equatable {
+    case medicine
+    case feed
+    case water
+
+    /// Short question above the yes / no controls on schedule rows.
+    var compliancePrompt: String {
+        switch self {
+        case .medicine: return "Taken?"
+        case .feed:     return "Ate food?"
+        case .water:    return "Drank water?"
+        }
+    }
+
+    var acceptedResultLabel: String {
+        switch self {
+        case .medicine: return "Taken"
+        case .feed:     return "Ate"
+        case .water:    return "Drank"
+        }
+    }
+
+    var declinedResultLabel: String {
+        switch self {
+        case .medicine: return "Skipped"
+        case .feed:     return "Didn't eat"
+        case .water:    return "Didn't drink"
+        }
+    }
+}
+
 enum RepeatRule: String, CaseIterable, Identifiable {
     case never     = "Never"
     case daily     = "Every day"
@@ -65,6 +97,26 @@ struct ScheduleItem: Identifiable {
     var isMedicineEvent: Bool {
         let n = activityName.lowercased()
         return n.contains("medic") || n.contains("tablet") || n.contains("pill")
+    }
+
+    /// Feeding / meal activities (yes–no: ate food).
+    var isFeedComplianceEvent: Bool {
+        let n = activityName.lowercased()
+        return n.contains("feed") || n.contains("meal") || n.contains("food") || n.contains("eat")
+    }
+
+    /// Water / hydration (yes–no: drank).
+    var isWaterComplianceEvent: Bool {
+        let n = activityName.lowercased()
+        return n.contains("water") || n.contains("drink") || n.contains("hydrat")
+    }
+
+    /// Activities that show the same yes/no control as medicine (mutually exclusive kinds).
+    var complianceKind: ScheduleComplianceKind? {
+        if isMedicineEvent { return .medicine }
+        if isWaterComplianceEvent { return .water }
+        if isFeedComplianceEvent { return .feed }
+        return nil
     }
 
     var timeString: String {
