@@ -3,6 +3,7 @@ import SwiftUI
 struct ScheduleView: View {
     @Bindable var viewModel: HomeViewModel
     @State private var showingAddEvent = false
+    @State private var showingAddLog = false
     @State private var hideCompleted = false
 
     var body: some View {
@@ -63,32 +64,34 @@ struct ScheduleView: View {
 
                     // Today header (list mode only)
                     if viewModel.selectedView == .list {
-                        HStack(alignment: .center, spacing: 10) {
+                        HStack(alignment: .center, spacing: 6) {
                             Text("Today")
                                 .font(.title3.bold())
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
 
-                            Text(Date.now.formatted(.dateTime.month(.abbreviated).day()))
+                            Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
                                 .font(.caption.bold())
                                 .foregroundStyle(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .fixedSize(horizontal: true, vertical: false)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(.blue, in: Capsule())
+                                .layoutPriority(1)
 
-                            Spacer()
+                            Spacer(minLength: 4)
 
-                            Button { showingAddEvent = true } label: {
-                                HStack(spacing: 5) {
-                                    Image(systemName: "plus")
-                                        .font(.caption.bold())
-                                    Text("Event")
-                                        .font(.caption.bold())
+                            HStack(spacing: 4) {
+                                scheduleHeaderCapsuleButton(title: "Event", tint: Color.appPink) {
+                                    showingAddEvent = true
                                 }
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.appPink, in: Capsule())
+                                scheduleHeaderCapsuleButton(title: "Log", tint: Color.appPink.opacity(0.85)) {
+                                    showingAddLog = true
+                                }
                             }
-                            .buttonStyle(.plain)
+                            .layoutPriority(1)
 
                             Button {
                                 withAnimation(.spring(duration: 0.25)) {
@@ -100,6 +103,8 @@ struct ScheduleView: View {
                                         .font(.body.bold())
                                     Text(hideCompleted ? "Pending" : "All")
                                         .font(.caption.bold())
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.85)
                                 }
                                 .foregroundStyle(hideCompleted ? Color.appPink : .secondary)
                                 .padding(.horizontal, 10)
@@ -110,6 +115,8 @@ struct ScheduleView: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .layoutPriority(1)
                         }
                         .padding(.horizontal)
                         .padding(.top, 20)
@@ -118,21 +125,14 @@ struct ScheduleView: View {
 
                     // Calendar header — + Event button (calendar mode only)
                     if viewModel.selectedView == .calendar {
-                        HStack {
+                        HStack(spacing: 6) {
                             Spacer()
-                            Button { showingAddEvent = true } label: {
-                                HStack(spacing: 5) {
-                                    Image(systemName: "plus")
-                                        .font(.caption.bold())
-                                    Text("Event")
-                                        .font(.caption.bold())
-                                }
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 6)
-                                .background(Color.appPink, in: Capsule())
+                            scheduleHeaderCapsuleButton(title: "Event", tint: Color.appPink) {
+                                showingAddEvent = true
                             }
-                            .buttonStyle(.plain)
+                            scheduleHeaderCapsuleButton(title: "Log", tint: Color.appPink.opacity(0.85)) {
+                                showingAddLog = true
+                            }
                         }
                         .padding(.horizontal)
                         .padding(.top, 16)
@@ -163,7 +163,33 @@ struct ScheduleView: View {
                     prefilledDate: viewModel.selectedView == .calendar ? viewModel.selectedCalendarDate : nil
                 )
             }
+            .sheet(isPresented: $showingAddLog) {
+                AddLogSheet(
+                    viewModel: viewModel,
+                    prefilledDate: viewModel.selectedView == .calendar ? viewModel.selectedCalendarDate : nil
+                )
+            }
         }
+    }
+
+    /// Header action chip: keep **+** and title on one line when horizontal space is tight.
+    private func scheduleHeaderCapsuleButton(title: String, tint: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Image(systemName: "plus")
+                    .font(.caption.bold())
+                Text(title)
+                    .font(.caption.bold())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(tint, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .fixedSize(horizontal: true, vertical: false)
     }
 }
 

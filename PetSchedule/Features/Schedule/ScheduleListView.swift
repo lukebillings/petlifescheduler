@@ -106,9 +106,14 @@ struct ScheduleListView: View {
             EditEventSheet(viewModel: viewModel, item: item)
         }
         .sheet(item: $viewingPet) { pet in
-            PetDetailSheet(pet: pet) { updated in
-                viewModel.updatePet(updated)
-            }
+            PetDetailSheet(
+                pet: pet,
+                onSave: { viewModel.updatePet($0) },
+                onRemovePet: {
+                    viewModel.deletePet(pet)
+                    viewingPet = nil
+                }
+            )
         }
     }
 }

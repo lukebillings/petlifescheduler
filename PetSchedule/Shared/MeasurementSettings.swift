@@ -124,7 +124,7 @@ enum TimeFormat: String {
     case twentyFourHour = "24h"
 
     static var current: TimeFormat {
-        TimeFormat(rawValue: UserDefaults.standard.string(forKey: "timeFormat") ?? "12h") ?? .twelveHour
+        TimeFormat(rawValue: UserDefaults.standard.string(forKey: "timeFormat") ?? "24h") ?? .twentyFourHour
     }
 
     var dateFormat: String {

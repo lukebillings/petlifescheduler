@@ -73,4 +73,34 @@ struct Pet: Identifiable, Hashable {
         }
         return "Born today"
     }
+
+    /// Full calendar years plus days since the last birthday (start of day). Nil without a valid DOB.
+    var ageYearsAndDaysComponents: (years: Int, days: Int)? {
+        guard let dob = dateOfBirth else { return nil }
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: dob)
+        let end = cal.startOfDay(for: .now)
+        guard start <= end else { return nil }
+
+        let years = cal.dateComponents([.year], from: start, to: end).year ?? 0
+        guard let afterLastBirthday = cal.date(byAdding: .year, value: years, to: start) else {
+            return (years, 0)
+        }
+        let days = cal.dateComponents([.day], from: afterLastBirthday, to: end).day ?? 0
+        return (years, days)
+    }
+
+    /// Profile-style line, e.g. "2 years, 47 days" or "Born today". Nil if no DOB.
+    var ageYearsAndDaysSummary: String? {
+        guard let (y, d) = ageYearsAndDaysComponents else { return nil }
+        if y == 0 && d == 0 { return "Born today" }
+        let yearPart: String
+        switch y {
+        case 0: yearPart = "0 years"
+        case 1: yearPart = "1 year"
+        default: yearPart = "\(y) years"
+        }
+        let dayPart = d == 1 ? "1 day" : "\(d) days"
+        return "\(yearPart), \(dayPart)"
+    }
 }

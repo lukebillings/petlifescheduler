@@ -9,7 +9,7 @@ struct SettingsView: View {
     @AppStorage("reminderMinutes") private var reminderMinutes = 10
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("soundEffectsEnabled") private var soundEffectsEnabled = true
-    @AppStorage("timeFormat")  private var timeFormatRaw  = "12h"
+    @AppStorage("timeFormat")  private var timeFormatRaw  = "24h"
     @AppStorage("weightUnit")  private var weightUnitRaw  = "kg"
     @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
 

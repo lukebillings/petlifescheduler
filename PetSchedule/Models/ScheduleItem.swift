@@ -54,6 +54,23 @@ enum RepeatRule: String, CaseIterable, Identifiable {
     }
 }
 
+/// One-off bathroom / care logs (poo, wee, or custom) from **+ Log**; shown with a pink-tinted row.
+enum QuickLogKind: String, CaseIterable, Identifiable {
+    case poo = "Poo"
+    case wee = "Wee"
+    case custom = "Custom"
+
+    var id: String { rawValue }
+
+    var iconName: String {
+        switch self {
+        case .poo: return "toilet.fill"
+        case .wee: return "drop.fill"
+        case .custom: return "note.text"
+        }
+    }
+}
+
 struct ScheduleItem: Identifiable {
     let id: UUID
     var time: Date
@@ -67,6 +84,10 @@ struct ScheduleItem: Identifiable {
     var isBirthday: Bool
     /// nil = not yet answered, true = pet took the medicine, false = pet did not
     var medicineAccepted: Bool?
+    /// Set for quick logs from **+ Log**; drives icon and pink row styling.
+    var quickLogKind: QuickLogKind?
+    /// Optional photo attached to a quick log (or other event).
+    var attachmentImageData: Data?
 
     init(
         id: UUID = UUID(),
@@ -79,7 +100,9 @@ struct ScheduleItem: Identifiable {
         isCompleted: Bool = false,
         isAllDay: Bool = false,
         isBirthday: Bool = false,
-        medicineAccepted: Bool? = nil
+        medicineAccepted: Bool? = nil,
+        quickLogKind: QuickLogKind? = nil,
+        attachmentImageData: Data? = nil
     ) {
         self.id = id
         self.time = time
@@ -92,6 +115,8 @@ struct ScheduleItem: Identifiable {
         self.isAllDay = isAllDay
         self.isBirthday = isBirthday
         self.medicineAccepted = medicineAccepted
+        self.quickLogKind = quickLogKind
+        self.attachmentImageData = attachmentImageData
     }
 
     var isMedicineEvent: Bool {
@@ -113,6 +138,7 @@ struct ScheduleItem: Identifiable {
 
     /// Activities that show the same yes/no control as medicine (mutually exclusive kinds).
     var complianceKind: ScheduleComplianceKind? {
+        if quickLogKind != nil { return nil }
         if isMedicineEvent { return .medicine }
         if isWaterComplianceEvent { return .water }
         if isFeedComplianceEvent { return .feed }
@@ -130,10 +156,15 @@ struct ScheduleItem: Identifiable {
         return start
     }
 
-    var activityIcon: String { ScheduleItem.icon(for: activityName) }
+    var activityIcon: String {
+        if let kind = quickLogKind { return kind.iconName }
+        return ScheduleItem.icon(for: activityName)
+    }
 
     static func icon(for activityName: String) -> String {
         let n = activityName.lowercased()
+        if n.contains("poo") || n.contains("poop")                         { return "toilet.fill" }
+        if n.contains("wee") || n.contains("urin") || n.contains("pee")  { return "drop.fill" }
         if n.contains("walk")                                               { return "figure.walk" }
         if n.contains("run")                                                { return "figure.run" }
         if n.contains("feed") || n.contains("meal") || n.contains("food") || n.contains("eat") { return "fork.knife" }

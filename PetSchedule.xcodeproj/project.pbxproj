@@ -22,6 +22,7 @@
 		66067D350BD915B5E4A0CD8A /* EditEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AF10EE3C14C2123427C6898 /* EditEventSheet.swift */; };
 		6E04C1751D6C0A38AAA95B08 /* PetAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */; };
 		7C6341ED2574F5ED3378E189 /* AddEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3327F274E84078B38862BEED /* AddEventSheet.swift */; };
+		A91C4E2B8D3F5012A7B89C01 /* AddLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B82D5F1E9C4A60318E7D2A90 /* AddLogSheet.swift */; };
 		845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 004BEB5D563AD507764446BB /* Assets.xcassets */; };
 		855DDBBC929D3FF621EB9976 /* HeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */; };
 		85C6FCBBEFD03F516B9F94A4 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870B6B2E15C92C0C03ADDEF6 /* AnalyticsView.swift */; };
@@ -46,6 +47,7 @@
 		217BD314318A028856956D09 /* PetPDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetPDFGenerator.swift; sourceTree = "<group>"; };
 		21A63243C759BB8D063AF92A /* ScheduleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleListView.swift; sourceTree = "<group>"; };
 		3327F274E84078B38862BEED /* AddEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEventSheet.swift; sourceTree = "<group>"; };
+		B82D5F1E9C4A60318E7D2A90 /* AddLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddLogSheet.swift; sourceTree = "<group>"; };
 		3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarScheduleView.swift; sourceTree = "<group>"; };
 		4A5C7586D9735ADDB5C9842C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementSettings.swift; sourceTree = "<group>"; };
@@ -85,6 +87,7 @@
 			isa = PBXGroup;
 			children = (
 				3327F274E84078B38862BEED /* AddEventSheet.swift */,
+				B82D5F1E9C4A60318E7D2A90 /* AddLogSheet.swift */,
 				3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */,
 				9AF10EE3C14C2123427C6898 /* EditEventSheet.swift */,
 				21A63243C759BB8D063AF92A /* ScheduleListView.swift */,
@@ -271,6 +274,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7C6341ED2574F5ED3378E189 /* AddEventSheet.swift in Sources */,
+				A91C4E2B8D3F5012A7B89C01 /* AddLogSheet.swift in Sources */,
 				85C6FCBBEFD03F516B9F94A4 /* AnalyticsView.swift in Sources */,
 				4B02216A6044074925DA1D5F /* AnimalType.swift in Sources */,
 				D72C7128A019801C00BF8732 /* AppColors.swift in Sources */,

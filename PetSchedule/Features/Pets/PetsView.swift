@@ -45,9 +45,14 @@ struct PetsView: View {
                 }
             }
             .sheet(item: $editingPet) { pet in
-                PetDetailSheet(pet: pet) { updated in
-                    viewModel.updatePet(updated)
-                }
+                PetDetailSheet(
+                    pet: pet,
+                    onSave: { viewModel.updatePet($0) },
+                    onRemovePet: {
+                        viewModel.deletePet(pet)
+                        editingPet = nil
+                    }
+                )
             }
             .sheet(isPresented: $showingAddPet) {
                 PetDetailSheet(pet: nil) { newPet in

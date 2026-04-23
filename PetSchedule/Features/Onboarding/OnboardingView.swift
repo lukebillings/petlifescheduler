@@ -8,6 +8,10 @@ struct OnboardingView: View {
     @Bindable var viewModel: HomeViewModel
     let onComplete: () -> Void
 
+    @AppStorage("timeFormat")  private var timeFormatRaw  = "24h"
+    @AppStorage("weightUnit")  private var weightUnitRaw  = "kg"
+    @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
+
     @State private var subscriptionProducts = SubscriptionProductLoader()
     @State private var step = 0
     @State private var confettiTrigger = 0
@@ -21,7 +25,7 @@ struct OnboardingView: View {
     @State private var activityTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: .now) ?? .now
     @State private var paywallPlan: Step5Paywall.Plan = .yearly
 
-    private let totalSteps = 5
+    private let totalSteps = 8
 
     var body: some View {
         VStack(spacing: 0) {
@@ -45,12 +49,21 @@ struct OnboardingView: View {
                     Step4Notifications()
                         .transition(slideTransition)
                 case 4:
+                    StepTimeFormat(timeFormatRaw: $timeFormatRaw)
+                        .transition(slideTransition)
+                case 5:
+                    StepWeightUnits(weightUnitRaw: $weightUnitRaw)
+                        .transition(slideTransition)
+                case 6:
+                    StepHeightUnits(heightUnitRaw: $heightUnitRaw)
+                        .transition(slideTransition)
+                case 7:
                     Step5Paywall(
                         pet: previewPet,
                         products: subscriptionProducts,
                         selectedPlan: $paywallPlan
                     )
-                    .transition(slideTransition)
+                        .transition(slideTransition)
                 default:
                     EmptyView()
                 }
@@ -130,7 +143,7 @@ struct OnboardingView: View {
                 .allowsHitTesting(false)
         }
         .onChange(of: step) { _, newStep in
-            if newStep == 4 {
+            if newStep == 7 {
                 Task { await subscriptionProducts.refresh() }
             }
         }
@@ -140,7 +153,7 @@ struct OnboardingView: View {
         switch step {
         case 1: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 3: return "Enable Notifications"
-        case 4:
+        case 7:
             if paywallPlan == .yearly,
                subscriptionProducts.yearlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial {
                 return "Start My 7-Day Free Trial"
@@ -186,7 +199,7 @@ struct OnboardingView: View {
             }
         case 3:
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
-        case 4:
+        case 7:
             completeOnboarding()
             return
         default:
@@ -503,6 +516,221 @@ private struct Step4Notifications: View {
             Spacer()
         }
         .padding(.horizontal, 28)
+    }
+}
+
+// MARK: - Clock & units (onboarding)
+
+private struct OnboardingChoiceButton: View {
+    let title: String
+    var caption: String? = nil
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(alignment: .center, spacing: 14) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.leading)
+                    if let caption, !caption.isEmpty {
+                        Text(caption)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer(minLength: 8)
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
+                    .foregroundStyle(isSelected ? Color.appPink : Color(.tertiaryLabel))
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(.secondarySystemBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(isSelected ? Color.appPink : Color.clear, lineWidth: 2)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct StepTimeFormat: View {
+    @Binding var timeFormatRaw: String
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 28) {
+                ZStack {
+                    Circle()
+                        .fill(Color.appPink.opacity(0.12))
+                        .frame(width: 140, height: 140)
+                    Image(systemName: "clock")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(Color.appPink.gradient)
+                        .padding(36)
+                        .frame(width: 140, height: 140)
+                }
+                .padding(.top, 48)
+
+                VStack(spacing: 10) {
+                    Text("How should we show the time?")
+                        .font(.largeTitle.bold())
+                        .multilineTextAlignment(.center)
+                    Text("Choose 24-hour or 12-hour for reminders and your schedule.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                VStack(spacing: 12) {
+                    OnboardingChoiceButton(
+                        title: "24-hour",
+                        caption: "e.g. 14:30",
+                        isSelected: timeFormatRaw == TimeFormat.twentyFourHour.rawValue
+                    ) {
+                        timeFormatRaw = TimeFormat.twentyFourHour.rawValue
+                    }
+                    OnboardingChoiceButton(
+                        title: "12-hour",
+                        caption: "e.g. 2:30 pm",
+                        isSelected: timeFormatRaw == TimeFormat.twelveHour.rawValue
+                    ) {
+                        timeFormatRaw = TimeFormat.twelveHour.rawValue
+                    }
+                }
+
+                Text("You can change this later in Settings.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+
+                Spacer(minLength: 40)
+            }
+            .padding(.horizontal, 28)
+        }
+    }
+}
+
+private struct StepWeightUnits: View {
+    @Binding var weightUnitRaw: String
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 28) {
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.12))
+                        .frame(width: 140, height: 140)
+                    Image(systemName: "scalemass")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(Color.orange.gradient)
+                        .padding(36)
+                        .frame(width: 140, height: 140)
+                }
+                .padding(.top, 48)
+
+                VStack(spacing: 10) {
+                    Text("Weight units")
+                        .font(.largeTitle.bold())
+                        .multilineTextAlignment(.center)
+                    Text("We’ll use this when you log weight and in charts.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                VStack(spacing: 12) {
+                    OnboardingChoiceButton(
+                        title: WeightUnit.kg.pickerLabel,
+                        caption: nil,
+                        isSelected: weightUnitRaw == WeightUnit.kg.rawValue
+                    ) {
+                        weightUnitRaw = WeightUnit.kg.rawValue
+                    }
+                    OnboardingChoiceButton(
+                        title: WeightUnit.stone.pickerLabel,
+                        caption: nil,
+                        isSelected: weightUnitRaw == WeightUnit.stone.rawValue
+                    ) {
+                        weightUnitRaw = WeightUnit.stone.rawValue
+                    }
+                }
+
+                Text("You can change this later in Settings.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+
+                Spacer(minLength: 40)
+            }
+            .padding(.horizontal, 28)
+        }
+    }
+}
+
+private struct StepHeightUnits: View {
+    @Binding var heightUnitRaw: String
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 28) {
+                ZStack {
+                    Circle()
+                        .fill(Color.cyan.opacity(0.12))
+                        .frame(width: 140, height: 140)
+                    Image(systemName: "ruler")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(Color.cyan.gradient)
+                        .padding(36)
+                        .frame(width: 140, height: 140)
+                }
+                .padding(.top, 48)
+
+                VStack(spacing: 10) {
+                    Text("Height units")
+                        .font(.largeTitle.bold())
+                        .multilineTextAlignment(.center)
+                    Text("Centimetres for metric, or feet and inches for imperial.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                VStack(spacing: 12) {
+                    OnboardingChoiceButton(
+                        title: HeightUnit.cm.pickerLabel,
+                        caption: "Metric — metres & centimetres",
+                        isSelected: heightUnitRaw == HeightUnit.cm.rawValue
+                    ) {
+                        heightUnitRaw = HeightUnit.cm.rawValue
+                    }
+                    OnboardingChoiceButton(
+                        title: HeightUnit.imperial.pickerLabel,
+                        caption: "Feet and inches",
+                        isSelected: heightUnitRaw == HeightUnit.imperial.rawValue
+                    ) {
+                        heightUnitRaw = HeightUnit.imperial.rawValue
+                    }
+                }
+
+                Text("You can change this later in Settings.")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+
+                Spacer(minLength: 40)
+            }
+            .padding(.horizontal, 28)
+        }
     }
 }
 

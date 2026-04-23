@@ -2,6 +2,7 @@ import SwiftUI
 import PhotosUI
 import Charts
 import UniformTypeIdentifiers
+import UIKit
 
 struct PetDetailSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -15,9 +16,13 @@ struct PetDetailSheet: View {
     @State private var weightHistory: [WeightEntry]
     @State private var weightInput: String = ""
     @State private var weightDate: Date = .now
+    @State private var weightEntryPhotoItem: PhotosPickerItem?
+    @State private var weightEntryImageData: Data?
     @State private var heightHistory: [HeightEntry]
     @State private var heightInput: String = ""
     @State private var heightDate: Date = .now
+    @State private var heightEntryPhotoItem: PhotosPickerItem?
+    @State private var heightEntryImageData: Data?
     @State private var notes: String
     @State private var vetDetails: VetDetails
     @State private var documents: [PetDocument]
@@ -45,14 +50,19 @@ struct PetDetailSheet: View {
     }
 
     @State private var pdfExportActivity: PDFExportActivity = .idle
+    @State private var showClearPetDataConfirm = false
+    @State private var showRemovePetConfirm = false
 
     private let petID: UUID
     private let isNew: Bool
     let onSave: (Pet) -> Void
+    /// When set, shows “Remove pet from My Pets” and calls this before dismiss (e.g. `viewModel.deletePet`).
+    var onRemovePet: (() -> Void)?
 
-    init(pet: Pet?, onSave: @escaping (Pet) -> Void) {
+    init(pet: Pet?, onSave: @escaping (Pet) -> Void, onRemovePet: (() -> Void)? = nil) {
         self.isNew = pet == nil
         self.onSave = onSave
+        self.onRemovePet = onRemovePet
         self.petID = pet?.id ?? UUID()
         _name             = State(initialValue: pet?.name ?? "")
         _animalType       = State(initialValue: pet?.animalType ?? .dog)
@@ -69,29 +79,58 @@ struct PetDetailSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                // Avatar preview
-                Section {
-                    HStack {
-                        Spacer()
-                        PhotosPicker(selection: $photoItem, matching: .images) {
-                            ZStack(alignment: .bottomTrailing) {
-                                PetAvatarView(pet: previewPet, size: 90)
-                                Circle()
-                                    .fill(Color.appPink)
-                                    .frame(width: 28, height: 28)
-                                    .overlay {
-                                        Image(systemName: "camera.fill")
-                                            .font(.caption.bold())
-                                            .foregroundStyle(.white)
-                                    }
+                if let ageLine = previewPet.ageYearsAndDaysSummary {
+                    Section {
+                        HStack(alignment: .center, spacing: 14) {
+                            Image(systemName: "hourglass.bottomhalf.filled")
+                                .font(.title2.bold())
+                                .foregroundStyle(Color.appPink)
+                                .frame(width: 36, height: 36)
+                                .background(Color.appPink.opacity(0.12), in: Circle())
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Age")
+                                    .font(.caption.bold())
+                                    .foregroundStyle(.secondary)
+                                Text(ageLine)
+                                    .font(.title3.bold())
+                                    .foregroundStyle(.primary)
                             }
+                            Spacer(minLength: 0)
                         }
-                        .onChange(of: photoItem) { _, item in
-                            Task { photoData = try? await item?.loadTransferable(type: Data.self) }
-                        }
-                        Spacer()
+                        .padding(.vertical, 6)
                     }
-                    .padding(.vertical, 8)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                }
+
+                // Profile cover photo
+                Section {
+                    PhotosPicker(selection: $photoItem, matching: .images) {
+                        ZStack(alignment: .bottomTrailing) {
+                            petProfileCoverImage
+                                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+                                )
+
+                            Circle()
+                                .fill(Color.appPink)
+                                .frame(width: 36, height: 36)
+                                .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
+                                .overlay {
+                                    Image(systemName: "camera.fill")
+                                        .font(.body.bold())
+                                        .foregroundStyle(.white)
+                                }
+                                .padding(12)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .onChange(of: photoItem) { _, item in
+                        Task { photoData = try? await item?.loadTransferable(type: Data.self) }
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                 } header: {
                     sectionHeader(
                         "Photo",
@@ -300,7 +339,7 @@ struct PetDetailSheet: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Add a new weight reading")
                                 .font(.subheadline.weight(.semibold))
-                            Text("Enter the weight and the date it was taken, then tap + to save.")
+                            Text("Enter the weight and the date it was taken, then tap + to save. You can attach a photo (optional).")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             HStack(spacing: 12) {
@@ -322,10 +361,16 @@ struct PetDetailSheet: View {
                                     guard let val = Double(weightInput.replacingOccurrences(of: ",", with: ".")),
                                           val > 0 else { return }
                                     withAnimation(.spring(duration: 0.3)) {
-                                        weightHistory.append(WeightEntry(date: weightDate, kg: weightUnit.toKg(val)))
+                                        weightHistory.append(WeightEntry(
+                                            date: weightDate,
+                                            kg: weightUnit.toKg(val),
+                                            imageData: weightEntryImageData
+                                        ))
                                         weightHistory.sort { $0.date < $1.date }
                                     }
                                     weightInput = ""
+                                    weightEntryImageData = nil
+                                    weightEntryPhotoItem = nil
                                 } label: {
                                     Image(systemName: "plus.circle.fill")
                                         .font(.title2)
@@ -334,10 +379,43 @@ struct PetDetailSheet: View {
                                 .buttonStyle(.plain)
                                 .disabled(weightInput.isEmpty)
                             }
+                            HStack(spacing: 12) {
+                                PhotosPicker(selection: $weightEntryPhotoItem, matching: .images) {
+                                    Label(
+                                        weightEntryImageData == nil ? "Attach photo" : "Change photo",
+                                        systemImage: "photo.badge.plus"
+                                    )
+                                    .font(.caption.bold())
+                                    .foregroundStyle(Color.appPink)
+                                }
+                                .buttonStyle(.plain)
+                                if weightEntryImageData != nil {
+                                    Button {
+                                        weightEntryImageData = nil
+                                        weightEntryPhotoItem = nil
+                                    } label: {
+                                        Text("Remove")
+                                            .font(.caption.bold())
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                if let data = weightEntryImageData, let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 44, height: 44)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                }
+                                Spacer(minLength: 0)
+                            }
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                        .onChange(of: weightEntryPhotoItem) { _, item in
+                            Task { weightEntryImageData = try? await item?.loadTransferable(type: Data.self) }
+                        }
 
                         if !weightHistory.isEmpty {
                             Divider()
@@ -402,7 +480,7 @@ struct PetDetailSheet: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Add a new height reading")
                                 .font(.subheadline.weight(.semibold))
-                            Text("Enter the height and the date it was taken, then tap + to save.")
+                            Text("Enter the height and the date it was taken, then tap + to save. You can attach a photo (optional).")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             HStack(spacing: 12) {
@@ -424,10 +502,16 @@ struct PetDetailSheet: View {
                                     guard let val = Double(heightInput.replacingOccurrences(of: ",", with: ".")),
                                           val > 0 else { return }
                                     withAnimation(.spring(duration: 0.3)) {
-                                        heightHistory.append(HeightEntry(date: heightDate, cm: heightUnit.toCm(val)))
+                                        heightHistory.append(HeightEntry(
+                                            date: heightDate,
+                                            cm: heightUnit.toCm(val),
+                                            imageData: heightEntryImageData
+                                        ))
                                         heightHistory.sort { $0.date < $1.date }
                                     }
                                     heightInput = ""
+                                    heightEntryImageData = nil
+                                    heightEntryPhotoItem = nil
                                 } label: {
                                     Image(systemName: "plus.circle.fill")
                                         .font(.title2)
@@ -436,10 +520,43 @@ struct PetDetailSheet: View {
                                 .buttonStyle(.plain)
                                 .disabled(heightInput.isEmpty)
                             }
+                            HStack(spacing: 12) {
+                                PhotosPicker(selection: $heightEntryPhotoItem, matching: .images) {
+                                    Label(
+                                        heightEntryImageData == nil ? "Attach photo" : "Change photo",
+                                        systemImage: "photo.badge.plus"
+                                    )
+                                    .font(.caption.bold())
+                                    .foregroundStyle(Color.appPink)
+                                }
+                                .buttonStyle(.plain)
+                                if heightEntryImageData != nil {
+                                    Button {
+                                        heightEntryImageData = nil
+                                        heightEntryPhotoItem = nil
+                                    } label: {
+                                        Text("Remove")
+                                            .font(.caption.bold())
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                                if let data = heightEntryImageData, let uiImage = UIImage(data: data) {
+                                    Image(uiImage: uiImage)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 44, height: 44)
+                                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                }
+                                Spacer(minLength: 0)
+                            }
                         }
                         .padding(12)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 12))
+                        .onChange(of: heightEntryPhotoItem) { _, item in
+                            Task { heightEntryImageData = try? await item?.loadTransferable(type: Data.self) }
+                        }
 
                         if !heightHistory.isEmpty {
                             Divider()
@@ -510,12 +627,6 @@ struct PetDetailSheet: View {
                             in: ...Date.now,
                             displayedComponents: .date
                         )
-                        if let age = petAgeDescription {
-                            Text(age)
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
                         Button("Remove date of birth", role: .destructive) {
                             dateOfBirth = nil
                         }
@@ -538,6 +649,29 @@ struct PetDetailSheet: View {
                         "Birthday",
                         subtitle: "Optional—used for birthday reminders on your schedule when you add a date."
                     )
+                }
+
+                if !isNew {
+                    Section {
+                        Button(role: .destructive) {
+                            showClearPetDataConfirm = true
+                        } label: {
+                            Label("Delete pet data", systemImage: "trash.slash")
+                        }
+
+                        if onRemovePet != nil {
+                            Button(role: .destructive) {
+                                showRemovePetConfirm = true
+                            } label: {
+                                Label("Remove pet from My Pets", systemImage: "rectangle.badge.xmark")
+                            }
+                        }
+                    } header: {
+                        Text("Data & list")
+                    } footer: {
+                        Text("Delete pet data clears weight and height logs, notes, vet details, and documents—your pet’s name, photo, type, and birthday stay. Remove pet deletes this profile and all scheduled events for them.")
+                            .font(.caption)
+                    }
                 }
             }
             .navigationTitle(isNew ? "New Pet" : name.trimmingCharacters(in: .whitespaces).isEmpty ? "Edit Pet" : name)
@@ -562,6 +696,23 @@ struct PetDetailSheet: View {
                 if case .success = result {
                     HapticManager.notification(.success)
                 }
+            }
+            .alert("Delete pet data?", isPresented: $showClearPetDataConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete data", role: .destructive) {
+                    performClearPetData()
+                }
+            } message: {
+                Text("This removes weight and height history, notes, vet details, and documents. Name, photo, animal type, and birthday are kept.")
+            }
+            .alert("Remove from My Pets?", isPresented: $showRemovePetConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Remove pet", role: .destructive) {
+                    onRemovePet?()
+                    dismiss()
+                }
+            } message: {
+                Text("This deletes the pet from your list and removes all scheduled events for them. This cannot be undone.")
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -592,19 +743,55 @@ struct PetDetailSheet: View {
         }
     }
 
+    private func performClearPetData() {
+        weightHistory = []
+        heightHistory = []
+        notes = ""
+        vetDetails = VetDetails()
+        documents = []
+        weightInput = ""
+        heightInput = ""
+        weightEntryImageData = nil
+        weightEntryPhotoItem = nil
+        heightEntryImageData = nil
+        heightEntryPhotoItem = nil
+        onSave(Pet(
+            id: petID,
+            name: name.trimmingCharacters(in: .whitespaces),
+            animalType: animalType,
+            customAnimalType: animalType == .other ? customAnimalType.trimmingCharacters(in: .whitespaces) : nil,
+            dateOfBirth: dateOfBirth,
+            photoData: photoData,
+            weightHistory: [],
+            heightHistory: [],
+            notes: "",
+            vetDetails: VetDetails(),
+            documents: []
+        ))
+        HapticManager.notification(.success)
+    }
+
     private var previewPet: Pet {
         Pet(id: petID, name: name.isEmpty ? "Pet" : name, animalType: animalType, customAnimalType: customAnimalType, dateOfBirth: dateOfBirth, photoData: photoData)
     }
 
-    /// Age string derived from the current birthday fields (updates as the user changes the date).
-    private var petAgeDescription: String? {
-        Pet(
-            id: petID,
-            name: "Pet",
-            animalType: animalType,
-            customAnimalType: animalType == .other ? customAnimalType : nil,
-            dateOfBirth: dateOfBirth
-        ).age
+    /// Large square cover for the profile editor (lists still use circular `PetAvatarView`).
+    @ViewBuilder
+    private var petProfileCoverImage: some View {
+        ZStack {
+            if let data = photoData, let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(animalType.placeholderImage)
+                    .resizable()
+                    .scaledToFill()
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .aspectRatio(1, contentMode: .fit)
+        .clipped()
     }
 
     @ViewBuilder
@@ -624,7 +811,14 @@ struct PetDetailSheet: View {
 
             ForEach(entries.sorted { $0.date > $1.date }) { entry in
                 Divider()
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .center, spacing: 10) {
+                    if let data = entry.imageData, let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 36, height: 36)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
                     Text(entry.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
                         .foregroundStyle(.primary)
@@ -659,7 +853,14 @@ struct PetDetailSheet: View {
 
             ForEach(entries.sorted { $0.date > $1.date }) { entry in
                 Divider()
-                HStack(alignment: .firstTextBaseline) {
+                HStack(alignment: .center, spacing: 10) {
+                    if let data = entry.imageData, let uiImage = UIImage(data: data) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 36, height: 36)
+                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                    }
                     Text(entry.date.formatted(date: .abbreviated, time: .omitted))
                         .font(.caption)
                         .foregroundStyle(.primary)

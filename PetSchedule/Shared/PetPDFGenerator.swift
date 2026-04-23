@@ -65,7 +65,9 @@ enum PetPDFGenerator {
                 .foregroundColor: UIColor.secondaryLabel
             ]
             var infoLines: [String] = [pet.animalDisplayName]
-            if let age = pet.age { infoLines.append("Age: \(age)") }
+            if let ageText = pet.ageYearsAndDaysSummary ?? pet.age {
+                infoLines.append("Age: \(ageText)")
+            }
             if let dob = pet.dateOfBirth {
                 infoLines.append("DOB: \(dob.formatted(date: .abbreviated, time: .omitted))")
             }

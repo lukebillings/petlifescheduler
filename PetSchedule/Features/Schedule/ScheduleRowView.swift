@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ScheduleRowView: View {
     let item: ScheduleItem
@@ -34,6 +35,18 @@ struct ScheduleRowView: View {
                         .font(.caption2.bold())
                         .foregroundStyle(Color.appPink)
                 }
+                if let data = item.attachmentImageData, let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 56, height: 56)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                        )
+                        .padding(.top, 4)
+                }
             }
 
             Spacer()
@@ -60,8 +73,35 @@ struct ScheduleRowView: View {
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
-        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 24))
+        .background {
+            if item.quickLogKind != nil {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.appPink.opacity(0.2))
+            }
+        }
+        .overlay {
+            if item.quickLogKind != nil {
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.appPink.opacity(0.35), lineWidth: 1)
+            }
+        }
+        .modifier(ScheduleRowGlassModifier(isQuickLog: item.quickLogKind != nil))
+        // Spacer is not hit-testable; without this, taps in the middle of the row miss the row tap.
+        .contentShape(RoundedRectangle(cornerRadius: 24))
         .onTapGesture { onTap?() }
+    }
+}
+
+private struct ScheduleRowGlassModifier: ViewModifier {
+    let isQuickLog: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isQuickLog {
+            content
+        } else {
+            content.glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 24))
+        }
     }
 }
 
@@ -134,6 +174,8 @@ private struct CareCompliancePill: View {
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet, medicineAccepted: false)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Feed", pet: pet)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give water", pet: pet, medicineAccepted: true)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Poo", pet: pet, isCompleted: true, quickLogKind: .poo)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Accident", description: "Kitchen", pet: pet, isCompleted: true, quickLogKind: .custom)) {}
     }
     .padding()
 }

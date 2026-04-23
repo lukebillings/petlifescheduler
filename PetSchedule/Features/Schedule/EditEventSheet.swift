@@ -1,4 +1,6 @@
 import SwiftUI
+import PhotosUI
+import UIKit
 
 struct EditEventSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -12,6 +14,8 @@ struct EditEventSheet: View {
     @State private var endTime: Date
     @State private var repeatRule: RepeatRule
     @State private var customActivity: Bool
+    @State private var attachmentImageData: Data?
+    @State private var attachmentPhotoItem: PhotosPickerItem?
 
     private let commonActivities = ["Walk", "Feed", "Give water", "Sleep", "Play", "Vet", "Groom", "Give Medication"]
     private static let legacyPresetNames: Set<String> = ["Eat", "Medicine"]
@@ -26,7 +30,8 @@ struct EditEventSheet: View {
         _endTime         = State(initialValue: item.endTime ?? Calendar.current.date(byAdding: .hour, value: 1, to: item.time) ?? item.time)
         _repeatRule      = State(initialValue: item.repeatRule)
         let presets = Set(commonActivities).union(Self.legacyPresetNames)
-        _customActivity  = State(initialValue: !presets.contains(item.activityName))
+        _customActivity  = State(initialValue: item.quickLogKind != nil || !presets.contains(item.activityName))
+        _attachmentImageData = State(initialValue: item.attachmentImageData)
     }
 
     var body: some View {
@@ -49,6 +54,30 @@ struct EditEventSheet: View {
                 Section("Description") {
                     TextField("Optional notes…", text: $eventDescription, axis: .vertical)
                         .lineLimit(3...6)
+                }
+
+                if item.quickLogKind != nil {
+                    Section("Photo") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            if let data = attachmentImageData, let uiImage = UIImage(data: data) {
+                                Image(uiImage: uiImage)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 160)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            PhotosPicker(selection: $attachmentPhotoItem, matching: .images) {
+                                Label(attachmentImageData == nil ? "Add photo" : "Change photo", systemImage: "photo.badge.plus")
+                            }
+                            if attachmentImageData != nil {
+                                Button("Remove photo", role: .destructive) {
+                                    attachmentImageData = nil
+                                    attachmentPhotoItem = nil
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Section("When") {
@@ -78,6 +107,9 @@ struct EditEventSheet: View {
                     }
                 }
             }
+            .onChange(of: attachmentPhotoItem) { _, pickerItem in
+                Task { attachmentImageData = try? await pickerItem?.loadTransferable(type: Data.self) }
+            }
             .navigationTitle("Edit Event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -92,6 +124,8 @@ struct EditEventSheet: View {
                             viewModel.scheduleItems[idx].time = eventDate
                             viewModel.scheduleItems[idx].endTime = hasEndTime ? endTime : nil
                             viewModel.scheduleItems[idx].repeatRule = repeatRule
+                            viewModel.scheduleItems[idx].quickLogKind = item.quickLogKind
+                            viewModel.scheduleItems[idx].attachmentImageData = attachmentImageData
                         }
                         dismiss()
                     }
