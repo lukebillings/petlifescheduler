@@ -74,7 +74,7 @@ struct CalendarScheduleView: View {
                                 viewModel.selectedCalendarDate = date
                             }
                         }
-                        .interfaceSlideInRow(index: min(idx, 28))
+                        .modifier(SlideInRowModifier(index: min(idx, 28)))
                     } else {
                         Color.clear
                             .aspectRatio(1, contentMode: .fit)
@@ -117,7 +117,7 @@ struct CalendarScheduleView: View {
                                     viewModel.setMedicineAccepted(accepted, for: item)
                                     HapticManager.notification(.success)
                                 }
-                                .interfaceSlideInRow(index: rowIdx)
+                                .modifier(SlideInRowModifier(index: rowIdx))
                             }
                         }
                     }

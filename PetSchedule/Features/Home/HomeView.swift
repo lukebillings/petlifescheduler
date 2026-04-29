@@ -66,7 +66,9 @@ struct HomeView: View {
                 viewModel.syncWidgetSchedule()
             }
         }
-        .environment(\.interfaceMotionEnabled, effectiveInterfaceMotion)
+        .transformEnvironment(\.petScheduleInterfaceMotionEnabled) { enabled in
+            enabled = effectiveInterfaceMotion
+        }
     }
 }
 

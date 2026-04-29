@@ -254,7 +254,7 @@ struct AnalyticsView: View {
                     Spacer(minLength: 32)
                 }
                 .padding(.top, 20)
-                .interfaceContentEntrance(delay: 0.06)
+                .modifier(InterfaceContentEntranceModifier(delay: 0.06))
             }
             .navigationTitle("Analytics")
             .navigationBarTitleDisplayMode(.large)

@@ -20,7 +20,7 @@ struct PetsView: View {
                             ForEach(Array(viewModel.pets.enumerated()), id: \.element.id) { index, pet in
                                 PetCard(pet: pet)
                                     .onTapGesture { editingPet = pet }
-                                    .interfaceSlideInRow(index: index)
+                                    .modifier(SlideInRowModifier(index: index))
                                     .contextMenu {
                                         Button(role: .destructive) {
                                             withAnimation { viewModel.deletePet(pet) }

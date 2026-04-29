@@ -157,7 +157,7 @@ struct ScheduleView: View {
                     }
                 }
                 .background(Color(.systemBackground))
-                .interfaceContentEntrance(delay: 0)
+                .modifier(InterfaceContentEntranceModifier(delay: 0))
 
                 // ── Scrollable: events only ───────────────────────────────────────
                 ScrollView {

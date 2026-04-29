@@ -57,7 +57,7 @@ struct ScheduleListView: View {
                             BirthdayRowView(item: item) {
                                 viewingPet = item.pet
                             }
-                            .interfaceSlideInRow(index: dayIndex)
+                            .modifier(SlideInRowModifier(index: dayIndex))
                         }
                     }
 
@@ -89,7 +89,7 @@ struct ScheduleListView: View {
                             }
                             .opacity(isPast ? 0.82 : 1.0)
                             .saturation(isPast ? 0.88 : 1.0)
-                            .interfaceSlideInRow(index: allDayItems.count + index)
+                            .modifier(SlideInRowModifier(index: allDayItems.count + index))
                         }
 
                         // If all events are in the past, show NOW bar after last item
