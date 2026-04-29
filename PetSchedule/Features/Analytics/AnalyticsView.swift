@@ -278,6 +278,7 @@ struct AnalyticsView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 14) {
                 Button {
+                    HapticManager.impact(.light)
                     withAnimation(.spring(duration: 0.25)) { selectedPetID = nil }
                 } label: {
                     VStack(spacing: 6) {
@@ -307,6 +308,7 @@ struct AnalyticsView: View {
                 ForEach(viewModel.pets) { pet in
                     let sel = selectedPetID == pet.id
                     Button {
+                        HapticManager.impact(.light)
                         withAnimation(.spring(duration: 0.25)) {
                             selectedPetID = sel ? nil : pet.id
                         }
@@ -604,6 +606,23 @@ struct AnalyticsView: View {
 
     // MARK: - Mood over time (quick logs)
 
+    /// Keeps emoji in a fixed left column so labels line up vertically (charts + mood tables).
+    private func moodEmojiAlignedLabel(_ mood: PetMood, font: Font, valueSecondary: Bool = false) -> some View {
+        HStack(alignment: .center, spacing: 4) {
+            Text(mood.emoji)
+                .font(font)
+                .frame(width: Self.moodEmojiColumnWidth, alignment: .leading)
+            Text(mood.rawValue)
+                .font(font)
+                .foregroundStyle(valueSecondary ? .secondary : .primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+        }
+    }
+
+    /// Width reserved so each emoji sits in one column and mood titles share a left edge after it.
+    private static let moodEmojiColumnWidth: CGFloat = 40
+
     /// Mood quick logs in the selected analytics window for one pet.
     private func moodQuickLogs(for petID: UUID) -> [ScheduleItem] {
         viewModel.scheduleItems.filter {
@@ -656,9 +675,7 @@ struct AnalyticsView: View {
                 Spacer()
                 if let last {
                     HStack(spacing: 4) {
-                        Text(last.emoji)
-                        Text(last.rawValue)
-                            .foregroundStyle(.secondary)
+                        moodEmojiAlignedLabel(last, font: .caption.bold(), valueSecondary: true)
                         if items.count >= 2, abs(delta) > 0.001 {
                             Image(systemName: delta >= 0 ? "arrow.up.right" : "arrow.down.right")
                                 .foregroundStyle(delta >= 0 ? .green : .orange)
@@ -666,7 +683,6 @@ struct AnalyticsView: View {
                                 .foregroundStyle(delta >= 0 ? .green : .orange)
                         }
                     }
-                    .font(.caption.bold())
                 }
             }
 
@@ -707,10 +723,7 @@ struct AnalyticsView: View {
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
                     AxisValueLabel {
                         if let i = value.as(Int.self), let m = PetMood.mood(forChartScore: i) {
-                            Text("\(m.emoji) \(m.rawValue)")
-                                .font(.caption2)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
+                            moodEmojiAlignedLabel(m, font: .caption2)
                         }
                     }
                 }
@@ -718,15 +731,42 @@ struct AnalyticsView: View {
             .frame(height: 160)
 
             Divider().padding(.top, 4)
-            historyTable(
-                rows: items.reversed().map { item in
-                    let m = item.petMood!
-                    return (date: item.time, value: "\(m.emoji) \(m.rawValue)")
-                }
-            )
+            moodEntriesHistoryTable(items: items.reversed())
         }
         .padding(14)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    /// Date / value rows for Mood Over Time — value column aligns emoji + text like the chart axis.
+    private func moodEntriesHistoryTable(items: [ScheduleItem]) -> some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Date")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Text("Value")
+                    .font(.caption2.bold())
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 5)
+
+            ForEach(items) { item in
+                Divider()
+                HStack {
+                    Text(item.time.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption)
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    if let mood = item.petMood {
+                        moodEmojiAlignedLabel(mood, font: .caption.bold())
+                    }
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 5)
+            }
+        }
     }
 
     // MARK: - Medicine / feeding / water compliance

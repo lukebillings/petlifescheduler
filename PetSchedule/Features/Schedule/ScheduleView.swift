@@ -23,6 +23,7 @@ struct ScheduleView: View {
                                     let isSelected = viewModel.selectedPet?.id == pet.id
                                     let pending = viewModel.pendingTodayTaskCount(for: pet)
                                     Button {
+                                        HapticManager.impact(.light)
                                         withAnimation(.spring(duration: 0.25)) {
                                             viewModel.togglePetFilter(pet)
                                         }

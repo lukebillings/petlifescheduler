@@ -5,6 +5,35 @@ import UniformTypeIdentifiers
 import UIKit
 
 struct PetDetailSheet: View {
+    /// Quick-jump targets for the section pill bar (matches `.id` on each `Section` below).
+    private enum JumpSection: String, CaseIterable, Hashable {
+        case age, photo, details, notes, vet, documents, export, weight, height, birthday, data
+
+        var pillTitle: String {
+            switch self {
+            case .age: return "Age"
+            case .photo: return "Photo"
+            case .details: return "Details"
+            case .notes: return "Notes"
+            case .vet: return "Vet"
+            case .documents: return "Documents"
+            case .export: return "Export"
+            case .weight: return "Weight"
+            case .height: return "Height"
+            case .birthday: return "Birthday"
+            case .data: return "Pet data"
+            }
+        }
+
+        func isVisible(isNewPet: Bool, previewPet: Pet) -> Bool {
+            switch self {
+            case .age: return previewPet.ageYearsAndDaysSummary != nil
+            case .data: return !isNewPet
+            default: return true
+            }
+        }
+    }
+
     @Environment(\.dismiss) private var dismiss
 
     @State private var name: String
@@ -79,7 +108,11 @@ struct PetDetailSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
+            ScrollViewReader { proxy in
+                VStack(spacing: 0) {
+                    jumpSectionPillBar(proxy: proxy)
+
+                    Form {
                 if let ageLine = previewPet.ageYearsAndDaysSummary {
                     Section {
                         HStack(alignment: .center, spacing: 14) {
@@ -102,6 +135,7 @@ struct PetDetailSheet: View {
                         .padding(.vertical, 6)
                     }
                     .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                    .id(JumpSection.age.rawValue)
                 }
 
                 // Profile cover photo
@@ -134,6 +168,7 @@ struct PetDetailSheet: View {
                         subtitle: "Optional picture so your pet is easy to recognise in lists and reminders."
                     )
                 }
+                .id(JumpSection.photo.rawValue)
 
                 Section {
                     TextField("Name", text: $name)
@@ -154,6 +189,7 @@ struct PetDetailSheet: View {
                         subtitle: "Your pet's name and type—the basics used everywhere in the app."
                     )
                 }
+                .id(JumpSection.details.rawValue)
 
                 Section {
                     TextField("Allergies, vet info, behaviour tips…", text: $notes, axis: .vertical)
@@ -164,6 +200,7 @@ struct PetDetailSheet: View {
                         subtitle: "Free-form notes—allergies, behaviour, care tips, or anything else to remember."
                     )
                 }
+                .id(JumpSection.notes.rawValue)
 
                 Section {
                     HStack(spacing: 12) {
@@ -233,6 +270,7 @@ struct PetDetailSheet: View {
                         subtitle: "Your clinic's name, address, phone, and email for quick contact."
                     )
                 }
+                .id(JumpSection.vet.rawValue)
 
                 // ── Documents ──────────────────────────────────────────────
                 Section {
@@ -288,6 +326,7 @@ struct PetDetailSheet: View {
                         subtitle: "Attach files such as lab results, vaccination records, or insurance—kept on this device."
                     )
                 }
+                .id(JumpSection.documents.rawValue)
 
                 Section {
                     Button {
@@ -330,6 +369,7 @@ struct PetDetailSheet: View {
                         subtitle: "Save a health summary PDF to Files, or share it with your vet from the share sheet."
                     )
                 }
+                .id(JumpSection.export.rawValue)
 
                 Section {
                     VStack(alignment: .leading, spacing: 14) {
@@ -471,6 +511,7 @@ struct PetDetailSheet: View {
                         subtitle: "Enter a value and date to build a history—charts appear after two or more entries."
                     )
                 }
+                .id(JumpSection.weight.rawValue)
 
                 Section {
                     VStack(alignment: .leading, spacing: 14) {
@@ -612,6 +653,7 @@ struct PetDetailSheet: View {
                         subtitle: "Measure and log with a date to track growth or size changes over time."
                     )
                 }
+                .id(JumpSection.height.rawValue)
 
                 Section {
                     if let dob = dateOfBirth {
@@ -647,6 +689,7 @@ struct PetDetailSheet: View {
                         subtitle: "Optional—used for birthday reminders on your schedule when you add a date."
                     )
                 }
+                .id(JumpSection.birthday.rawValue)
 
                 if !isNew {
                     Section {
@@ -668,6 +711,9 @@ struct PetDetailSheet: View {
                     } footer: {
                         Text("Delete pet data clears weight and height logs, notes, vet details, and documents—your pet’s name, photo, type, and birthday stay. Remove pet deletes this profile and all scheduled events for them.")
                             .font(.caption)
+                    }
+                    .id(JumpSection.data.rawValue)
+                }
                     }
                 }
             }
@@ -784,6 +830,44 @@ struct PetDetailSheet: View {
 
     private var previewPet: Pet {
         Pet(id: petID, name: name.isEmpty ? "Pet" : name, animalType: animalType, customAnimalType: customAnimalType, dateOfBirth: dateOfBirth, photoData: photoData)
+    }
+
+    private var visibleJumpSections: [JumpSection] {
+        JumpSection.allCases.filter { $0.isVisible(isNewPet: isNew, previewPet: previewPet) }
+    }
+
+    /// Horizontal capsules above the form; scrolls the grouped list to matching section anchors.
+    @ViewBuilder
+    private func jumpSectionPillBar(proxy: ScrollViewProxy) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(visibleJumpSections, id: \.self) { section in
+                    Button {
+                        HapticManager.impact(.light)
+                        withAnimation(.easeInOut(duration: 0.28)) {
+                            proxy.scrollTo(section.rawValue, anchor: .top)
+                        }
+                    } label: {
+                        Text(section.pillTitle)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .padding(.horizontal, 13)
+                            .padding(.vertical, 7)
+                            .background(Color(.tertiarySystemGroupedBackground), in: Capsule())
+                            .overlay {
+                                Capsule()
+                                    .strokeBorder(Color.appPink.opacity(0.35), lineWidth: 1)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .scrollClipDisabled()
+        .frame(maxWidth: .infinity)
+        .background(Color(.systemGroupedBackground))
     }
 
     /// Large square cover for the profile editor (lists still use circular `PetAvatarView`).
