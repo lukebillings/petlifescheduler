@@ -36,18 +36,20 @@ struct LaunchSplashView: View {
 
 // MARK: - Orbiting icons
 
-/// Cat and dog each follow **their own** circular path (nested rings), so they never sit side-by-side as duplicated pairs.
+/// Two cats orbit **together on the inner ring** (opposite each other); two dogs orbit **together on the outer ring**
+/// (opposite each other). Inner and outer use **different** speeds/phases so dogs aren’t “linked” to the cats — four independent sprites,
+/// species grouped only by radius as requested (“two of each”).
 private struct OrbitingPetIconsView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Inner path — cat only (`SplashCat` matches app-icon artwork).
     private let innerRadius: CGFloat = 78
-    /// Outer path — dog only.
     private let outerRadius: CGFloat = 118
     private let assetSize: CGFloat = 76
 
-    /// Rad/s — same feel as the previous single-ring splash.
-    private let angularSpeed: Double = 0.72
+    /// Inner-ring angular velocity (rad/s).
+    private let innerAngularSpeed: Double = 0.72
+    /// Outer ring differs slightly so cats/dogs don’t rotate as one rigid crosshair.
+    private let outerAngularSpeed: Double = -0.61
 
     private var orbitExtent: CGFloat {
         outerRadius * 2 + assetSize + 28
@@ -56,22 +58,26 @@ private struct OrbitingPetIconsView: View {
     var body: some View {
         Group {
             if reduceMotion {
-                dualRing(catAngle: .pi * 0.5, dogAngle: -.pi * 0.5)
+                quadRing(innerAngleBase: .pi * 0.25, outerAngleBase: .pi * 0.85)
             } else {
                 TimelineView(.animation(minimumInterval: 1 / 60, paused: false)) { timeline in
-                    let spin = timeline.date.timeIntervalSinceReferenceDate * angularSpeed
-                    // Cat on inner ring clockwise; dog on outer ring counter-clockwise so they weave instead of lining up.
-                    dualRing(catAngle: spin, dogAngle: -spin)
+                    let t = timeline.date.timeIntervalSinceReferenceDate
+                    let inner = t * innerAngularSpeed
+                    let outer = t * outerAngularSpeed + 0.42
+                    quadRing(innerAngleBase: inner, outerAngleBase: outer)
                 }
             }
         }
         .frame(width: orbitExtent, height: orbitExtent)
     }
 
-    private func dualRing(catAngle: Double, dogAngle: Double) -> some View {
+    /// Two cats opposite on inner circle; two dogs opposite on outer circle.
+    private func quadRing(innerAngleBase: Double, outerAngleBase: Double) -> some View {
         ZStack {
-            orbitingPetAsset("SplashCat", radius: innerRadius, angle: catAngle)
-            orbitingPetAsset("SplashDog", radius: outerRadius, angle: dogAngle)
+            orbitingPetAsset("SplashCat", radius: innerRadius, angle: innerAngleBase)
+            orbitingPetAsset("SplashCat", radius: innerRadius, angle: innerAngleBase + .pi)
+            orbitingPetAsset("SplashDog", radius: outerRadius, angle: outerAngleBase)
+            orbitingPetAsset("SplashDog", radius: outerRadius, angle: outerAngleBase + .pi)
         }
     }
 

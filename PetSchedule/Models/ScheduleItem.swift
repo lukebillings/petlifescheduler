@@ -153,6 +153,29 @@ enum PetMood: String, CaseIterable, Identifiable, Hashable {
         case .anxious: return "😰"
         }
     }
+
+    /// 1 (lowest) … 5 (highest) for analytics charts — higher means brighter mood.
+    var wellbeingChartScore: Double {
+        switch self {
+        case .great: return 5
+        case .good: return 4
+        case .okay: return 3
+        case .low: return 2
+        case .anxious: return 1
+        }
+    }
+
+    /// Mood label for chart axis ticks at integer scores 1…5.
+    static func mood(forChartScore score: Int) -> PetMood? {
+        switch score {
+        case 5: return .great
+        case 4: return .good
+        case 3: return .okay
+        case 2: return .low
+        case 1: return .anxious
+        default: return nil
+        }
+    }
 }
 
 struct ScheduleItem: Identifiable {

@@ -253,6 +253,9 @@ struct AnalyticsView: View {
                     heightSection
                         .padding(.horizontal)
 
+                    moodSection
+                        .padding(.horizontal)
+
                     complianceKindSections
                         .padding(.horizontal)
 
@@ -593,6 +596,133 @@ struct AnalyticsView: View {
             Divider().padding(.top, 4)
             historyTable(
                 rows: sorted.reversed().map { (date: $0.date, value: heightUnit.formatValue($0.cm)) }
+            )
+        }
+        .padding(14)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: - Mood over time (quick logs)
+
+    /// Mood quick logs in the selected analytics window for one pet.
+    private func moodQuickLogs(for petID: UUID) -> [ScheduleItem] {
+        viewModel.scheduleItems.filter {
+            $0.pet.id == petID
+                && $0.quickLogKind == .mood
+                && $0.petMood != nil
+                && $0.time >= rangeStart
+        }
+        .sorted { $0.time < $1.time }
+    }
+
+    @ViewBuilder
+    private var moodSection: some View {
+        let petsToShow: [Pet] = {
+            if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
+                return moodQuickLogs(for: p.id).count >= 2 ? [p] : []
+            }
+            return viewModel.pets.filter { moodQuickLogs(for: $0.id).count >= 2 }
+        }()
+
+        if !petsToShow.isEmpty {
+            VStack(alignment: .leading, spacing: 12) {
+                Divider()
+                Text("Mood Over Time")
+                    .font(.headline)
+
+                Text("From Log → Mood entries in this period (higher is brighter mood).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                ForEach(petsToShow) { pet in
+                    moodCard(for: pet, color: petColor(for: pet.id))
+                }
+            }
+        }
+    }
+
+    private func moodCard(for pet: Pet, color: Color) -> some View {
+        let items = moodQuickLogs(for: pet.id)
+        let first = items.first?.petMood
+        let last = items.last?.petMood
+        let delta = (last?.wellbeingChartScore ?? 0) - (first?.wellbeingChartScore ?? 0)
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                if viewModel.pets.count > 1 {
+                    PetAvatarView(pet: pet, size: 26)
+                    Text(pet.name).font(.subheadline.bold())
+                }
+                Spacer()
+                if let last {
+                    HStack(spacing: 4) {
+                        Text(last.emoji)
+                        Text(last.rawValue)
+                            .foregroundStyle(.secondary)
+                        if items.count >= 2, abs(delta) > 0.001 {
+                            Image(systemName: delta >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                .foregroundStyle(delta >= 0 ? .green : .orange)
+                            Text(delta >= 0 ? "+\(String(format: "%.0f", delta))" : String(format: "%.0f", delta))
+                                .foregroundStyle(delta >= 0 ? .green : .orange)
+                        }
+                    }
+                    .font(.caption.bold())
+                }
+            }
+
+            Chart(items) { item in
+                let mood = item.petMood!
+                let y = mood.wellbeingChartScore
+                LineMark(x: .value("Date", item.time), y: .value("Mood", y))
+                    .foregroundStyle(color)
+                    .interpolationMethod(.linear)
+                AreaMark(
+                    x: .value("Date", item.time),
+                    yStart: .value("Floor", 0.5),
+                    yEnd: .value("Mood", y)
+                )
+                .foregroundStyle(LinearGradient(
+                    colors: [color.opacity(0.22), color.opacity(0.02)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                ))
+                .interpolationMethod(.linear)
+                PointMark(x: .value("Date", item.time), y: .value("Mood", y))
+                    .foregroundStyle(color)
+                    .symbolSize(28)
+            }
+            .chartYScale(domain: 0.5...5.5)
+            .chartXAxis {
+                AxisMarks(values: items.map(\.time)) { value in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel {
+                        if let d = value.as(Date.self) {
+                            Text(d, format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                        }
+                    }
+                }
+            }
+            .chartYAxis {
+                AxisMarks(position: .leading, values: [1, 2, 3, 4, 5]) { value in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel {
+                        if let i = value.as(Int.self), let m = PetMood.mood(forChartScore: i) {
+                            Text("\(m.emoji) \(m.rawValue)")
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.85)
+                        }
+                    }
+                }
+            }
+            .frame(height: 160)
+
+            Divider().padding(.top, 4)
+            historyTable(
+                rows: items.reversed().map { item in
+                    let m = item.petMood!
+                    return (date: item.time, value: "\(m.emoji) \(m.rawValue)")
+                }
             )
         }
         .padding(14)

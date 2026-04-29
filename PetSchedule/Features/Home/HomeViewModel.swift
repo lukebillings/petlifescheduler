@@ -196,6 +196,32 @@ final class HomeViewModel {
             }
         }
 
+        // Mood quick logs (Analytics → Mood Over Time; dates within default Week window)
+        let maxMoodDays = [0, 2, 4]
+        let maxMoodSeries: [PetMood] = [.okay, .good, .great]
+        for (idx, day) in maxMoodDays.enumerated() {
+            items.append(ScheduleItem(
+                time: daysAgo(day),
+                activityName: "Mood",
+                pet: max,
+                isCompleted: true,
+                quickLogKind: .mood,
+                petMood: maxMoodSeries[idx]
+            ))
+        }
+        let lunaMoodDays = [1, 3, 5]
+        let lunaMoodSeries: [PetMood] = [.good, .anxious, .okay]
+        for (idx, day) in lunaMoodDays.enumerated() {
+            items.append(ScheduleItem(
+                time: daysAgo(day),
+                activityName: "Mood",
+                pet: luna,
+                isCompleted: true,
+                quickLogKind: .mood,
+                petMood: lunaMoodSeries[idx]
+            ))
+        }
+
         vm.scheduleItems = items
         return vm
     }
