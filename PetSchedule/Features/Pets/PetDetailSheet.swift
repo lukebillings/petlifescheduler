@@ -778,16 +778,18 @@ struct PetDetailSheet: View {
             if let data = photoData, let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFill()
             } else {
                 Image(animalType.placeholderImage)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFill()
             }
         }
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
-        .scaleEffect(1.03)
+        .scaleEffect(1.05)
         .clipped()
     }
 

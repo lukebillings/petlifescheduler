@@ -4,6 +4,10 @@ import WidgetKit
 
 private let widgetPink = Color(red: 248 / 255, green: 78 / 255, blue: 166 / 255)
 
+/// Dark text always readable on forced white cards (widgets can be in dark appearance; `.label` would be near-white).
+private let widgetCardText = Color(red: 0.12, green: 0.12, blue: 0.14)
+private let widgetCardTextSecondary = Color(red: 0.38, green: 0.38, blue: 0.42)
+
 struct TodayEventsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: TodayEventsWidget.kind, provider: TodayEventsProvider()) { entry in
@@ -107,6 +111,7 @@ struct TodayEventsWidgetView: View {
             if noEventsToday {
                 Text("No events today")
                     .font(compactCards ? .subheadline.bold() : .body.bold())
+                    .foregroundStyle(.primary)
                 Text("Add some in PetSchedule")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
@@ -133,7 +138,7 @@ struct TodayEventsWidgetView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         // Explicit insets — `widgetContentMargins` + `glassEffect` led to empty / clipped layouts on device.
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 4)
         .padding(.vertical, 8)
     }
 }
@@ -186,15 +191,16 @@ private struct WidgetPetAvatar: View {
             if let jpegData, let ui = UIImage(data: jpegData) {
                 Image(uiImage: ui)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFill()
             } else {
                 Image(systemName: systemImageName ?? "pawprint.fill")
                     .font(.system(size: size * 0.38, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(widgetCardTextSecondary)
             }
         }
         .frame(width: size, height: size)
-        .scaleEffect(1.06)
+        .scaleEffect(1.14)
         .clipShape(Circle())
     }
 }
@@ -225,11 +231,12 @@ private struct WidgetScheduleEventCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(event.timeLabel(timeFormat24h: timeFormat24h))
                     .font(compact ? .subheadline.bold() : .headline.bold())
+                    .foregroundStyle(widgetCardText)
                     .minimumScaleFactor(0.85)
                     .lineLimit(1)
                 Text(event.activityName)
                     .font(compact ? .caption : .subheadline)
-                    .foregroundStyle(.primary.opacity(0.85))
+                    .foregroundStyle(widgetCardTextSecondary)
                     .lineLimit(2)
             }
 
@@ -238,7 +245,7 @@ private struct WidgetScheduleEventCard: View {
             Image(systemName: "circle")
                 .font(compact ? .title3 : .title2)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.primary)
+                .foregroundStyle(widgetCardText.opacity(0.55))
         }
         .padding(.horizontal, compact ? 14 : 18)
         .padding(.vertical, compact ? 11 : 16)

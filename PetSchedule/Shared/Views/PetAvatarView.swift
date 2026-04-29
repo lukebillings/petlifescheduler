@@ -5,18 +5,20 @@ struct PetAvatarView: View {
     var size: CGFloat = 48
     var glowColor: Color? = nil
 
-    /// Zooms artwork slightly before the circular crop so edge anti-aliasing doesn’t show as a light fringe.
-    private static let cropOverscale: CGFloat = 1.06
+    /// Zooms artwork before circular crop so JPEG fringe / anti-alias doesn’t read as a white ring.
+    private static let cropOverscale: CGFloat = 1.14
 
     var body: some View {
         ZStack {
             if let data = pet.photoData, let uiImage = UIImage(data: data) {
                 Image(uiImage: uiImage)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFill()
             } else {
                 Image(pet.animalType.placeholderImage)
                     .resizable()
+                    .interpolation(.high)
                     .scaledToFill()
             }
         }

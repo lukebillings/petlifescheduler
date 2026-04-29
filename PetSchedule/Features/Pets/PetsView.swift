@@ -72,15 +72,17 @@ private struct PetCard: View {
                 if let data = pet.photoData, let uiImage = UIImage(data: data) {
                     Image(uiImage: uiImage)
                         .resizable()
+                        .interpolation(.high)
                         .scaledToFill()
                 } else {
                     Image(pet.animalType.placeholderImage)
                         .resizable()
+                        .interpolation(.high)
                         .scaledToFill()
                 }
             }
             .frame(width: 72, height: 72)
-            .scaleEffect(1.06)
+            .scaleEffect(1.14)
             .clipShape(RoundedRectangle(cornerRadius: 16))
 
             Text(pet.name)

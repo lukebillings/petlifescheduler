@@ -347,15 +347,17 @@ private struct Step2AddPhoto: View {
                         if let data = photoData, let uiImage = UIImage(data: data) {
                             Image(uiImage: uiImage)
                                 .resizable()
+                                .interpolation(.high)
                                 .scaledToFill()
                         } else {
                             Image(animalType.placeholderImage)
                                 .resizable()
+                                .interpolation(.high)
                                 .scaledToFill()
                         }
                     }
                     .frame(width: 180, height: 180)
-                    .scaleEffect(1.06)
+                    .scaleEffect(1.14)
                     .clipShape(Circle())
                     .shadow(color: animalType.color.opacity(0.4), radius: 12, y: 6)
 

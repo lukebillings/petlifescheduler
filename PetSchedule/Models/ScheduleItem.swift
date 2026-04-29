@@ -9,26 +9,23 @@ enum ScheduleComplianceKind: Equatable {
     /// Short question above the yes / no controls on schedule rows.
     var compliancePrompt: String {
         switch self {
-        case .medicine: return "Taken?"
+        case .medicine: return "Took it?"
         case .feed:     return "Ate food?"
         case .water:    return "Drank water?"
         }
     }
 
+    /// Past-tense outcomes after logging — lowercase chips: took / ate / drank / skipped.
     var acceptedResultLabel: String {
         switch self {
-        case .medicine: return "Taken"
-        case .feed:     return "Ate"
-        case .water:    return "Drank"
+        case .medicine: return "took"
+        case .feed:     return "ate"
+        case .water:    return "drank"
         }
     }
 
     var declinedResultLabel: String {
-        switch self {
-        case .medicine: return "Skipped"
-        case .feed:     return "Didn't eat"
-        case .water:    return "Didn't drink"
-        }
+        "skipped"
     }
 }
 
