@@ -286,15 +286,23 @@ final class HomeViewModel {
 
     func toggleCompletion(for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
+        let wasCompleted = scheduleItems[index].isCompleted
         scheduleItems[index].isCompleted.toggle()
+        if !wasCompleted, scheduleItems[index].isCompleted {
+            AppRatingPrompt.recordTaskCompleted()
+        }
         syncWidgetSchedule()
     }
 
     /// Stores yes/no for medicine, feed, and water (`ScheduleItem.complianceKind`).
     func setMedicineAccepted(_ accepted: Bool, for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
+        let wasIncomplete = !scheduleItems[index].isCompleted
         scheduleItems[index].medicineAccepted = accepted
         scheduleItems[index].isCompleted = true
+        if wasIncomplete {
+            AppRatingPrompt.recordTaskCompleted()
+        }
         syncWidgetSchedule()
     }
 
@@ -387,5 +395,6 @@ final class HomeViewModel {
             )
         )
         WidgetCenter.shared.reloadAllTimelines()
+        ScheduleReminderScheduler.reschedule(for: scheduleItems)
     }
 }

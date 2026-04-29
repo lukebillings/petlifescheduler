@@ -1,4 +1,6 @@
+import PhotosUI
 import SwiftUI
+import UIKit
 
 struct AddEventSheet: View {
     @Environment(\.dismiss) private var dismiss
@@ -13,6 +15,8 @@ struct AddEventSheet: View {
     @State private var endTime = Calendar.current.date(byAdding: .hour, value: 1, to: .now) ?? .now
     @State private var repeatRule: RepeatRule = .never
     @State private var customActivity = false
+    @State private var attachmentPhotoItem: PhotosPickerItem?
+    @State private var attachmentImageData: Data?
 
     private let commonActivities = ["Walk", "Feed", "Give water", "Sleep", "Play", "Vet", "Groom", "Give Medication"]
 
@@ -77,6 +81,32 @@ struct AddEventSheet: View {
                         .lineLimit(3...6)
                 }
 
+                Section {
+                    VStack(alignment: .leading, spacing: 10) {
+                        if let data = attachmentImageData, let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 160)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
+                        PhotosPicker(selection: $attachmentPhotoItem, matching: .images) {
+                            Label(attachmentImageData == nil ? "Add photo" : "Change photo", systemImage: "photo.on.rectangle.angled")
+                        }
+                        if attachmentImageData != nil {
+                            Button("Remove photo", role: .destructive) {
+                                attachmentImageData = nil
+                                attachmentPhotoItem = nil
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Memory")
+                } footer: {
+                    Text("Optional—a snapshot tied to this event.")
+                }
+
                 Section("When") {
                     DatePicker("Start", selection: $eventDate, displayedComponents: [.date, .hourAndMinute])
                     Toggle("Add end time", isOn: $hasEndTime.animation())
@@ -94,6 +124,9 @@ struct AddEventSheet: View {
                     }
                     .pickerStyle(.navigationLink)
                 }
+            }
+            .onChange(of: attachmentPhotoItem) { _, pickerItem in
+                Task { attachmentImageData = try? await pickerItem?.loadTransferable(type: Data.self) }
             }
             .onAppear {
                 if let date = prefilledDate {
@@ -117,7 +150,8 @@ struct AddEventSheet: View {
                                 activityName: activityName,
                                 description: eventDescription,
                                 repeatRule: repeatRule,
-                                pet: pet
+                                pet: pet,
+                                attachmentImageData: attachmentImageData
                             )
                         )
                         viewModel.syncWidgetSchedule()

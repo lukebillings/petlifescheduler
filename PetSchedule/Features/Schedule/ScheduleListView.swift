@@ -53,10 +53,11 @@ struct ScheduleListView: View {
                 VStack(spacing: 12) {
                     // ── All-day events (birthdays) ────────────────────────────
                     if !allDayItems.isEmpty {
-                        ForEach(allDayItems) { item in
+                        ForEach(Array(allDayItems.enumerated()), id: \.element.id) { dayIndex, item in
                             BirthdayRowView(item: item) {
                                 viewingPet = item.pet
                             }
+                            .interfaceSlideInRow(index: dayIndex)
                         }
                     }
 
@@ -88,6 +89,7 @@ struct ScheduleListView: View {
                             }
                             .opacity(isPast ? 0.82 : 1.0)
                             .saturation(isPast ? 0.88 : 1.0)
+                            .interfaceSlideInRow(index: allDayItems.count + index)
                         }
 
                         // If all events are in the past, show NOW bar after last item

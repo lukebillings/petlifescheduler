@@ -62,7 +62,7 @@ struct CalendarScheduleView: View {
 
             // Day grid
             LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(Array(daysInMonth().enumerated()), id: \.offset) { _, date in
+                ForEach(Array(daysInMonth().enumerated()), id: \.offset) { idx, date in
                     if let date {
                         CalendarDayCell(
                             date: date,
@@ -74,6 +74,7 @@ struct CalendarScheduleView: View {
                                 viewModel.selectedCalendarDate = date
                             }
                         }
+                        .interfaceSlideInRow(index: min(idx, 28))
                     } else {
                         Color.clear
                             .aspectRatio(1, contentMode: .fit)
@@ -99,7 +100,7 @@ struct CalendarScheduleView: View {
                 } else {
                     GlassEffectContainer(spacing: 12) {
                         VStack(spacing: 12) {
-                            ForEach(selectedItems) { item in
+                            ForEach(Array(selectedItems.enumerated()), id: \.element.id) { rowIdx, item in
                                 ScheduleRowView(item: item) {
                                     let wasCompleted = item.isCompleted
                                     viewModel.toggleCompletion(for: item)
@@ -116,6 +117,7 @@ struct CalendarScheduleView: View {
                                     viewModel.setMedicineAccepted(accepted, for: item)
                                     HapticManager.notification(.success)
                                 }
+                                .interfaceSlideInRow(index: rowIdx)
                             }
                         }
                     }

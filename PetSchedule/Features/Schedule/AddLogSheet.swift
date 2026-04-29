@@ -14,10 +14,12 @@ struct AddLogSheet: View {
     @State private var occurredAt = Date.now
     @State private var attachmentPhotoItem: PhotosPickerItem?
     @State private var attachmentImageData: Data?
+    @State private var mood: PetMood = .okay
 
     private var resolvedTitle: String {
         switch logKind {
         case .poo, .wee: return logKind.rawValue
+        case .mood: return "Mood"
         case .custom: return customTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         }
     }
@@ -77,6 +79,12 @@ struct AddLogSheet: View {
 
                     if logKind == .custom {
                         TextField("What happened?", text: $customTitle)
+                    }
+                }
+
+                if logKind == .mood {
+                    Section("How were they feeling?") {
+                        MoodLogPicker(selection: $mood)
                     }
                 }
 
@@ -142,6 +150,7 @@ struct AddLogSheet: View {
                                 pet: pet,
                                 isCompleted: true,
                                 quickLogKind: logKind,
+                                petMood: logKind == .mood ? mood : nil,
                                 attachmentImageData: attachmentImageData
                             )
                         )
@@ -152,6 +161,45 @@ struct AddLogSheet: View {
                     .disabled(!canSave)
                 }
             }
+        }
+    }
+}
+
+/// Horizontal chips for mood logging on **Log**.
+struct MoodLogPicker: View {
+    @Binding var selection: PetMood
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(PetMood.allCases) { mood in
+                    let selected = selection == mood
+                    Button {
+                        selection = mood
+                    } label: {
+                        VStack(spacing: 4) {
+                            Text(mood.emoji)
+                                .font(.title)
+                            Text(mood.rawValue)
+                                .font(.caption2.bold())
+                                .foregroundStyle(selected ? Color.appPink : .secondary)
+                        }
+                        .frame(width: 72)
+                        .padding(.vertical, 10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(selected ? Color.appPink.opacity(0.14) : Color(.secondarySystemBackground))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .strokeBorder(selected ? Color.appPink : .clear, lineWidth: 2)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(mood.rawValue)
+                }
+            }
+            .padding(.vertical, 4)
         }
     }
 }

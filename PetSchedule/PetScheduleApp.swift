@@ -11,6 +11,8 @@ struct PetScheduleApp: App {
     }()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var showSplash = true
+    /// One-shot tour of main tabs after the onboarding paywall (same session only).
+    @State private var showPostPaywallFeatureTutorial = false
 
     var body: some Scene {
         WindowGroup {
@@ -20,9 +22,10 @@ struct PetScheduleApp: App {
                         showSplash = false
                     }
                 } else if hasCompletedOnboarding {
-                    HomeView(viewModel: homeViewModel)
+                    HomeView(viewModel: homeViewModel, showFeatureTutorial: $showPostPaywallFeatureTutorial)
                 } else {
                     OnboardingView(viewModel: homeViewModel) {
+                        showPostPaywallFeatureTutorial = true
                         hasCompletedOnboarding = true
                     }
                 }

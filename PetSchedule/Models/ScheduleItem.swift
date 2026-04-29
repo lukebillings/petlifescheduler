@@ -51,10 +51,11 @@ enum RepeatRule: String, CaseIterable, Identifiable {
     }
 }
 
-/// One-off bathroom / care logs (poo, wee, or custom) from **+ Log**; shown with a pink-tinted row.
+/// One-off bathroom / care logs from **+ Log**; shown with a pink-tinted row.
 enum QuickLogKind: String, CaseIterable, Identifiable {
     case poo = "Poo"
     case wee = "Wee"
+    case mood = "Mood"
     case custom = "Custom"
 
     var id: String { rawValue }
@@ -63,7 +64,29 @@ enum QuickLogKind: String, CaseIterable, Identifiable {
         switch self {
         case .poo: return "toilet.fill"
         case .wee: return "drop.fill"
+        case .mood: return "face.smiling"
         case .custom: return "note.text"
+        }
+    }
+}
+
+/// Recorded with **Log → Mood** for behaviour / wellbeing notes.
+enum PetMood: String, CaseIterable, Identifiable, Hashable {
+    case great = "Great"
+    case good = "Good"
+    case okay = "Okay"
+    case low = "Low"
+    case anxious = "Anxious"
+
+    var id: String { rawValue }
+
+    var emoji: String {
+        switch self {
+        case .great: return "😄"
+        case .good: return "🙂"
+        case .okay: return "😐"
+        case .low: return "😔"
+        case .anxious: return "😰"
         }
     }
 }
@@ -83,7 +106,9 @@ struct ScheduleItem: Identifiable {
     var medicineAccepted: Bool?
     /// Set for quick logs from **+ Log**; drives icon and pink row styling.
     var quickLogKind: QuickLogKind?
-    /// Optional photo attached to a quick log (or other event).
+    /// How the pet seemed — only used when `quickLogKind == .mood`.
+    var petMood: PetMood?
+    /// Optional photo (“memory”) attached to this event or quick log.
     var attachmentImageData: Data?
 
     init(
@@ -99,6 +124,7 @@ struct ScheduleItem: Identifiable {
         isBirthday: Bool = false,
         medicineAccepted: Bool? = nil,
         quickLogKind: QuickLogKind? = nil,
+        petMood: PetMood? = nil,
         attachmentImageData: Data? = nil
     ) {
         self.id = id
@@ -113,6 +139,7 @@ struct ScheduleItem: Identifiable {
         self.isBirthday = isBirthday
         self.medicineAccepted = medicineAccepted
         self.quickLogKind = quickLogKind
+        self.petMood = petMood
         self.attachmentImageData = attachmentImageData
     }
 

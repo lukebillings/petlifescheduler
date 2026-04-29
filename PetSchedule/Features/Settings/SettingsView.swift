@@ -9,6 +9,7 @@ struct SettingsView: View {
     @AppStorage("reminderMinutes") private var reminderMinutes = 10
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("soundEffectsEnabled") private var soundEffectsEnabled = true
+    @AppStorage("interfaceAnimationsEnabled") private var interfaceAnimationsEnabled = true
     @AppStorage("timeFormat")  private var timeFormatRaw  = "24h"
     @AppStorage("weightUnit")  private var weightUnitRaw  = "kg"
     @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
@@ -46,7 +47,13 @@ struct SettingsView: View {
                         .tint(Color.appPink)
                         .onChange(of: remindersEnabled) { _, enabled in
                             if enabled {
-                                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+                                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in
+                                    DispatchQueue.main.async {
+                                        viewModel.syncWidgetSchedule()
+                                    }
+                                }
+                            } else {
+                                viewModel.syncWidgetSchedule()
                             }
                         }
 
@@ -93,8 +100,11 @@ struct SettingsView: View {
                         }
                     }
                 }
+                .onChange(of: reminderMinutes) { _, _ in
+                    viewModel.syncWidgetSchedule()
+                }
 
-                Section("App") {
+                Section {
                     Toggle(isOn: $hapticsEnabled) {
                         Label("Haptic feedback", systemImage: "iphone.radiowaves.left.and.right")
                     }
@@ -104,6 +114,15 @@ struct SettingsView: View {
                         Label("Sound effects", systemImage: "speaker.wave.2.fill")
                     }
                     .tint(Color.appPink)
+
+                    Toggle(isOn: $interfaceAnimationsEnabled) {
+                        Label("Interface animations", systemImage: "sparkles")
+                    }
+                    .tint(Color.appPink)
+                } header: {
+                    Text("App")
+                } footer: {
+                    Text("Lists and panels slide in subtly when they load. Turn off here for less motion; Settings › Accessibility › Motion › Reduce Motion also disables these animations.")
                 }
 
                 Section("Units") {

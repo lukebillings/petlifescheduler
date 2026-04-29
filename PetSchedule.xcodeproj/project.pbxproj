@@ -30,10 +30,14 @@
 		D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */; };
 		D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */; };
 		D72C7128A019801C00BF8732 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
+		F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */; };
+		C7D8E9F01234567890123457 /* ScheduleReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */; };
 		D7497F803AB294807D80630D /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */; };
 		E344CC248B2F9819D2ABAB82 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C629F5BF9352863F3F86CEF /* OnboardingView.swift */; };
 		E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C426C7BD93CA490A97C5D60E /* SettingsView.swift */; };
 		E91FAA118C7D4520B83E9002 /* LaunchSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91FAA118C7D4520B83E9001 /* LaunchSplashView.swift */; };
+		E93BBB012345678901234502 /* InterfaceMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93BBB012345678901234501 /* InterfaceMotion.swift */; };
+		A1B8C9D01EF243561728394B /* FeatureTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B8C9D01EF243561728394A /* FeatureTutorialOverlay.swift */; };
 		E92F4B81D406413472DFCEDF /* ScheduleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A63243C759BB8D063AF92A /* ScheduleListView.swift */; };
 		F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */; };
 		F86A00D102A14D00A2000001 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
@@ -46,6 +50,8 @@
 /* Begin PBXFileReference section */
 		004BEB5D563AD507764446BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+		F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPrompt.swift; sourceTree = "<group>"; };
+		C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleReminderScheduler.swift; sourceTree = "<group>"; };
 		085D2996E216446E27F6CDA6 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
 		12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetailSheet.swift; sourceTree = "<group>"; };
 		1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
@@ -71,6 +77,8 @@
 		DD3FD342A675248F7267C680 /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
 		E228C28C3910BD1ACD24EAD9 /* ScheduleRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRowView.swift; sourceTree = "<group>"; };
 		E91FAA118C7D4520B83E9001 /* LaunchSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSplashView.swift; sourceTree = "<group>"; };
+		E93BBB012345678901234501 /* InterfaceMotion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterfaceMotion.swift; sourceTree = "<group>"; };
+		A1B8C9D01EF243561728394A /* FeatureTutorialOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTutorialOverlay.swift; sourceTree = "<group>"; };
 		E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeightEntry.swift; sourceTree = "<group>"; };
 		EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntry.swift; sourceTree = "<group>"; };
 		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -123,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				B91838FB176EEFF031E2CD16 /* ConfettiView.swift */,
+				A1B8C9D01EF243561728394A /* FeatureTutorialOverlay.swift */,
 				E91FAA118C7D4520B83E9001 /* LaunchSplashView.swift */,
 				5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */,
 			);
@@ -146,9 +155,12 @@
 			isa = PBXGroup;
 			children = (
 				082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */,
+				F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */,
 				1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */,
+				E93BBB012345678901234501 /* InterfaceMotion.swift */,
 				4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */,
 				217BD314318A028856956D09 /* PetPDFGenerator.swift */,
+				C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */,
 				F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */,
 				46B5109A87B29D224A344EA1 /* Views */,
 			);
@@ -368,12 +380,16 @@
 				85C6FCBBEFD03F516B9F94A4 /* AnalyticsView.swift in Sources */,
 				4B02216A6044074925DA1D5F /* AnimalType.swift in Sources */,
 				D72C7128A019801C00BF8732 /* AppColors.swift in Sources */,
+				F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */,
+				C7D8E9F01234567890123457 /* ScheduleReminderScheduler.swift in Sources */,
 				D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */,
 				223A36163E699597848BCD3A /* ConfettiView.swift in Sources */,
 				66067D350BD915B5E4A0CD8A /* EditEventSheet.swift in Sources */,
 				D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */,
 				855DDBBC929D3FF621EB9976 /* HeightEntry.swift in Sources */,
 				E91FAA118C7D4520B83E9002 /* LaunchSplashView.swift in Sources */,
+				E93BBB012345678901234502 /* InterfaceMotion.swift in Sources */,
+				A1B8C9D01EF243561728394B /* FeatureTutorialOverlay.swift in Sources */,
 				8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */,
 				19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */,
 				13B3F254B52D23745C8D53FF /* MeasurementSettings.swift in Sources */,

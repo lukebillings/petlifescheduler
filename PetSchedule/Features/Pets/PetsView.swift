@@ -17,9 +17,10 @@ struct PetsView: View {
                 } else {
                     ScrollView {
                         LazyVStack(spacing: 16) {
-                            ForEach(viewModel.pets) { pet in
+                            ForEach(Array(viewModel.pets.enumerated()), id: \.element.id) { index, pet in
                                 PetCard(pet: pet)
                                     .onTapGesture { editingPet = pet }
+                                    .interfaceSlideInRow(index: index)
                                     .contextMenu {
                                         Button(role: .destructive) {
                                             withAnimation { viewModel.deletePet(pet) }

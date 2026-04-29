@@ -26,6 +26,11 @@ struct ScheduleRowView: View {
                     .opacity(0.85)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
+                if let mood = item.petMood {
+                    Text("\(mood.emoji) \(mood.rawValue)")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.appPink.opacity(0.95))
+                }
                 if !item.description.isEmpty {
                     Text(item.description)
                         .font(.caption)
@@ -182,6 +187,7 @@ private struct CareCompliancePill: View {
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give water", pet: pet, medicineAccepted: true)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Poo", pet: pet, isCompleted: true, quickLogKind: .poo)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Accident", description: "Kitchen", pet: pet, isCompleted: true, quickLogKind: .custom)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Mood", pet: pet, isCompleted: true, quickLogKind: .mood, petMood: .good)) {}
     }
     .padding()
 }
