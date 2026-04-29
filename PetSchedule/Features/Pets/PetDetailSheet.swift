@@ -32,6 +32,22 @@ struct PetDetailSheet: View {
             default: return true
             }
         }
+
+        var pillSymbol: String {
+            switch self {
+            case .age: return "hourglass.bottomhalf.filled"
+            case .photo: return "camera.fill"
+            case .details: return "list.bullet.rectangle"
+            case .notes: return "note.text"
+            case .vet: return "cross.case.fill"
+            case .documents: return "doc.fill"
+            case .export: return "square.and.arrow.up"
+            case .weight: return "scalemass.fill"
+            case .height: return "ruler.fill"
+            case .birthday: return "gift.fill"
+            case .data: return "chart.bar.doc.horizontal"
+            }
+        }
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -82,6 +98,7 @@ struct PetDetailSheet: View {
     @State private var showClearPetDataConfirm = false
     @State private var showRemovePetConfirm = false
     @State private var showVetDetailsCopiedToast = false
+    @State private var selectedJumpSection: JumpSection?
 
     private let petID: UUID
     private let isNew: Bool
@@ -842,22 +859,27 @@ struct PetDetailSheet: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(visibleJumpSections, id: \.self) { section in
+                    let sel = selectedJumpSection == section
                     Button {
                         HapticManager.impact(.light)
+                        withAnimation(.spring(duration: 0.25)) {
+                            selectedJumpSection = section
+                        }
                         withAnimation(.easeInOut(duration: 0.28)) {
                             proxy.scrollTo(section.rawValue, anchor: .top)
                         }
                     } label: {
-                        Text(section.pillTitle)
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.primary)
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 7)
-                            .background(Color(.tertiarySystemGroupedBackground), in: Capsule())
-                            .overlay {
-                                Capsule()
-                                    .strokeBorder(Color.appPink.opacity(0.35), lineWidth: 1)
-                            }
+                        HStack(spacing: 8) {
+                            Image(systemName: section.pillSymbol)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(sel ? Color.white : Color.black)
+                            Text(section.pillTitle)
+                                .font(.subheadline.bold())
+                                .foregroundStyle(sel ? Color.white : Color.black)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(sel ? Color.appPink : Color.white, in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }
