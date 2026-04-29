@@ -10,16 +10,24 @@ struct PetScheduleApp: App {
         #endif
     }()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @State private var showSplash = true
 
     var body: some Scene {
         WindowGroup {
-            if hasCompletedOnboarding {
-                HomeView(viewModel: homeViewModel)
-            } else {
-                OnboardingView(viewModel: homeViewModel) {
-                    hasCompletedOnboarding = true
+            Group {
+                if showSplash {
+                    LaunchSplashView {
+                        showSplash = false
+                    }
+                } else if hasCompletedOnboarding {
+                    HomeView(viewModel: homeViewModel)
+                } else {
+                    OnboardingView(viewModel: homeViewModel) {
+                        hasCompletedOnboarding = true
+                    }
                 }
             }
+            .animation(.easeOut(duration: 0.35), value: showSplash)
         }
     }
 }

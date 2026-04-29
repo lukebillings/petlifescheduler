@@ -283,9 +283,10 @@ struct AnalyticsView: View {
                                 .foregroundStyle(selectedPetID == nil ? Color.appPink : .secondary)
                         }
                         .overlay {
-                            Circle()
-                                .stroke(Color.appPink, lineWidth: 3)
-                                .opacity(selectedPetID == nil ? 1 : 0)
+                            if selectedPetID == nil {
+                                Circle()
+                                    .strokeBorder(Color.appPink, lineWidth: 3)
+                            }
                         }
                         Text("All")
                             .font(.caption.bold())
@@ -304,11 +305,12 @@ struct AnalyticsView: View {
                         VStack(spacing: 6) {
                             PetAvatarView(pet: pet, size: 60)
                                 .overlay {
-                                    Circle()
-                                        .stroke(Color.appPink, lineWidth: 3)
-                                        .opacity(sel ? 1 : 0)
+                                    if sel {
+                                        Circle()
+                                            .strokeBorder(Color.appPink, lineWidth: 3)
+                                    }
                                 }
-                                .scaleEffect(sel ? 1.08 : 1.0)
+                                .scaleEffect(sel ? 1.05 : 1.0)
                             Text(pet.name)
                                 .font(.caption.bold())
                                 .foregroundStyle(sel ? Color.appPink : .secondary)

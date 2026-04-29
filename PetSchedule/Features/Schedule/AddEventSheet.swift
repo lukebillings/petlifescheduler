@@ -36,11 +36,12 @@ struct AddEventSheet: View {
                                         VStack(spacing: 6) {
                                             PetAvatarView(pet: pet, size: 52)
                                                 .overlay {
-                                                    Circle()
-                                                        .stroke(Color.appPink, lineWidth: 3)
-                                                        .opacity(isSelected ? 1 : 0)
+                                                    if isSelected {
+                                                        Circle()
+                                                            .strokeBorder(Color.appPink, lineWidth: 3)
+                                                    }
                                                 }
-                                                .scaleEffect(isSelected ? 1.08 : 1.0)
+                                                .scaleEffect(isSelected ? 1.05 : 1.0)
                                             Text(pet.name)
                                                 .font(.caption.bold())
                                                 .foregroundStyle(isSelected ? Color.appPink : Color.secondary)

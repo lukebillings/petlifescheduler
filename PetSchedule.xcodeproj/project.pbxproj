@@ -33,6 +33,7 @@
 		D7497F803AB294807D80630D /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */; };
 		E344CC248B2F9819D2ABAB82 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C629F5BF9352863F3F86CEF /* OnboardingView.swift */; };
 		E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C426C7BD93CA490A97C5D60E /* SettingsView.swift */; };
+		E91FAA118C7D4520B83E9002 /* LaunchSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E91FAA118C7D4520B83E9001 /* LaunchSplashView.swift */; };
 		E92F4B81D406413472DFCEDF /* ScheduleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A63243C759BB8D063AF92A /* ScheduleListView.swift */; };
 		F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */; };
 		F86A00D102A14D00A2000001 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
@@ -69,6 +70,7 @@
 		CED9087F17B21DC83D342723 /* ScheduleItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleItem.swift; sourceTree = "<group>"; };
 		DD3FD342A675248F7267C680 /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
 		E228C28C3910BD1ACD24EAD9 /* ScheduleRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRowView.swift; sourceTree = "<group>"; };
+		E91FAA118C7D4520B83E9001 /* LaunchSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchSplashView.swift; sourceTree = "<group>"; };
 		E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeightEntry.swift; sourceTree = "<group>"; };
 		EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntry.swift; sourceTree = "<group>"; };
 		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -121,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				B91838FB176EEFF031E2CD16 /* ConfettiView.swift */,
+				E91FAA118C7D4520B83E9001 /* LaunchSplashView.swift */,
 				5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */,
 			);
 			path = Views;
@@ -370,6 +373,7 @@
 				66067D350BD915B5E4A0CD8A /* EditEventSheet.swift in Sources */,
 				D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */,
 				855DDBBC929D3FF621EB9976 /* HeightEntry.swift in Sources */,
+				E91FAA118C7D4520B83E9002 /* LaunchSplashView.swift in Sources */,
 				8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */,
 				19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */,
 				13B3F254B52D23745C8D53FF /* MeasurementSettings.swift in Sources */,

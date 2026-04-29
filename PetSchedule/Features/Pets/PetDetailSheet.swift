@@ -109,10 +109,6 @@ struct PetDetailSheet: View {
                         ZStack(alignment: .bottomTrailing) {
                             petProfileCoverImage
                                 .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
-                                )
 
                             Circle()
                                 .fill(Color.appPink)
@@ -791,6 +787,7 @@ struct PetDetailSheet: View {
         }
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
+        .scaleEffect(1.03)
         .clipped()
     }
 

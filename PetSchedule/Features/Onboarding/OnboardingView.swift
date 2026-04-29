@@ -348,16 +348,15 @@ private struct Step2AddPhoto: View {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .scaledToFill()
-                                .frame(width: 180, height: 180)
-                                .clipShape(Circle())
                         } else {
                             Image(animalType.placeholderImage)
                                 .resizable()
                                 .scaledToFill()
-                                .frame(width: 180, height: 180)
-                                .clipShape(Circle())
                         }
                     }
+                    .frame(width: 180, height: 180)
+                    .scaleEffect(1.06)
+                    .clipShape(Circle())
                     .shadow(color: animalType.color.opacity(0.4), radius: 12, y: 6)
 
                     // Camera badge

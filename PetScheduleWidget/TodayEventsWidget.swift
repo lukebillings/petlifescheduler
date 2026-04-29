@@ -8,7 +8,7 @@ struct TodayEventsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: TodayEventsWidget.kind, provider: TodayEventsProvider()) { entry in
             TodayEventsWidgetView(entry: entry)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(Color(uiColor: .systemGroupedBackground), for: .widget)
         }
         .configurationDisplayName("Today's schedule")
         .description("Next upcoming events for your pets today.")
@@ -94,10 +94,6 @@ struct TodayEventsWidgetView: View {
         compactCards || (family == .systemMedium && displayedEvents.count >= 2)
     }
 
-    private var title: String {
-        Date().formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
-    }
-
     private var noEventsToday: Bool {
         entry.totalTodayEventCount == 0 && entry.events.isEmpty
     }
@@ -108,10 +104,6 @@ struct TodayEventsWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: compactCards ? 6 : 8) {
-            Text(title)
-                .font(compactCards ? .caption2.bold() : .subheadline.bold())
-                .foregroundStyle(.secondary)
-
             if noEventsToday {
                 Text("No events today")
                     .font(compactCards ? .subheadline.bold() : .body.bold())
@@ -141,7 +133,7 @@ struct TodayEventsWidgetView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         // Explicit insets — `widgetContentMargins` + `glassEffect` led to empty / clipped layouts on device.
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 6)
         .padding(.vertical, 8)
     }
 }
@@ -182,7 +174,7 @@ struct TodayEventsWidgetView: View {
     )
 }
 
-// MARK: - Card chrome like `ScheduleRowView` (material vs pink quick log; no `glassEffect` in widgets)
+// MARK: - White cards on grouped background (quick log: pink stroke; no `glassEffect` in widgets)
 
 private struct WidgetPetAvatar: View {
     let jpegData: Data?
@@ -202,6 +194,7 @@ private struct WidgetPetAvatar: View {
             }
         }
         .frame(width: size, height: size)
+        .scaleEffect(1.06)
         .clipShape(Circle())
     }
 }
@@ -251,12 +244,12 @@ private struct WidgetScheduleEventCard: View {
         .padding(.vertical, compact ? 11 : 16)
         .background {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(isQuickLog ? AnyShapeStyle(widgetPink.opacity(0.2)) : AnyShapeStyle(.ultraThinMaterial))
+                .fill(Color.white)
         }
         .overlay {
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .strokeBorder(
-                    isQuickLog ? widgetPink.opacity(0.35) : Color.primary.opacity(0.1),
+                    isQuickLog ? widgetPink.opacity(0.45) : Color.black.opacity(0.06),
                     lineWidth: 1
                 )
         }
