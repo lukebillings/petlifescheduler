@@ -24,11 +24,15 @@ struct ScheduleRowView: View {
                 Text(item.activityName)
                     .font(.subheadline)
                     .opacity(0.85)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
                 if !item.description.isEmpty {
                     Text(item.description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineLimit(4)
                 }
                 if item.repeatRule != .never {
                     Label(item.repeatRule.rawValue, systemImage: item.repeatRule.icon)
@@ -48,6 +52,8 @@ struct ScheduleRowView: View {
                         .padding(.top, 4)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
 
             Spacer()
 
@@ -66,7 +72,7 @@ struct ScheduleRowView: View {
                 Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(item.isCompleted ? Color(red: 0.0, green: 0.55, blue: 0.2) : .primary)
+                    .foregroundStyle(item.isCompleted ? Color.complianceAccept : .primary)
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
@@ -122,16 +128,16 @@ private struct CareCompliancePill: View {
                     Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
                         .font(.caption2.bold())
                 }
-                .foregroundStyle(accepted ? Color.green : Color.red)
+                .foregroundStyle(accepted ? Color.complianceAccept : Color.complianceDecline)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 5)
                 .background(
                     Capsule()
-                        .fill(accepted ? Color.green.opacity(0.12) : Color.red.opacity(0.12))
+                        .fill(accepted ? Color.complianceAccept.opacity(0.14) : Color.complianceDecline.opacity(0.14))
                 )
                 .overlay(
                     Capsule()
-                        .stroke(accepted ? Color.green.opacity(0.35) : Color.red.opacity(0.35), lineWidth: 1)
+                        .stroke(accepted ? Color.complianceAccept.opacity(0.4) : Color.complianceDecline.opacity(0.4), lineWidth: 1)
                 )
             } else {
                 VStack(alignment: .center, spacing: 6) {
@@ -145,7 +151,7 @@ private struct CareCompliancePill: View {
                                 .font(.caption2.bold())
                                 .foregroundStyle(.white)
                                 .frame(width: 26, height: 26)
-                                .background(Color.green, in: Circle())
+                                .background(Color.complianceAccept, in: Circle())
                         }
                         .buttonStyle(.plain)
 
@@ -154,7 +160,7 @@ private struct CareCompliancePill: View {
                                 .font(.caption2.bold())
                                 .foregroundStyle(.white)
                                 .frame(width: 26, height: 26)
-                                .background(Color.red, in: Circle())
+                                .background(Color.complianceDecline, in: Circle())
                         }
                         .buttonStyle(.plain)
                     }

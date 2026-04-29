@@ -262,6 +262,18 @@ final class HomeViewModel {
         return (birthdays + regular).sorted { $0.time < $1.time }
     }
 
+    /// Incomplete tasks scheduled for today for this pet (matches Today list semantics).
+    func pendingTodayTaskCount(for pet: Pet) -> Int {
+        let cal = Calendar.current
+        let regular = scheduleItems.filter {
+            cal.isDateInToday($0.time) && $0.pet.id == pet.id && !$0.isCompleted
+        }.count
+        let birthdays = birthdayItems(on: .now).filter {
+            $0.pet.id == pet.id && !$0.isCompleted
+        }.count
+        return regular + birthdays
+    }
+
     func items(for date: Date) -> [ScheduleItem] {
         let regular = scheduleItems
             .filter { Calendar.current.isDate($0.time, inSameDayAs: date) }

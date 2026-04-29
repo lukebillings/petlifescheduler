@@ -21,20 +21,37 @@ struct ScheduleView: View {
                             HStack(spacing: 14) {
                                 ForEach(viewModel.pets) { pet in
                                     let isSelected = viewModel.selectedPet?.id == pet.id
+                                    let pending = viewModel.pendingTodayTaskCount(for: pet)
                                     Button {
                                         withAnimation(.spring(duration: 0.25)) {
                                             viewModel.togglePetFilter(pet)
                                         }
                                     } label: {
                                         VStack(spacing: 6) {
-                                            PetAvatarView(pet: pet, size: 60)
-                                                .overlay {
-                                                    if isSelected {
-                                                        Circle()
-                                                            .strokeBorder(Color.appPink, lineWidth: 3)
+                                            ZStack(alignment: .topTrailing) {
+                                                PetAvatarView(pet: pet, size: 60)
+                                                    .overlay {
+                                                        if isSelected {
+                                                            Circle()
+                                                                .strokeBorder(Color.appPink, lineWidth: 3)
+                                                        }
                                                     }
+                                                    .scaleEffect(isSelected ? 1.05 : 1.0)
+
+                                                if pending > 0 {
+                                                    Text(pending > 99 ? "99+" : "\(pending)")
+                                                        .font(.system(size: 11, weight: .bold))
+                                                        .foregroundStyle(.white)
+                                                        .padding(.horizontal, pending > 9 ? 5 : 0)
+                                                        .frame(minWidth: 18, minHeight: 18)
+                                                        .background(Color.appPink, in: Capsule())
+                                                        .overlay(
+                                                            Capsule()
+                                                                .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
+                                                        )
+                                                        .offset(x: 8, y: -8)
                                                 }
-                                                .scaleEffect(isSelected ? 1.05 : 1.0)
+                                            }
                                             Text(pet.name)
                                                 .font(.caption.bold())
                                                 .foregroundStyle(isSelected ? Color.appPink : Color.secondary)

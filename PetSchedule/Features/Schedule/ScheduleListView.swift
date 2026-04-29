@@ -86,8 +86,8 @@ struct ScheduleListView: View {
                                 viewModel.setMedicineAccepted(accepted, for: item)
                                 HapticManager.notification(.success)
                             }
-                            .opacity(isPast ? 0.45 : 1.0)
-                            .saturation(isPast ? 0.4 : 1.0)
+                            .opacity(isPast ? 0.82 : 1.0)
+                            .saturation(isPast ? 0.88 : 1.0)
                         }
 
                         // If all events are in the past, show NOW bar after last item
