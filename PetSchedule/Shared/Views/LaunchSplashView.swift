@@ -26,7 +26,8 @@ struct LaunchSplashView: View {
             .padding(.vertical, 48)
         }
         .onAppear {
-            let seconds = reduceMotion ? 1.0 : 2.3
+            // Half of prior durations (~2.3s → ~1.15s).
+            let seconds = reduceMotion ? 0.5 : 1.15
             DispatchQueue.main.asyncAfter(deadline: .now() + seconds) {
                 onFinished()
             }
@@ -36,9 +37,9 @@ struct LaunchSplashView: View {
 
 // MARK: - Orbiting icons
 
-/// Two cats orbit **together on the inner ring** (opposite each other); two dogs orbit **together on the outer ring**
-/// (opposite each other). Inner and outer use **different** speeds/phases so dogs aren’t “linked” to the cats — four independent sprites,
-/// species grouped only by radius as requested (“two of each”).
+/// Two cats opposite on the inner ring; two dogs opposite on the outer ring.
+/// Sprites are exported from the AppIcon cat/dog halves (centered art with margin — avoids flush-edge clipping from the older splash composite).
+/// Both rings rotate **clockwise** at slightly different rates so the icons don’t stay radially locked.
 private struct OrbitingPetIconsView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -46,10 +47,10 @@ private struct OrbitingPetIconsView: View {
     private let outerRadius: CGFloat = 118
     private let assetSize: CGFloat = 76
 
-    /// Inner-ring angular velocity (rad/s).
+    /// Clockwise (positive angular velocity with sin/cos offsets below).
     private let innerAngularSpeed: Double = 0.72
-    /// Outer ring differs slightly so cats/dogs don’t rotate as one rigid crosshair.
-    private let outerAngularSpeed: Double = -0.61
+    /// Same direction, slightly slower + phase so outer dogs drift relative to inner cats.
+    private let outerAngularSpeed: Double = 0.61
 
     private var orbitExtent: CGFloat {
         outerRadius * 2 + assetSize + 28
@@ -88,7 +89,7 @@ private struct OrbitingPetIconsView: View {
             .interpolation(.high)
             .scaledToFit()
             .frame(width: assetSize, height: assetSize)
-            .shadow(color: .black.opacity(0.22), radius: 5, y: 3)
+            .shadow(color: .black.opacity(0.18), radius: 4, y: 2)
             .offset(
                 x: radius * CGFloat(sin(angle)),
                 y: -radius * CGFloat(cos(angle))
