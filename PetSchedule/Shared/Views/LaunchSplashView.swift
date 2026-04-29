@@ -36,50 +36,57 @@ struct LaunchSplashView: View {
 
 // MARK: - Orbiting icons
 
+/// Cat and dog each follow **their own** circular path (nested rings), so they never sit side-by-side as duplicated pairs.
 private struct OrbitingPetIconsView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Left/right halves of `AppIcon.png` — same cat & dog faces as the home-screen icon.
-    private let orbitingAssets = ["SplashCat", "SplashDog", "SplashCat", "SplashDog"]
-    private let radius: CGFloat = 100
+    /// Inner path — cat only (`SplashCat` matches app-icon artwork).
+    private let innerRadius: CGFloat = 78
+    /// Outer path — dog only.
+    private let outerRadius: CGFloat = 118
     private let assetSize: CGFloat = 76
+
+    /// Rad/s — same feel as the previous single-ring splash.
+    private let angularSpeed: Double = 0.72
+
+    private var orbitExtent: CGFloat {
+        outerRadius * 2 + assetSize + 28
+    }
 
     var body: some View {
         Group {
             if reduceMotion {
-                staticRing
+                dualRing(catAngle: .pi * 0.5, dogAngle: -.pi * 0.5)
             } else {
                 TimelineView(.animation(minimumInterval: 1 / 60, paused: false)) { timeline in
-                    let spin = timeline.date.timeIntervalSinceReferenceDate * 0.72
-                    ring(angleOffset: spin)
+                    let spin = timeline.date.timeIntervalSinceReferenceDate * angularSpeed
+                    // Cat on inner ring clockwise; dog on outer ring counter-clockwise so they weave instead of lining up.
+                    dualRing(catAngle: spin, dogAngle: -spin)
                 }
             }
         }
-        .frame(width: radius * 2 + assetSize + 24, height: radius * 2 + assetSize + 24)
+        .frame(width: orbitExtent, height: orbitExtent)
     }
 
-    private var staticRing: some View {
-        ring(angleOffset: 0)
-    }
-
-    private func ring(angleOffset: Double) -> some View {
+    private func dualRing(catAngle: Double, dogAngle: Double) -> some View {
         ZStack {
-            ForEach(Array(orbitingAssets.enumerated()), id: \.offset) { index, assetName in
-                let base = 2 * Double.pi * Double(index) / Double(orbitingAssets.count)
-                let angle = base + angleOffset
-                Image(assetName)
-                    .renderingMode(.original)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .frame(width: assetSize, height: assetSize)
-                    .shadow(color: .black.opacity(0.22), radius: 5, y: 3)
-                    .offset(
-                        x: radius * CGFloat(sin(angle)),
-                        y: -radius * CGFloat(cos(angle))
-                    )
-            }
+            orbitingPetAsset("SplashCat", radius: innerRadius, angle: catAngle)
+            orbitingPetAsset("SplashDog", radius: outerRadius, angle: dogAngle)
         }
+    }
+
+    private func orbitingPetAsset(_ name: String, radius: CGFloat, angle: Double) -> some View {
+        Image(name)
+            .renderingMode(.original)
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(width: assetSize, height: assetSize)
+            .shadow(color: .black.opacity(0.22), radius: 5, y: 3)
+            .offset(
+                x: radius * CGFloat(sin(angle)),
+                y: -radius * CGFloat(cos(angle))
+            )
     }
 }
 

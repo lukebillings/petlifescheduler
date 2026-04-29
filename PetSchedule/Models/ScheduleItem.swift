@@ -1,7 +1,7 @@
 import Foundation
 
 /// Tracks yes/no logging for medicine, feeding, and water (stored in `medicineAccepted`).
-enum ScheduleComplianceKind: Equatable {
+enum ScheduleComplianceKind: Equatable, Hashable {
     case medicine
     case feed
     case water
@@ -26,6 +26,70 @@ enum ScheduleComplianceKind: Equatable {
 
     var declinedResultLabel: String {
         "skipped"
+    }
+
+    /// Analytics section titles (schedule yes/no compliance).
+    var analyticsSectionTitle: String {
+        switch self {
+        case .medicine: return "Medicine Compliance"
+        case .feed:     return "Feeding Compliance"
+        case .water:    return "Water Compliance"
+        }
+    }
+
+    /// Full-screen log title when filtering by pet (`petName` nil → all pets).
+    func logNavigationTitle(petName: String?) -> String {
+        let base: String = {
+            switch self {
+            case .medicine: return "Medicine Log"
+            case .feed:     return "Feeding Log"
+            case .water:    return "Water Log"
+            }
+        }()
+        if let name = petName { return "\(name)'s \(base)" }
+        return base
+    }
+
+    var logEmptySystemImage: String {
+        switch self {
+        case .medicine: return "pill.fill"
+        case .feed:     return "fork.knife"
+        case .water:    return "drop.fill"
+        }
+    }
+
+    var logEmptyTitle: String {
+        switch self {
+        case .medicine: return "No Medicine Events"
+        case .feed:     return "No Feeding Events"
+        case .water:    return "No Water Events"
+        }
+    }
+
+    var logEmptyDescription: String {
+        switch self {
+        case .medicine: return "No medicine events have been logged yet."
+        case .feed:     return "No feeding events have been logged yet."
+        case .water:    return "No water events have been logged yet."
+        }
+    }
+
+    /// Day card copy when there are no rows for that calendar day.
+    var logDayEmptyRowLabel: String {
+        switch self {
+        case .medicine: return "No medicine scheduled"
+        case .feed:     return "No feeding scheduled"
+        case .water:    return "No water scheduled"
+        }
+    }
+
+    /// Shown under the chart when the selected date range has no rows for this pet.
+    var analyticsPeriodEmptyMessage: String {
+        switch self {
+        case .medicine: return "No medicine events in this period."
+        case .feed:     return "No feeding events in this period."
+        case .water:    return "No water events in this period."
+        }
     }
 }
 

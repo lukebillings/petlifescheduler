@@ -52,6 +52,7 @@ struct PetDetailSheet: View {
     @State private var pdfExportActivity: PDFExportActivity = .idle
     @State private var showClearPetDataConfirm = false
     @State private var showRemovePetConfirm = false
+    @State private var showVetDetailsCopiedToast = false
 
     private let petID: UUID
     private let isNew: Bool
@@ -736,6 +737,20 @@ struct PetDetailSheet: View {
                               (animalType == .other && customAnimalType.trimmingCharacters(in: .whitespaces).isEmpty))
                 }
             }
+            .overlay(alignment: .bottom) {
+                if showVetDetailsCopiedToast {
+                    Text("Copied to clipboard")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 11)
+                        .background(.regularMaterial, in: Capsule())
+                        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+                        .padding(.bottom, 28)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.38, dampingFraction: 0.82), value: showVetDetailsCopiedToast)
         }
     }
 
@@ -938,6 +953,15 @@ struct PetDetailSheet: View {
         }
         UIPasteboard.general.string = lines.joined(separator: "\n")
         HapticManager.notification(.success)
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+            showVetDetailsCopiedToast = true
+        }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(2))
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.82)) {
+                showVetDetailsCopiedToast = false
+            }
+        }
     }
 
     private func documentShareURL(for doc: PetDocument) -> URL {

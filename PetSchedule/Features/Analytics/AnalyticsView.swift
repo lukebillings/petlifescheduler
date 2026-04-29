@@ -33,6 +33,12 @@ private struct Insight: Identifiable {
     let tone:    Tone
 }
 
+private struct ComplianceLogSheetPayload: Identifiable {
+    let kind: ScheduleComplianceKind
+    let pet: Pet?
+    var id: String { "\(kind)-\(pet?.id.uuidString ?? "all")" }
+}
+
 // MARK: - AnalyticsView
 
 struct AnalyticsView: View {
@@ -47,8 +53,7 @@ struct AnalyticsView: View {
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .kg }
     private var heightUnit: HeightUnit { HeightUnit(rawValue: heightUnitRaw) ?? .cm }
 
-    @State private var showingMedicineLog = false
-    @State private var medicineLogPet: Pet? = nil
+    @State private var complianceLogSheet: ComplianceLogSheetPayload?
 
     private let calendar = Calendar.current
 
@@ -248,7 +253,7 @@ struct AnalyticsView: View {
                     heightSection
                         .padding(.horizontal)
 
-                    medicineComplianceSection
+                    complianceKindSections
                         .padding(.horizontal)
 
                     Spacer(minLength: 32)
@@ -259,8 +264,8 @@ struct AnalyticsView: View {
             .navigationTitle("Analytics")
             .navigationBarTitleDisplayMode(.large)
         }
-        .sheet(isPresented: $showingMedicineLog) {
-            MedicineLogSheet(viewModel: viewModel, petFilter: medicineLogPet)
+        .sheet(item: $complianceLogSheet) { payload in
+            ComplianceLogSheet(viewModel: viewModel, kind: payload.kind, petFilter: payload.pet)
         }
     }
 
@@ -594,9 +599,9 @@ struct AnalyticsView: View {
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    // MARK: - Medicine compliance
+    // MARK: - Medicine / feeding / water compliance
 
-    private struct MedicineCompliancePoint: Identifiable {
+    private struct ComplianceRatePoint: Identifiable {
         let id = UUID()
         let date: Date
         let petName: String
@@ -606,16 +611,16 @@ struct AnalyticsView: View {
         var rate: Double { total > 0 ? Double(accepted) / Double(total) : 0 }
     }
 
-    private func medicineCompliance(for pet: Pet) -> [MedicineCompliancePoint] {
-        let medItems = viewModel.scheduleItems.filter { $0.pet.id == pet.id && $0.isMedicineEvent }
-        guard !medItems.isEmpty else { return [] }
+    private func complianceRatePoints(for pet: Pet, kind: ScheduleComplianceKind) -> [ComplianceRatePoint] {
+        let kindItems = viewModel.scheduleItems.filter { $0.pet.id == pet.id && $0.complianceKind == kind }
+        guard !kindItems.isEmpty else { return [] }
 
         switch selectedRange {
         case .day:
-            let todayItems = medItems.filter { calendar.isDateInToday($0.time) }
+            let todayItems = kindItems.filter { calendar.isDateInToday($0.time) }
             guard !todayItems.isEmpty else { return [] }
             let accepted = todayItems.filter { $0.medicineAccepted == true }.count
-            return [MedicineCompliancePoint(
+            return [ComplianceRatePoint(
                 date: calendar.startOfDay(for: .now),
                 petName: pet.name, petID: pet.id,
                 accepted: accepted, total: todayItems.count
@@ -623,11 +628,10 @@ struct AnalyticsView: View {
 
         case .week:
             // Always emit all 7 days so the line spans the full x-axis.
-            // Days with no scheduled medicine are shown at 0% to keep the line continuous.
-            return (0..<7).reversed().compactMap { offset -> MedicineCompliancePoint? in
+            return (0..<7).reversed().compactMap { offset -> ComplianceRatePoint? in
                 guard let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: .now)) else { return nil }
-                let items = medItems.filter { calendar.isDate($0.time, inSameDayAs: day) }
-                return MedicineCompliancePoint(
+                let items = kindItems.filter { calendar.isDate($0.time, inSameDayAs: day) }
+                return ComplianceRatePoint(
                     date: day, petName: pet.name, petID: pet.id,
                     accepted: items.filter { $0.medicineAccepted == true }.count,
                     total: items.count
@@ -635,14 +639,13 @@ struct AnalyticsView: View {
             }
 
         case .month:
-            // Group by week — 5 windows to fill a 30-day range.
-            return (0..<5).reversed().compactMap { weekOffset -> MedicineCompliancePoint? in
+            return (0..<5).reversed().compactMap { weekOffset -> ComplianceRatePoint? in
                 guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -weekOffset, to: calendar.startOfDay(for: .now)),
                       let weekEnd   = calendar.date(byAdding: .day, value: 7, to: weekStart)
                 else { return nil }
-                let items = medItems.filter { $0.time >= weekStart && $0.time < weekEnd }
+                let items = kindItems.filter { $0.time >= weekStart && $0.time < weekEnd }
                 guard !items.isEmpty else { return nil }
-                return MedicineCompliancePoint(
+                return ComplianceRatePoint(
                     date: weekStart, petName: pet.name, petID: pet.id,
                     accepted: items.filter { $0.medicineAccepted == true }.count,
                     total: items.count
@@ -651,36 +654,43 @@ struct AnalyticsView: View {
         }
     }
 
-    @ViewBuilder
-    private var medicineComplianceSection: some View {
-        let petsWithMeds: [Pet] = {
-            if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
-                let hasMeds = viewModel.scheduleItems.contains { $0.pet.id == p.id && $0.isMedicineEvent }
-                return hasMeds ? [p] : []
-            }
-            return viewModel.pets.filter { pet in
-                viewModel.scheduleItems.contains { $0.pet.id == pet.id && $0.isMedicineEvent }
-            }
-        }()
+    private func petsWithScheduleCompliance(_ kind: ScheduleComplianceKind) -> [Pet] {
+        if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
+            let has = viewModel.scheduleItems.contains { $0.pet.id == p.id && $0.complianceKind == kind }
+            return has ? [p] : []
+        }
+        return viewModel.pets.filter { pet in
+            viewModel.scheduleItems.contains { $0.pet.id == pet.id && $0.complianceKind == kind }
+        }
+    }
 
-        if !petsWithMeds.isEmpty {
+    @ViewBuilder
+    private var complianceKindSections: some View {
+        ForEach([ScheduleComplianceKind.medicine, .feed, .water], id: \.self) { kind in
+            complianceSection(for: kind)
+        }
+    }
+
+    @ViewBuilder
+    private func complianceSection(for kind: ScheduleComplianceKind) -> some View {
+        let petsListed = petsWithScheduleCompliance(kind)
+        if !petsListed.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
-                Text("Medicine Compliance")
+                Text(kind.analyticsSectionTitle)
                     .font(.headline)
 
-                ForEach(petsWithMeds) { pet in
-                    medicineCard(for: pet, color: petColor(for: pet.id)) {
-                        medicineLogPet = pet
-                        showingMedicineLog = true
+                ForEach(petsListed) { pet in
+                    complianceRateCard(for: pet, kind: kind, color: petColor(for: pet.id)) {
+                        complianceLogSheet = ComplianceLogSheetPayload(kind: kind, pet: pet)
                     }
                 }
             }
         }
     }
 
-    private func medicineCard(for pet: Pet, color: Color, onViewLog: @escaping () -> Void) -> some View {
-        let points = medicineCompliance(for: pet)
+    private func complianceRateCard(for pet: Pet, kind: ScheduleComplianceKind, color: Color, onViewLog: @escaping () -> Void) -> some View {
+        let points = complianceRatePoints(for: pet, kind: kind)
         let avg = points.isEmpty ? 0.0 : points.map(\.rate).reduce(0, +) / Double(points.count)
 
         return VStack(alignment: .leading, spacing: 10) {
@@ -696,7 +706,7 @@ struct AnalyticsView: View {
             }
 
             if points.isEmpty {
-                Text("No medicine events in this period.")
+                Text(kind.analyticsPeriodEmptyMessage)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
@@ -818,10 +828,11 @@ struct AnalyticsView: View {
     }
 }
 
-// MARK: - Medicine Log Sheet
+// MARK: - Compliance log sheets (medicine / feeding / water)
 
-struct MedicineLogSheet: View {
+struct ComplianceLogSheet: View {
     let viewModel: HomeViewModel
+    let kind: ScheduleComplianceKind
     /// Initial pet selection when the sheet opens (`nil` = all pets).
     private let petFilter: Pet?
 
@@ -833,36 +844,35 @@ struct MedicineLogSheet: View {
     private let cal = Calendar.current
     private var timeFormat: TimeFormat { TimeFormat(rawValue: timeFormatRaw) ?? .twelveHour }
 
-    init(viewModel: HomeViewModel, petFilter: Pet?) {
+    init(viewModel: HomeViewModel, kind: ScheduleComplianceKind, petFilter: Pet?) {
         self.viewModel = viewModel
+        self.kind = kind
         self.petFilter = petFilter
         _selectedPetID = State(initialValue: petFilter?.id)
     }
 
-    /// Pets that have at least one medicine event in the schedule.
-    private var petsWithMedicine: [Pet] {
+    private var petsWithThisCompliance: [Pet] {
         viewModel.pets.filter { pet in
-            viewModel.scheduleItems.contains { $0.pet.id == pet.id && $0.isMedicineEvent }
+            viewModel.scheduleItems.contains { $0.pet.id == pet.id && $0.complianceKind == kind }
         }
     }
 
     private var showPetNameOnRows: Bool {
-        selectedPetID == nil && petsWithMedicine.count > 1
+        selectedPetID == nil && petsWithThisCompliance.count > 1
     }
 
-    private var medicineItems: [ScheduleItem] {
+    private var filteredItems: [ScheduleItem] {
         viewModel.scheduleItems
-            .filter { $0.isMedicineEvent }
+            .filter { $0.complianceKind == kind }
             .filter { selectedPetID == nil || $0.pet.id == selectedPetID }
             .sorted { $0.time > $1.time }
     }
 
-    /// All days from the earliest medicine event to today, newest first.
-    /// Days with no events are included so the user can see the full history.
+    /// All days from the earliest event to today, newest first.
     private var allDays: [(date: Date, items: [ScheduleItem])] {
-        guard let firstDate = medicineItems.map({ cal.startOfDay(for: $0.time) }).min() else { return [] }
+        guard let firstDate = filteredItems.map({ cal.startOfDay(for: $0.time) }).min() else { return [] }
         let today = cal.startOfDay(for: .now)
-        let grouped = Dictionary(grouping: medicineItems) { cal.startOfDay(for: $0.time) }
+        let grouped = Dictionary(grouping: filteredItems) { cal.startOfDay(for: $0.time) }
 
         var result: [(date: Date, items: [ScheduleItem])] = []
         var current = today
@@ -874,32 +884,29 @@ struct MedicineLogSheet: View {
     }
 
     private var navigationTitle: String {
-        if let id = selectedPetID, let name = viewModel.pets.first(where: { $0.id == id })?.name {
-            return "\(name)'s Medicine Log"
-        }
-        return "Medicine Log"
+        kind.logNavigationTitle(petName: selectedPetID.flatMap { id in viewModel.pets.first { $0.id == id }?.name })
     }
 
     var body: some View {
         NavigationStack {
             Group {
-                if medicineItems.isEmpty {
+                if filteredItems.isEmpty {
                     ContentUnavailableView(
-                        "No Medicine Events",
-                        systemImage: "pill.fill",
-                        description: Text("No medicine events have been logged yet.")
+                        kind.logEmptyTitle,
+                        systemImage: kind.logEmptySystemImage,
+                        description: Text(kind.logEmptyDescription)
                     )
                 } else {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
-                            if petsWithMedicine.count > 1 {
-                                medicineLogPetPicker
+                            if petsWithThisCompliance.count > 1 {
+                                complianceLogPetPicker
                                     .padding(.bottom, 16)
                             }
 
                             LazyVStack(alignment: .leading, spacing: 20) {
                                 ForEach(allDays, id: \.date) { group in
-                                    medicineDayCard(group: group)
+                                    complianceDayCard(group: group)
                                 }
                             }
                         }
@@ -920,7 +927,7 @@ struct MedicineLogSheet: View {
         }
     }
 
-    private var medicineLogPetPicker: some View {
+    private var complianceLogPetPicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
                 let allSelected = selectedPetID == nil
@@ -937,7 +944,7 @@ struct MedicineLogSheet: View {
                 }
                 .buttonStyle(.plain)
 
-                ForEach(petsWithMedicine) { pet in
+                ForEach(petsWithThisCompliance) { pet in
                     let sel = selectedPetID == pet.id
                     Button {
                         HapticManager.impact(.light)
@@ -963,7 +970,7 @@ struct MedicineLogSheet: View {
         .scrollClipDisabled()
     }
 
-    private func medicineDayCard(group: (date: Date, items: [ScheduleItem])) -> some View {
+    private func complianceDayCard(group: (date: Date, items: [ScheduleItem])) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(group.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
                 .font(.subheadline.bold())
@@ -973,7 +980,7 @@ struct MedicineLogSheet: View {
             VStack(spacing: 0) {
                 if group.items.isEmpty {
                     HStack {
-                        Text("No medicine scheduled")
+                        Text(kind.logDayEmptyRowLabel)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Spacer()
@@ -985,7 +992,7 @@ struct MedicineLogSheet: View {
                     .padding(.vertical, 14)
                 } else {
                     ForEach(Array(group.items.enumerated()), id: \.element.id) { index, item in
-                        MedicineLogRow(
+                        ComplianceLogRow(
                             item: item,
                             showPetName: showPetNameOnRows,
                             timeFormat: timeFormat
@@ -1005,7 +1012,7 @@ struct MedicineLogSheet: View {
     }
 }
 
-private struct MedicineLogRow: View {
+private struct ComplianceLogRow: View {
     let item: ScheduleItem
     let showPetName: Bool
     let timeFormat: TimeFormat
@@ -1078,7 +1085,13 @@ private struct MedicineLogRow: View {
 
     private var statusText: String {
         switch item.medicineAccepted {
-        case true:  return "Yes — taken"
+        case true:
+            switch item.complianceKind {
+            case .medicine: return "Yes — taken"
+            case .feed:     return "Yes — ate"
+            case .water:    return "Yes — drank"
+            case nil:        return "Yes"
+            }
         case false: return "No — skipped"
         case nil:   return item.isCompleted ? "Done" : "Pending"
         }
