@@ -17,7 +17,7 @@ struct LaunchSplashView: View {
                 OrbitingPetIconsView()
 
                 Text("PetSchedule")
-                    .font(.largeTitle.bold())
+                    .font(AppTypography.screenTitle)
                     .foregroundStyle(.white)
                     .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
 

@@ -134,17 +134,17 @@ struct PetDetailSheet: View {
                     Section {
                         HStack(alignment: .center, spacing: 14) {
                             Image(systemName: "hourglass.bottomhalf.filled")
-                                .font(.title2.bold())
+                                .font(AppTypography.sectionHeading)
                                 .foregroundStyle(Color.appPink)
                                 .frame(width: 36, height: 36)
                                 .background(Color.appPink.opacity(0.12), in: Circle())
 
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("Age")
-                                    .font(.caption.bold())
+                                    .font(AppTypography.compactControl)
                                     .foregroundStyle(.secondary)
                                 Text(ageLine)
-                                    .font(.title3.bold())
+                                    .font(AppTypography.sectionHeading)
                                     .foregroundStyle(.primary)
                             }
                             Spacer(minLength: 0)
@@ -167,7 +167,7 @@ struct PetDetailSheet: View {
                                 .shadow(color: .black.opacity(0.12), radius: 4, y: 2)
                                 .overlay {
                                     Image(systemName: "camera.fill")
-                                        .font(.body.bold())
+                                        .font(AppTypography.primaryLabel)
                                         .foregroundStyle(.white)
                                 }
                                 .padding(12)
@@ -255,7 +255,7 @@ struct PetDetailSheet: View {
                         } label: {
                             Label("Call Vet", systemImage: "phone.arrow.up.right")
                                 .foregroundStyle(Color.appPink)
-                                .font(.subheadline.bold())
+                                .font(AppTypography.secondaryEmphasis)
                         }
                     }
                     if !vetDetails.email.isEmpty {
@@ -266,7 +266,7 @@ struct PetDetailSheet: View {
                         } label: {
                             Label("Email Vet", systemImage: "envelope.arrow.triangle.branch")
                                 .foregroundStyle(Color.appPink)
-                                .font(.subheadline.bold())
+                                .font(AppTypography.secondaryEmphasis)
                         }
                     }
 
@@ -275,7 +275,7 @@ struct PetDetailSheet: View {
                     } label: {
                         Label("Copy Vet Details to Clipboard", systemImage: "doc.on.doc")
                             .foregroundStyle(Color.appPink)
-                            .font(.subheadline.bold())
+                            .font(AppTypography.secondaryEmphasis)
                     }
                     .disabled(vetDetails.organisation.isEmpty && vetDetails.phone.isEmpty && vetDetails.email.isEmpty)
 
@@ -295,7 +295,7 @@ struct PetDetailSheet: View {
                     } label: {
                         Label("Add Document from Files", systemImage: "icloud.and.arrow.up")
                             .foregroundStyle(Color.appPink)
-                            .font(.subheadline.bold())
+                            .font(AppTypography.secondaryEmphasis)
                     }
 
                     ForEach(documents) { doc in
@@ -306,17 +306,17 @@ struct PetDetailSheet: View {
                                 .frame(width: 28)
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(doc.displayName)
-                                    .font(.subheadline)
+                                    .font(AppTypography.secondaryLabel)
                                     .lineLimit(1)
                                 Text("\(doc.sizeString) · \(doc.dateAdded.formatted(date: .abbreviated, time: .omitted))")
-                                    .font(.caption)
+                                    .font(AppTypography.supportingText)
                                     .foregroundStyle(.secondary)
                             }
                             Spacer()
                             // Preview / share button
                             ShareLink(item: documentShareURL(for: doc), preview: SharePreview(doc.displayName)) {
                                 Image(systemName: "square.and.arrow.up")
-                                    .font(.caption.bold())
+                                    .font(AppTypography.compactControl)
                                     .foregroundStyle(.secondary)
                             }
                             .buttonStyle(.plain)
@@ -332,7 +332,7 @@ struct PetDetailSheet: View {
 
                     if documents.isEmpty {
                         Text("No documents yet. Tap above to import from iCloud Drive or your device.")
-                            .font(.caption)
+                            .font(AppTypography.supportingText)
                             .foregroundStyle(.secondary)
                     }
                 } header: {
@@ -357,7 +357,7 @@ struct PetDetailSheet: View {
                             }
                             Text("Download data as PDF")
                                 .foregroundStyle(Color.appPink)
-                                .font(.subheadline.bold())
+                                .font(AppTypography.secondaryEmphasis)
                         }
                     }
                     .disabled(pdfExportActivity != .idle)
@@ -374,7 +374,7 @@ struct PetDetailSheet: View {
                             }
                             Text("Share pet data with vet")
                                 .foregroundStyle(Color.appPink)
-                                .font(.subheadline.bold())
+                                .font(AppTypography.secondaryEmphasis)
                         }
                     }
                     .disabled(pdfExportActivity != .idle)
@@ -391,9 +391,9 @@ struct PetDetailSheet: View {
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Add a new weight reading")
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.secondaryEmphasis)
                             Text("Enter the weight and the date it was taken, then tap + to save. You can attach a photo (optional).")
-                                .font(.caption)
+                                .font(AppTypography.supportingText)
                                 .foregroundStyle(.secondary)
                             HStack(spacing: 12) {
                                 HStack(spacing: 6) {
@@ -438,7 +438,7 @@ struct PetDetailSheet: View {
                                         weightEntryImageData == nil ? "Attach photo" : "Change photo",
                                         systemImage: "photo.badge.plus"
                                     )
-                                    .font(.caption.bold())
+                                    .font(AppTypography.compactControl)
                                     .foregroundStyle(Color.appPink)
                                 }
                                 .buttonStyle(.plain)
@@ -448,7 +448,7 @@ struct PetDetailSheet: View {
                                         weightEntryPhotoItem = nil
                                     } label: {
                                         Text("Remove")
-                                            .font(.caption.bold())
+                                            .font(AppTypography.compactControl)
                                             .foregroundStyle(.secondary)
                                     }
                                     .buttonStyle(.plain)
@@ -481,7 +481,7 @@ struct PetDetailSheet: View {
                             withAnimation { weightHistory.removeAll() }
                         } label: {
                             Text("Clear all readings")
-                                .font(.caption.bold())
+                                .font(AppTypography.compactControl)
                                 .foregroundStyle(.red)
                         }
                         .buttonStyle(.plain)
@@ -491,7 +491,7 @@ struct PetDetailSheet: View {
                             Image(systemName: "scalemass.fill")
                                 .foregroundStyle(Color.appPink)
                             Text("Latest: \(weightUnit.formatValue(weightHistory.last!.kg))")
-                                .font(.subheadline)
+                                .font(AppTypography.secondaryLabel)
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Button {
@@ -499,7 +499,7 @@ struct PetDetailSheet: View {
                             } label: {
                                 Image(systemName: "trash")
                                     .foregroundStyle(.red)
-                                    .font(.caption)
+                                    .font(AppTypography.supportingText)
                             }
                             .buttonStyle(.plain)
                         }
@@ -518,9 +518,9 @@ struct PetDetailSheet: View {
                     VStack(alignment: .leading, spacing: 14) {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Add a new height reading")
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.secondaryEmphasis)
                             Text("Enter the height and the date it was taken, then tap + to save. You can attach a photo (optional).")
-                                .font(.caption)
+                                .font(AppTypography.supportingText)
                                 .foregroundStyle(.secondary)
                             HStack(spacing: 12) {
                                 HStack(spacing: 6) {
@@ -565,7 +565,7 @@ struct PetDetailSheet: View {
                                         heightEntryImageData == nil ? "Attach photo" : "Change photo",
                                         systemImage: "photo.badge.plus"
                                     )
-                                    .font(.caption.bold())
+                                    .font(AppTypography.compactControl)
                                     .foregroundStyle(Color.appPink)
                                 }
                                 .buttonStyle(.plain)
@@ -575,7 +575,7 @@ struct PetDetailSheet: View {
                                         heightEntryPhotoItem = nil
                                     } label: {
                                         Text("Remove")
-                                            .font(.caption.bold())
+                                            .font(AppTypography.compactControl)
                                             .foregroundStyle(.secondary)
                                     }
                                     .buttonStyle(.plain)
@@ -608,7 +608,7 @@ struct PetDetailSheet: View {
                             withAnimation { heightHistory.removeAll() }
                         } label: {
                             Text("Clear all readings")
-                                .font(.caption.bold())
+                                .font(AppTypography.compactControl)
                                 .foregroundStyle(.red)
                         }
                         .buttonStyle(.plain)
@@ -618,7 +618,7 @@ struct PetDetailSheet: View {
                             Image(systemName: "ruler.fill")
                                 .foregroundStyle(Color.appPink)
                             Text("Latest: \(heightUnit.formatValue(heightHistory.last!.cm))")
-                                .font(.subheadline)
+                                .font(AppTypography.secondaryLabel)
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Button {
@@ -626,7 +626,7 @@ struct PetDetailSheet: View {
                             } label: {
                                 Image(systemName: "trash")
                                     .foregroundStyle(.red)
-                                    .font(.caption)
+                                    .font(AppTypography.supportingText)
                             }
                             .buttonStyle(.plain)
                         }
@@ -696,7 +696,7 @@ struct PetDetailSheet: View {
                         Text("Data & list")
                     } footer: {
                         Text("Delete pet data clears weight and height logs, notes, vet details, and documents—your pet’s name, photo, type, and birthday stay. Remove pet deletes this profile and all scheduled events for them.")
-                            .font(.caption)
+                            .font(AppTypography.supportingText)
                     }
                     .id(JumpSection.data.rawValue)
                 }
@@ -772,7 +772,7 @@ struct PetDetailSheet: View {
             .overlay(alignment: .bottom) {
                 if showVetDetailsCopiedToast {
                     Text("Copied to clipboard")
-                        .font(.subheadline.weight(.medium))
+                        .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.primary)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 11)
@@ -840,10 +840,10 @@ struct PetDetailSheet: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: section.pillSymbol)
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.secondaryEmphasis)
                                 .foregroundStyle(sel ? Color.white : Color.black)
                             Text(section.pillTitle)
-                                .font(.subheadline.bold())
+                                .font(AppTypography.secondaryEmphasis)
                                 .foregroundStyle(sel ? Color.white : Color.black)
                         }
                         .padding(.horizontal, 14)
@@ -895,11 +895,11 @@ struct PetDetailSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Date")
-                    .font(.caption2.bold())
+                    .font(AppTypography.micro)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text("Weight")
-                    .font(.caption2.bold())
+                    .font(AppTypography.micro)
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 4)
@@ -915,11 +915,11 @@ struct PetDetailSheet: View {
                             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
                     Text(entry.date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
+                        .font(AppTypography.supportingText)
                         .foregroundStyle(.primary)
                     Spacer()
                     Text(unit.formatValue(entry.kg))
-                        .font(.caption.bold())
+                        .font(AppTypography.compactControl)
                         .foregroundStyle(.primary)
                 }
                 .padding(.horizontal, 4)
@@ -936,11 +936,11 @@ struct PetDetailSheet: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Date")
-                    .font(.caption2.bold())
+                    .font(AppTypography.micro)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text("Height")
-                    .font(.caption2.bold())
+                    .font(AppTypography.micro)
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 4)
@@ -956,11 +956,11 @@ struct PetDetailSheet: View {
                             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     }
                     Text(entry.date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
+                        .font(AppTypography.supportingText)
                         .foregroundStyle(.primary)
                     Spacer()
                     Text(unit.formatValue(entry.cm))
-                        .font(.caption.bold())
+                        .font(AppTypography.compactControl)
                         .foregroundStyle(.primary)
                 }
                 .padding(.horizontal, 4)
@@ -1054,10 +1054,10 @@ struct PetDetailSheet: View {
     private func sectionHeader(_ title: String, subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.secondaryEmphasis)
                 .foregroundStyle(.primary)
             Text(subtitle)
-                .font(.caption)
+                .font(AppTypography.supportingText)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -1069,10 +1069,10 @@ struct PetDetailSheet: View {
     private func sectionHeaderWithLabel(title: String, systemImage: String, subtitle: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Label(title, systemImage: systemImage)
-                .font(.subheadline.weight(.semibold))
+                .font(AppTypography.secondaryEmphasis)
                 .foregroundStyle(.primary)
             Text(subtitle)
-                .font(.caption)
+                .font(AppTypography.supportingText)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }

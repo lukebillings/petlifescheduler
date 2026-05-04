@@ -30,6 +30,7 @@
 		D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */; };
 		D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */; };
 		D72C7128A019801C00BF8732 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
+		F1A2B3C4D5E600000000AB1 /* AppTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E600000000AB0 /* AppTypography.swift */; };
 		F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */; };
 		B1E2E3F40506070809101112 /* SatisfactionCheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */; };
 		D0E1F203040506070809010A /* PostTutorialHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E1F203040506070809010B /* PostTutorialHints.swift */; };
@@ -52,6 +53,7 @@
 /* Begin PBXFileReference section */
 		004BEB5D563AD507764446BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
+		F1A2B3C4D5E600000000AB0 /* AppTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTypography.swift; sourceTree = "<group>"; };
 		F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPrompt.swift; sourceTree = "<group>"; };
 		B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SatisfactionCheckIn.swift; sourceTree = "<group>"; };
 		D0E1F203040506070809010B /* PostTutorialHints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHints.swift; sourceTree = "<group>"; };
@@ -159,6 +161,7 @@
 			isa = PBXGroup;
 			children = (
 				082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */,
+				F1A2B3C4D5E600000000AB0 /* AppTypography.swift */,
 				F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */,
 				E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */,
 				D0E1F203040506070809010B /* PostTutorialHints.swift */,
@@ -386,6 +389,7 @@
 				85C6FCBBEFD03F516B9F94A4 /* AnalyticsView.swift in Sources */,
 				4B02216A6044074925DA1D5F /* AnimalType.swift in Sources */,
 				D72C7128A019801C00BF8732 /* AppColors.swift in Sources */,
+				F1A2B3C4D5E600000000AB1 /* AppTypography.swift in Sources */,
 				F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */,
 				C7D8E9F01234567890123457 /* ScheduleReminderScheduler.swift in Sources */,
 				D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */,

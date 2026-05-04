@@ -50,7 +50,7 @@ struct AddEventSheet: View {
                                                 }
                                                 .scaleEffect(isSelected ? 1.05 : 1.0)
                                             Text(pet.name)
-                                                .font(.caption.bold())
+                                                .font(AppTypography.compactControl)
                                                 .foregroundStyle(isSelected ? Color.appPink : Color.secondary)
                                         }
                                     }

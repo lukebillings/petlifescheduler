@@ -135,7 +135,7 @@ struct SatisfactionCheckInSheet: View {
     private var primaryPane: some View {
         VStack(spacing: 22) {
             Text("Quick check-in")
-                .font(.title2.bold())
+                .font(AppTypography.panelTitle)
 
             Text("Is PetSchedule working well for you so far?")
                 .font(.body)
@@ -149,7 +149,7 @@ struct SatisfactionCheckInSheet: View {
                     dismissFlow()
                 } label: {
                     Text("Yes")
-                        .font(.body.bold())
+                        .font(AppTypography.primaryLabel)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
@@ -161,7 +161,7 @@ struct SatisfactionCheckInSheet: View {
                     step = .pickGoal
                 } label: {
                     Text("Not really")
-                        .font(.body.bold())
+                        .font(AppTypography.primaryLabel)
                         .foregroundStyle(Color.appPink)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
@@ -238,7 +238,7 @@ struct SatisfactionCheckInSheet: View {
                     .padding(.top, 12)
 
                 Text(tutorialStep.title)
-                    .font(.title2.bold())
+                    .font(AppTypography.panelTitle)
 
                 Text(tutorialStep.detail)
                     .font(.body)
@@ -251,7 +251,7 @@ struct SatisfactionCheckInSheet: View {
                     dismissFlow()
                 } label: {
                     Text("Got it")
-                        .font(.body.bold())
+                        .font(AppTypography.primaryLabel)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
@@ -283,7 +283,7 @@ struct SatisfactionCheckInSheet: View {
     private var featureRequestPane: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text("Tell us what you’re missing")
-                .font(.title2.bold())
+                .font(AppTypography.panelTitle)
 
             Text(
                 "We read every note. Tap below to send a quick email — mention what you expected and what happened instead."
@@ -296,7 +296,7 @@ struct SatisfactionCheckInSheet: View {
                 SatisfactionCheckIn.openFeatureRequestMailComposer()
             } label: {
                 Label("Request a feature", systemImage: "envelope.fill")
-                    .font(.body.bold())
+                    .font(AppTypography.primaryLabel)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
@@ -308,7 +308,7 @@ struct SatisfactionCheckInSheet: View {
                 dismissFlow()
             } label: {
                 Text("Close")
-                    .font(.body.weight(.semibold))
+                    .font(AppTypography.secondaryEmphasis)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
             }

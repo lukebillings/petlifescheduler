@@ -144,10 +144,10 @@ private struct PostTutorialHintCard: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(id.title)
-                    .font(.subheadline.bold())
+                    .font(AppTypography.cardTitle)
                     .foregroundStyle(.white)
                 Text(id.message)
-                    .font(.caption)
+                    .font(AppTypography.supportingText)
                     .foregroundStyle(.white.opacity(0.92))
                     .fixedSize(horizontal: false, vertical: true)
             }

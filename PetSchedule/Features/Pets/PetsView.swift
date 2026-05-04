@@ -93,13 +93,13 @@ private struct PetCard: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             Text(pet.name)
-                .font(.title3.bold())
+                .font(AppTypography.primaryLabel)
                 .foregroundStyle(.primary)
 
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(.caption.bold())
+                .font(AppTypography.compactControl)
                 .foregroundStyle(.tertiary)
         }
         .padding(.horizontal, 16)

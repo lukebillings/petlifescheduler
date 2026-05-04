@@ -62,7 +62,7 @@ struct AddLogSheet: View {
                                                 }
                                                 .scaleEffect(isSelected ? 1.05 : 1.0)
                                             Text(pet.name)
-                                                .font(.caption.bold())
+                                                .font(AppTypography.compactControl)
                                                 .foregroundStyle(isSelected ? Color.appPink : Color.secondary)
                                         }
                                     }
@@ -246,7 +246,7 @@ struct EditLogSheet: View {
                                                 }
                                                 .scaleEffect(isSelected ? 1.05 : 1.0)
                                             Text(pet.name)
-                                                .font(.caption.bold())
+                                                .font(AppTypography.compactControl)
                                                 .foregroundStyle(isSelected ? Color.appPink : Color.secondary)
                                         }
                                     }
@@ -369,7 +369,7 @@ struct MoodLogPicker: View {
                             Text(mood.emoji)
                                 .font(.title)
                             Text(mood.rawValue)
-                                .font(.caption2.bold())
+                                .font(AppTypography.micro)
                                 .foregroundStyle(selected ? Color.appPink : .secondary)
                         }
                         .frame(width: 72)

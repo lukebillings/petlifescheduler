@@ -190,7 +190,7 @@ struct SettingsView: View {
                             Label("Write a Review", systemImage: "square.and.pencil")
                             Spacer()
                             Image(systemName: "arrow.up.right")
-                                .font(.caption)
+.font(AppTypography.supportingText)
                                 .foregroundStyle(.tertiary)
                         }
                     }
@@ -202,7 +202,7 @@ struct SettingsView: View {
                             Label("Privacy Policy", systemImage: "hand.raised.fill")
                             Spacer()
                             Image(systemName: "arrow.up.right")
-                                .font(.caption)
+.font(AppTypography.supportingText)
                                 .foregroundStyle(.tertiary)
                         }
                     }
@@ -211,7 +211,7 @@ struct SettingsView: View {
                             Label("Terms & Conditions", systemImage: "doc.text.fill")
                             Spacer()
                             Image(systemName: "arrow.up.right")
-                                .font(.caption)
+.font(AppTypography.supportingText)
                                 .foregroundStyle(.tertiary)
                         }
                     }
@@ -220,7 +220,7 @@ struct SettingsView: View {
                             Label("Terms of Service", systemImage: "checkmark.seal.fill")
                             Spacer()
                             Image(systemName: "arrow.up.right")
-                                .font(.caption)
+.font(AppTypography.supportingText)
                                 .foregroundStyle(.tertiary)
                         }
                     }

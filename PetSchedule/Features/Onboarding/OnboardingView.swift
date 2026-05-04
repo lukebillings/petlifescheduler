@@ -138,7 +138,7 @@ struct OnboardingView: View {
                         withAnimation { step += 1 }
                     } label: {
                         Text("Skip")
-                            .font(.subheadline)
+                            .font(AppTypography.secondaryLabel)
                             .foregroundStyle(Color.gray.opacity(0.5))
                     }
                     .buttonStyle(.plain)
@@ -158,7 +158,7 @@ struct OnboardingView: View {
                 VStack(spacing: 8) {
                     if step == 9 {
                         Text("Cancel anytime in Settings · Subscriptions.")
-                            .font(.caption)
+                            .font(AppTypography.supportingText)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
@@ -166,7 +166,7 @@ struct OnboardingView: View {
 
                     Button(action: advance) {
                         Text(buttonLabel)
-                            .font(.body.bold())
+                            .font(AppTypography.primaryLabel)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
@@ -312,11 +312,11 @@ private struct Step0HouseholdPetCount: View {
                 Spacer().frame(minHeight: 56)
 
                 Text("How many pets do you have?")
-                    .font(.largeTitle.bold())
+                    .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
 
                 Text("We'll personalize your setup. You can add every pet any time.")
-                    .font(.subheadline)
+                    .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
@@ -347,7 +347,7 @@ private struct Step0HouseholdPetCount: View {
     private func householdPetCountChip(title: String, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.subheadline.bold())
+                .font(AppTypography.secondaryEmphasis)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(selected ? Color.appPink : .primary)
                 .frame(maxWidth: .infinity)
@@ -397,10 +397,10 @@ private struct Step1AddPet: View {
 
                 VStack(spacing: 10) {
                     Text(addPetHeadline)
-                        .font(.largeTitle.bold())
+                        .font(AppTypography.screenTitle)
                         .multilineTextAlignment(.center)
                     Text("Tell us a little about your companion\nto get things set up. You can add more pets later.")
-                        .font(.subheadline)
+                        .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -429,7 +429,7 @@ private struct Step1AddPet: View {
                                             .frame(width: 54, height: 54)
                                     }
                                     Text(type == .other && !customAnimalType.isEmpty ? customAnimalType.capitalized : type.displayName)
-                                        .font(.caption.bold())
+                                        .font(AppTypography.compactControl)
                                         .foregroundStyle(selected ? Color.appPink : .secondary)
                                         .lineLimit(1)
                                 }
@@ -442,7 +442,7 @@ private struct Step1AddPet: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Pet's name")
-                        .font(.subheadline.bold())
+                        .font(AppTypography.secondaryEmphasis)
                         .foregroundStyle(.secondary)
                     TextField("e.g. Buddy, Luna, Max…", text: $petName)
                         .textFieldStyle(.plain)
@@ -513,7 +513,7 @@ private struct Step2AddPhoto: View {
                         .frame(width: 48, height: 48)
                         .overlay {
                             Image(systemName: photoData == nil ? "camera.fill" : "arrow.triangle.2.circlepath")
-                                .font(.body.bold())
+                                .font(AppTypography.primaryLabel)
                                 .foregroundStyle(.white)
                         }
                         .shadow(color: Color.appPink.opacity(0.4), radius: 6, y: 3)
@@ -527,17 +527,17 @@ private struct Step2AddPhoto: View {
             }
 
             Text(photoData == nil ? "Tap to choose a photo" : "Tap to change photo")
-                .font(.caption)
+                .font(AppTypography.supportingText)
                 .foregroundStyle(.tertiary)
                 .photosPicker(isPresented: $showPicker, selection: $photoItem, matching: .images)
                 .onChange(of: triggerPicker) { _, val in if val { showPicker = true; triggerPicker = false } }
 
             VStack(spacing: 10) {
                 Text("Add a photo of \(petName)")
-                    .font(.largeTitle.bold())
+                    .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
                 Text("Optional – you can always add one later.")
-                    .font(.subheadline)
+                    .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -577,17 +577,17 @@ private struct Step3AddSchedule: View {
 
                 VStack(spacing: 10) {
                     Text("Set up \(petName.isEmpty ? "their" : "\(petName)'s") day")
-                        .font(.largeTitle.bold())
+                        .font(AppTypography.screenTitle)
                         .multilineTextAlignment(.center)
                     Text("Add an event that is part of \(petName.isEmpty ? "their" : "\(petName)'s") daily schedule.")
-                        .font(.subheadline)
+                        .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Activity")
-                        .font(.subheadline.bold())
+                        .font(AppTypography.secondaryEmphasis)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 28)
 
@@ -597,7 +597,7 @@ private struct Step3AddSchedule: View {
                                 let selected = activityName == activity
                                 Button { activityName = activity } label: {
                                     Label(activity, systemImage: ScheduleItem.icon(for: activity))
-                                        .font(.subheadline.bold())
+                                        .font(AppTypography.secondaryEmphasis)
                                         .padding(.horizontal, 16)
                                         .padding(.vertical, 10)
                                         .background(Capsule().fill(selected ? Color.appPink : Color(.secondarySystemBackground)))
@@ -613,7 +613,7 @@ private struct Step3AddSchedule: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Time")
-                        .font(.subheadline.bold())
+                        .font(AppTypography.secondaryEmphasis)
                         .foregroundStyle(.secondary)
                     DatePicker("", selection: $activityTime, displayedComponents: .hourAndMinute)
                         .labelsHidden()
@@ -648,16 +648,16 @@ private struct Step4Notifications: View {
 
             VStack(spacing: 10) {
                 Text("Never miss a moment")
-                    .font(.largeTitle.bold())
+                    .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
                 Text("Get timely reminders for walks, meals,\nand every moment that matters.")
-                    .font(.subheadline)
+                    .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
             Text("You can change this in Settings at any time.")
-                .font(.caption)
+                .font(AppTypography.supportingText)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
 
@@ -681,12 +681,12 @@ private struct OnboardingChoiceButton: View {
             HStack(alignment: .center, spacing: 14) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.headline)
+                        .font(AppTypography.groupTitle)
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)
                     if let caption, !caption.isEmpty {
                         Text(caption)
-                            .font(.caption)
+                            .font(AppTypography.supportingText)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -730,10 +730,10 @@ private struct StepTimeFormat: View {
 
                 VStack(spacing: 10) {
                     Text("How should we show the time?")
-                        .font(.largeTitle.bold())
+                        .font(AppTypography.screenTitle)
                         .multilineTextAlignment(.center)
                     Text("Choose 24-hour or 12-hour for reminders and your schedule.")
-                        .font(.subheadline)
+                        .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -756,7 +756,7 @@ private struct StepTimeFormat: View {
                 }
 
                 Text("You can change this later in Settings.")
-                    .font(.caption)
+                    .font(AppTypography.supportingText)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
 
@@ -788,10 +788,10 @@ private struct StepWeightUnits: View {
 
                 VStack(spacing: 10) {
                     Text("Weight units")
-                        .font(.largeTitle.bold())
+                        .font(AppTypography.screenTitle)
                         .multilineTextAlignment(.center)
                     Text("We’ll use this when you log weight and in charts.")
-                        .font(.subheadline)
+                        .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -814,7 +814,7 @@ private struct StepWeightUnits: View {
                 }
 
                 Text("You can change this later in Settings.")
-                    .font(.caption)
+                    .font(AppTypography.supportingText)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
 
@@ -846,10 +846,10 @@ private struct StepHeightUnits: View {
 
                 VStack(spacing: 10) {
                     Text("Height units")
-                        .font(.largeTitle.bold())
+                        .font(AppTypography.screenTitle)
                         .multilineTextAlignment(.center)
                     Text("Centimetres for metric, or feet and inches for imperial.")
-                        .font(.subheadline)
+                        .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -872,7 +872,7 @@ private struct StepHeightUnits: View {
                 }
 
                 Text("You can change this later in Settings.")
-                    .font(.caption)
+                    .font(AppTypography.supportingText)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
 
@@ -906,10 +906,10 @@ private struct StepFeatureInterest: View {
 
                 VStack(spacing: 10) {
                     Text("What's the main reason you're using Pet Schedule?")
-                        .font(.largeTitle.bold())
+                        .font(AppTypography.screenTitle)
                         .multilineTextAlignment(.center)
                     Text("Pick the closest match—for example meds, pet records, weight, walks, or feeding.")
-                        .font(.subheadline)
+                        .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -935,7 +935,7 @@ private struct StepFeatureInterest: View {
             .frame(maxHeight: .infinity)
 
             Text("You'll still have access to every feature—this just tells us what you care about most.")
-                .font(.caption)
+                .font(AppTypography.supportingText)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 28)
@@ -986,7 +986,7 @@ private struct Step5Paywall: View {
         VStack(spacing: 0) {
             VStack(alignment: .center, spacing: 0) {
                 Text(paywallHeadline)
-                    .font(.largeTitle.bold())
+                    .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
                     .minimumScaleFactor(0.78)
                     .lineLimit(4)
@@ -1008,12 +1008,12 @@ private struct Step5Paywall: View {
                     } else if let err = products.loadError {
                         VStack(spacing: 8) {
                             Text("Couldn’t load prices")
-                                .font(.subheadline)
+                                .font(AppTypography.secondaryLabel)
                                 .foregroundStyle(.secondary)
                             Button("Try again") {
                                 Task { await products.refresh() }
                             }
-                            .font(.subheadline.bold())
+                            .font(AppTypography.secondaryEmphasis)
                         }
                         .padding(.vertical, 12)
                     } else {
@@ -1081,7 +1081,7 @@ private struct PaywallRotatingBenefits: View {
 
                     VStack(spacing: 18) {
                         Text(item.text)
-                            .font(.title2.bold())
+                            .font(AppTypography.panelTitle)
                             .multilineTextAlignment(.center)
                             .foregroundStyle(.primary)
                             .minimumScaleFactor(0.88)
@@ -1131,11 +1131,11 @@ private struct PaywallYearlyCard: View {
         Button(action: onSelect) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(titleText)
-                    .font(.title3.bold())
+                    .font(AppTypography.sectionHeading)
                     .multilineTextAlignment(.leading)
                 HStack(alignment: .firstTextBaseline) {
                     Text(yearSubtitleLeading)
-                        .font(.subheadline)
+                        .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)
                     Spacer(minLength: 8)
@@ -1177,7 +1177,7 @@ private struct PaywallMonthlyCard: View {
         Button(action: onSelect) {
             HStack(alignment: .firstTextBaseline) {
                 Text("Monthly")
-                    .font(.subheadline.bold())
+                    .font(AppTypography.secondaryEmphasis)
                 Spacer(minLength: 8)
                 Text("\(displayPrice) per month")
                     .font(.footnote)

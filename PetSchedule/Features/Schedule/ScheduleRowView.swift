@@ -14,26 +14,26 @@ struct ScheduleRowView: View {
                 .onTapGesture { onPetTap?() }
 
             Image(systemName: item.activityIcon)
-                .font(.body.bold())
+                .font(AppTypography.rowIcon)
                 .foregroundStyle(Color.appPink)
                 .frame(width: 22)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.timeString)
-                    .font(.headline.bold())
+                    .font(AppTypography.primaryLabel)
                 Text(item.activityName)
-                    .font(.subheadline)
+                    .font(AppTypography.secondaryLabel)
                     .opacity(0.85)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                 if let mood = item.petMood {
                     Text("\(mood.emoji) \(mood.rawValue)")
-                        .font(.subheadline.weight(.medium))
+                        .font(AppTypography.secondaryEmphasis)
                         .foregroundStyle(Color.appPink.opacity(0.95))
                 }
                 if !item.description.isEmpty {
                     Text(item.description)
-                        .font(.caption)
+                        .font(AppTypography.supportingText)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
@@ -41,7 +41,7 @@ struct ScheduleRowView: View {
                 }
                 if item.repeatRule != .never {
                     Label(item.repeatRule.rawValue, systemImage: item.repeatRule.icon)
-                        .font(.caption2.bold())
+                        .font(AppTypography.micro)
                         .foregroundStyle(Color.appPink)
                 }
                 if let data = item.attachmentImageData, let uiImage = UIImage(data: data) {
@@ -75,7 +75,7 @@ struct ScheduleRowView: View {
                 onToggle()
             } label: {
                 Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
+                    .font(AppTypography.completionControl)
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(item.isCompleted ? Color.complianceAccept : .primary)
                     .contentTransition(.symbolEffect(.replace))
@@ -128,7 +128,7 @@ private struct CareCompliancePill: View {
         Group {
             if let accepted {
                 Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.secondaryEmphasis)
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
@@ -141,19 +141,19 @@ private struct CareCompliancePill: View {
             } else {
                 VStack(alignment: .center, spacing: 6) {
                     Text(kind.compliancePrompt)
-                        .font(.caption2.bold())
+                        .font(AppTypography.micro)
                         .foregroundStyle(.secondary)
 
                     HStack(spacing: 12) {
                         Button(action: onAccept) {
                             HStack(spacing: 6) {
                                 Image(systemName: "checkmark")
-                                    .font(.caption2.bold())
+                                    .font(AppTypography.micro)
                                     .foregroundStyle(.white)
                                     .frame(width: 26, height: 26)
                                     .background(Color.complianceAccept, in: Circle())
                                 Text(kind.acceptedResultLabel)
-                                    .font(.caption.weight(.semibold))
+                                    .font(AppTypography.compactControl)
                                     .foregroundStyle(Color.complianceAccept)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.8)
@@ -164,12 +164,12 @@ private struct CareCompliancePill: View {
                         Button(action: onDecline) {
                             HStack(spacing: 6) {
                                 Image(systemName: "xmark")
-                                    .font(.caption2.bold())
+                                    .font(AppTypography.micro)
                                     .foregroundStyle(.white)
                                     .frame(width: 26, height: 26)
                                     .background(Color.complianceDecline, in: Circle())
                                 Text(kind.declinedResultLabel)
-                                    .font(.caption.weight(.semibold))
+                                    .font(AppTypography.compactControl)
                                     .foregroundStyle(Color.complianceDecline)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.8)

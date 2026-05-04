@@ -66,7 +66,7 @@ struct FeatureTutorialOverlay: View {
                     Button("Skip") {
                         dismissTutorial()
                     }
-                    .font(.subheadline.weight(.semibold))
+                    .font(AppTypography.secondaryEmphasis)
                     .foregroundStyle(.secondary)
                     .accessibilityHint("Ends the tour and returns to the app.")
                 }
@@ -83,7 +83,7 @@ struct FeatureTutorialOverlay: View {
                         .accessibilityHidden(true)
 
                     Text(step.title)
-                        .font(.title2.bold())
+                        .font(AppTypography.panelTitle)
                         .multilineTextAlignment(.center)
 
                     Text(step.detail)
@@ -106,7 +106,7 @@ struct FeatureTutorialOverlay: View {
                         advance()
                     } label: {
                         Text(step.nextButtonTitle)
-                            .font(.body.bold())
+                            .font(AppTypography.primaryLabel)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)

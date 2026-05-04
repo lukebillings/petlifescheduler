@@ -296,10 +296,10 @@ struct AnalyticsView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: section.pillSymbol)
-                                .font(.subheadline.weight(.semibold))
+                                .font(AppTypography.secondaryEmphasis)
                                 .foregroundStyle(sel ? Color.white : Color.black)
                             Text(section.pillTitle)
-                                .font(.subheadline.bold())
+                                .font(AppTypography.secondaryEmphasis)
                                 .foregroundStyle(sel ? Color.white : Color.black)
                         }
                         .padding(.horizontal, 14)
@@ -334,7 +334,7 @@ struct AnalyticsView: View {
                                       : Color(.secondarySystemBackground))
                                 .frame(width: 60, height: 60)
                             Image(systemName: "pawprint.fill")
-                                .font(.title3)
+                                .font(AppTypography.sectionHeading)
                                 .foregroundStyle(selectedPetID == nil ? Color.appPink : .secondary)
                         }
                         .overlay {
@@ -344,7 +344,7 @@ struct AnalyticsView: View {
                             }
                         }
                         Text("All")
-                            .font(.caption.bold())
+                            .font(AppTypography.compactControl)
                             .foregroundStyle(selectedPetID == nil ? Color.appPink : .secondary)
                     }
                 }
@@ -368,7 +368,7 @@ struct AnalyticsView: View {
                                 }
                                 .scaleEffect(sel ? 1.05 : 1.0)
                             Text(pet.name)
-                                .font(.caption.bold())
+                                .font(AppTypography.compactControl)
                                 .foregroundStyle(sel ? Color.appPink : .secondary)
                         }
                     }
@@ -390,7 +390,7 @@ struct AnalyticsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Divider()
                     Text("Weight Trends")
-                        .font(.headline)
+                        .font(AppTypography.groupTitle)
 
                     PetSwipePager(pets: petsForAnalyticsContext, page: $weightSwipePage) { pet in
                         if pet.weightHistory.count >= 2 {
@@ -422,7 +422,7 @@ struct AnalyticsView: View {
             HStack {
                 if viewModel.pets.count > 1 {
                     PetAvatarView(pet: pet, size: 26)
-                    Text(pet.name).font(.subheadline.bold())
+                    Text(pet.name).font(AppTypography.secondaryEmphasis)
                 }
                 Spacer()
                 HStack(spacing: 4) {
@@ -439,7 +439,7 @@ struct AnalyticsView: View {
                     Text("\(weightUnit.formatValue(sorted.last!.kg)) now")
                         .foregroundStyle(.secondary)
                 }
-                .font(.caption.bold())
+                .font(AppTypography.compactControl)
             }
 
             Chart(sorted) { e in
@@ -503,7 +503,7 @@ struct AnalyticsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Divider()
                     Text("Height Trends")
-                        .font(.headline)
+                        .font(AppTypography.groupTitle)
 
                     PetSwipePager(pets: petsForAnalyticsContext, page: $heightSwipePage) { pet in
                         if pet.heightHistory.count >= 2 {
@@ -535,7 +535,7 @@ struct AnalyticsView: View {
             HStack {
                 if viewModel.pets.count > 1 {
                     PetAvatarView(pet: pet, size: 26)
-                    Text(pet.name).font(.subheadline.bold())
+                    Text(pet.name).font(AppTypography.secondaryEmphasis)
                 }
                 Spacer()
                 HStack(spacing: 4) {
@@ -552,7 +552,7 @@ struct AnalyticsView: View {
                     Text("\(heightUnit.formatValue(sorted.last!.cm)) now")
                         .foregroundStyle(.secondary)
                 }
-                .font(.caption.bold())
+                .font(AppTypography.compactControl)
             }
 
             Chart(sorted) { e in
@@ -650,10 +650,10 @@ struct AnalyticsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Divider()
                     Text("Mood Over Time")
-                        .font(.headline)
+                        .font(AppTypography.groupTitle)
 
                     Text("From Log → Mood entries in this period (higher is brighter mood).")
-                        .font(.caption)
+                        .font(AppTypography.supportingText)
                         .foregroundStyle(.secondary)
 
                     PetSwipePager(pets: petsForAnalyticsContext, page: $moodSwipePage) { pet in
@@ -684,12 +684,12 @@ struct AnalyticsView: View {
             HStack {
                 if viewModel.pets.count > 1 {
                     PetAvatarView(pet: pet, size: 26)
-                    Text(pet.name).font(.subheadline.bold())
+                    Text(pet.name).font(AppTypography.secondaryEmphasis)
                 }
                 Spacer()
                 if let last {
                     HStack(spacing: 8) {
-                        moodEmojiAlignedLabel(last, font: .caption.bold(), valueSecondary: true)
+                        moodEmojiAlignedLabel(last, font: AppTypography.compactControl, valueSecondary: true)
                         if items.count >= 2, abs(deltaFromPrevious) > 0.001 {
                             HStack(spacing: 4) {
                                 Image(systemName: deltaFromPrevious >= 0 ? "arrow.up.right" : "arrow.down.right")
@@ -701,7 +701,7 @@ struct AnalyticsView: View {
                                     .fontWeight(.regular)
                                     .foregroundStyle(.tertiary)
                             }
-                            .font(.caption.bold())
+                            .font(AppTypography.compactControl)
                         }
                         Spacer(minLength: 0)
                     }
@@ -765,11 +765,11 @@ struct AnalyticsView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Date")
-                    .font(.caption2.bold())
+                    .font(AppTypography.micro)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text("Mood")
-                    .font(.caption2.bold())
+                    .font(AppTypography.micro)
                     .foregroundStyle(.secondary)
                     .frame(width: Self.moodLabelLayoutWidth, alignment: .leading)
             }
@@ -780,11 +780,11 @@ struct AnalyticsView: View {
                 Divider()
                 HStack {
                     Text(item.time.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
+                        .font(AppTypography.supportingText)
                         .foregroundStyle(.primary)
                     Spacer()
                     if let mood = item.petMood {
-                        moodEmojiAlignedLabel(mood, font: .caption.bold())
+                        moodEmojiAlignedLabel(mood, font: AppTypography.compactControl)
                     }
                 }
                 .padding(.horizontal, 4)
@@ -862,7 +862,7 @@ struct AnalyticsView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Divider()
                     Text(kind.analyticsSectionTitle)
-                        .font(.headline)
+                        .font(AppTypography.groupTitle)
 
                     PetSwipePager(
                         pets: petsForAnalyticsContext,
@@ -905,12 +905,12 @@ struct AnalyticsView: View {
             HStack {
                 if viewModel.pets.count > 1 {
                     PetAvatarView(pet: pet, size: 26)
-                    Text(pet.name).font(.subheadline.bold())
+                    Text(pet.name).font(AppTypography.secondaryEmphasis)
                 }
                 Spacer()
                 if hasScheduledItems {
                     Text("\(Int(avg * 100))% avg compliance")
-                        .font(.caption.bold())
+                        .font(AppTypography.compactControl)
                         .foregroundStyle(rateColor(avg))
                 }
             }
@@ -919,7 +919,7 @@ struct AnalyticsView: View {
                 complianceNeverScheduledPlaceholder(kind: kind, pet: pet)
             } else if points.isEmpty {
                 Text(kind.analyticsPeriodEmptyMessage)
-                    .font(.caption)
+                    .font(AppTypography.supportingText)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
             } else {
@@ -970,7 +970,7 @@ struct AnalyticsView: View {
                     HStack {
                         Spacer()
                         Label("View Full Log", systemImage: "list.bullet.clipboard")
-                            .font(.caption.bold())
+                            .font(AppTypography.compactControl)
                             .foregroundStyle(Color.appPink)
                         Spacer()
                     }
@@ -1001,9 +1001,9 @@ struct AnalyticsView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "plus")
-                    .font(.caption.bold())
+                    .font(AppTypography.capsuleButton)
                 Text(title)
-                    .font(.subheadline.bold())
+                    .font(AppTypography.capsuleButton)
                     .lineLimit(1)
                     .minimumScaleFactor(0.82)
             }
@@ -1020,14 +1020,14 @@ struct AnalyticsView: View {
     private func analyticsMeasurementEmptyCard(pet: Pet, icon: String, title: String, message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: icon)
-                .font(.largeTitle)
+                .font(AppTypography.emptyStateSymbol)
                 .foregroundStyle(Color.appPink.opacity(0.45))
             Text(title)
-                .font(.subheadline.bold())
+                .font(AppTypography.cardTitle)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
             Text(message)
-                .font(.caption)
+                .font(AppTypography.supportingText)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
@@ -1045,15 +1045,15 @@ struct AnalyticsView: View {
     private func moodTrendEmptyCard(for pet: Pet) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "face.smiling")
-                .font(.largeTitle)
+                .font(AppTypography.emptyStateSymbol)
                 .foregroundStyle(Color.appPink.opacity(0.45))
             Text("No mood chart yet")
-                .font(.subheadline.bold())
+                .font(AppTypography.cardTitle)
                 .foregroundStyle(.primary)
             Text(
                 "After two Mood logs for \(pet.name) in this \(selectedRange.rawValue.lowercased()), a trend appears here."
             )
-            .font(.caption)
+            .font(AppTypography.supportingText)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
 
@@ -1078,16 +1078,16 @@ struct AnalyticsView: View {
         }()
         return VStack(spacing: 16) {
             Image(systemName: kind.logEmptySystemImage)
-                .font(.largeTitle)
+                .font(AppTypography.emptyStateSymbol)
                 .foregroundStyle(Color.appPink.opacity(0.45))
             Text("No \(noun) tasks for \(pet.name)")
-                .font(.subheadline.bold())
+                .font(AppTypography.cardTitle)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
             Text(
                 "Add a repeating \(noun) reminder on your timeline. Analytics tracks yes/no once events appear."
             )
-            .font(.caption)
+            .font(AppTypography.supportingText)
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
 
@@ -1109,11 +1109,11 @@ struct AnalyticsView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Date")
-                    .font(.caption2.bold())
+                    .font(AppTypography.micro)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text(valueColumnTitle)
-                    .font(.caption2.bold())
+                    .font(AppTypography.micro)
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 4)
@@ -1123,11 +1123,11 @@ struct AnalyticsView: View {
                 Divider()
                 HStack {
                     Text(row.date.formatted(date: .abbreviated, time: .omitted))
-                        .font(.caption)
+                        .font(AppTypography.supportingText)
                         .foregroundStyle(.primary)
                     Spacer()
                     Text(row.value)
-                        .font(.caption.bold())
+                        .font(AppTypography.compactControl)
                         .foregroundStyle(.primary)
                 }
                 .padding(.horizontal, 4)
@@ -1145,10 +1145,10 @@ struct AnalyticsView: View {
             Spacer()
             VStack(spacing: 8) {
                 Image(systemName: icon)
-                    .font(.largeTitle)
+                .font(AppTypography.emptyStateSymbol)
                     .foregroundStyle(Color.appPink.opacity(0.4))
                 Text(text)
-                    .font(.subheadline)
+                    .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -1267,7 +1267,7 @@ struct ComplianceLogSheet: View {
                     withAnimation(.spring(duration: 0.25)) { selectedPetID = nil }
                 } label: {
                     Text("All pets")
-                        .font(.subheadline.bold())
+                        .font(AppTypography.secondaryEmphasis)
                         .foregroundStyle(allSelected ? .white : .primary)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
@@ -1286,7 +1286,7 @@ struct ComplianceLogSheet: View {
                         HStack(spacing: 8) {
                             PetAvatarView(pet: pet, size: 28)
                             Text(pet.name)
-                                .font(.subheadline.bold())
+                                .font(AppTypography.secondaryEmphasis)
                                 .foregroundStyle(sel ? .white : .primary)
                         }
                         .padding(.horizontal, 14)
@@ -1304,7 +1304,7 @@ struct ComplianceLogSheet: View {
     private func complianceDayCard(group: (date: Date, items: [ScheduleItem])) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(group.date.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-                .font(.subheadline.bold())
+                .font(AppTypography.secondaryEmphasis)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 4)
 
@@ -1316,7 +1316,7 @@ struct ComplianceLogSheet: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("—")
-                            .font(.caption.bold())
+                            .font(AppTypography.compactControl)
                             .foregroundStyle(.tertiary)
                     }
                     .padding(.horizontal, 16)
@@ -1355,14 +1355,14 @@ private struct ComplianceLogRow: View {
                     .fill(statusColor.opacity(0.15))
                     .frame(width: 36, height: 36)
                 Image(systemName: statusIconName)
-                    .font(.body.bold())
+                    .font(AppTypography.rowIcon)
                     .foregroundStyle(statusColor)
             }
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 4) {
                     Text(item.activityName)
-                        .font(.subheadline.bold())
+                        .font(AppTypography.secondaryEmphasis)
                     if showPetName {
                         Text("· \(item.pet.name)")
                             .font(.subheadline)
@@ -1371,7 +1371,7 @@ private struct ComplianceLogRow: View {
                 }
                 if !item.description.isEmpty {
                     Text(item.description)
-                        .font(.caption)
+                        .font(AppTypography.supportingText)
                         .foregroundStyle(.secondary)
                 }
                 Text(timeLabel)
@@ -1382,7 +1382,7 @@ private struct ComplianceLogRow: View {
             Spacer()
 
             Text(statusText)
-                .font(.caption.bold())
+                .font(AppTypography.compactControl)
                 .foregroundStyle(statusColor)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)

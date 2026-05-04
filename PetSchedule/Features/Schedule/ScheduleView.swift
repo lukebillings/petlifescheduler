@@ -14,7 +14,7 @@ struct ScheduleView: View {
                     // My Pets row
                     VStack(alignment: .leading, spacing: 14) {
                         Text("My pets")
-                            .font(.title2.bold())
+                            .font(AppTypography.screenTitle)
                             .padding(.horizontal)
 
                         ScrollView(.horizontal, showsIndicators: false) {
@@ -41,7 +41,7 @@ struct ScheduleView: View {
 
                                                 if pending > 0 {
                                                     Text(pending > 99 ? "99+" : "\(pending)")
-                                                        .font(.system(size: 11, weight: .bold))
+                                                        .font(AppTypography.micro)
                                                         .foregroundStyle(.white)
                                                         .padding(.horizontal, pending > 9 ? 5 : 0)
                                                         .frame(minWidth: 18, minHeight: 18)
@@ -54,7 +54,7 @@ struct ScheduleView: View {
                                                 }
                                             }
                                             Text(pet.name)
-                                                .font(.caption.bold())
+                                                .font(AppTypography.compactControl)
                                                 .foregroundStyle(isSelected ? Color.appPink : Color.secondary)
                                         }
                                     }
@@ -84,12 +84,12 @@ struct ScheduleView: View {
                     if viewModel.selectedView == .list {
                         HStack(alignment: .center, spacing: 6) {
                             Text("Today")
-                                .font(.title3.bold())
+                                .font(AppTypography.sectionHeading)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.85)
 
                             Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
-                                .font(.caption.bold())
+                                .font(AppTypography.compactControl)
                                 .foregroundStyle(.white)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.8)
@@ -118,9 +118,9 @@ struct ScheduleView: View {
                             } label: {
                                 HStack(spacing: 4) {
                                     Image(systemName: hideCompleted ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                                        .font(.body.bold())
+                                        .font(AppTypography.navControl)
                                     Text(hideCompleted ? "Pending" : "All")
-                                        .font(.caption.bold())
+                                        .font(AppTypography.compactControl)
                                         .lineLimit(1)
                                         .minimumScaleFactor(0.85)
                                 }
@@ -198,9 +198,9 @@ struct ScheduleView: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 Image(systemName: "plus")
-                    .font(.caption.bold())
+                    .font(AppTypography.compactControl)
                 Text(title)
-                    .font(.caption.bold())
+                    .font(AppTypography.compactControl)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
             }

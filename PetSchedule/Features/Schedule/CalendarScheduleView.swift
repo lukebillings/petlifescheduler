@@ -22,7 +22,7 @@ struct CalendarScheduleView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
-                        .font(.body.bold())
+                        .font(AppTypography.navControl)
                         .padding(10)
                         .glassEffect(in: Circle())
                 }
@@ -30,7 +30,7 @@ struct CalendarScheduleView: View {
                 Spacer()
 
                 Text(viewModel.selectedCalendarDate.formatted(.dateTime.month(.wide).year()))
-                    .font(.title3.bold())
+                    .font(AppTypography.sectionHeading)
 
                 Spacer()
 
@@ -42,7 +42,7 @@ struct CalendarScheduleView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.right")
-                        .font(.body.bold())
+                        .font(AppTypography.navControl)
                         .padding(10)
                         .glassEffect(in: Circle())
                 }
@@ -53,7 +53,7 @@ struct CalendarScheduleView: View {
             HStack(spacing: 0) {
                 ForEach(weekdayLabels, id: \.self) { label in
                     Text(label)
-                        .font(.caption.bold())
+                        .font(AppTypography.compactControl)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity)
                 }
@@ -87,7 +87,7 @@ struct CalendarScheduleView: View {
             let selectedItems = viewModel.items(for: viewModel.selectedCalendarDate)
             VStack(alignment: .leading, spacing: 16) {
                 Text(viewModel.selectedCalendarDate.formatted(.dateTime.weekday(.wide).month().day()))
-                    .font(.headline)
+                    .font(AppTypography.groupTitle)
                     .padding(.horizontal)
 
                 if selectedItems.isEmpty {
@@ -186,7 +186,7 @@ private struct CalendarDayCell: View {
         Button(action: onTap) {
             VStack(spacing: 3) {
                 Text("\(Calendar.current.component(.day, from: date))")
-                    .font(.callout.bold())
+                    .font(AppTypography.calendarDayNumber)
                     .foregroundStyle(isSelected ? Color.white : isToday ? Color.appPink : Color.primary)
                     .frame(width: 34, height: 34)
                     .background(

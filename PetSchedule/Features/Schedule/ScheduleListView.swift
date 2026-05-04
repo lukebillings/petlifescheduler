@@ -40,10 +40,10 @@ struct ScheduleListView: View {
                     Spacer()
                     VStack(spacing: 8) {
                         Image(systemName: "checkmark.seal.fill")
-                            .font(.largeTitle)
+                            .font(AppTypography.emptyStateSymbol)
                             .foregroundStyle(Color.appPink.opacity(0.5))
                         Text("All done for today!")
-                            .font(.subheadline)
+                            .font(AppTypography.secondaryLabel)
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 32)
@@ -137,7 +137,7 @@ private struct NowDivider: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text(time.formatted(.dateTime.hour().minute()))
-                .font(.caption2.bold())
+                .font(AppTypography.micro)
                 .foregroundStyle(Color.appPink)
                 .padding(.leading, timeLeadingInset)
 
@@ -172,22 +172,22 @@ private struct BirthdayRowView: View {
                 .onTapGesture { onPetTap() }
                 .overlay(alignment: .bottomTrailing) {
                     Text("🎂")
-                        .font(.title3)
+                        .font(AppTypography.sectionHeading)
                         .offset(x: 4, y: 4)
                 }
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("All Day")
-                    .font(.caption.bold())
+                    .font(AppTypography.compactControl)
                     .foregroundStyle(.secondary)
                 Text(item.activityName)
-                    .font(.subheadline.bold())
+                    .font(AppTypography.primaryLabel)
             }
 
             Spacer()
 
             Image(systemName: "gift.fill")
-                .font(.title3)
+                .font(AppTypography.sectionHeading)
                 .foregroundStyle(Color.appPink)
                 .symbolEffect(.pulse)
         }
