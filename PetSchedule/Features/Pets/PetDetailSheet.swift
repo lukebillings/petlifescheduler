@@ -160,7 +160,6 @@ struct PetDetailSheet: View {
                     PhotosPicker(selection: $photoItem, matching: .images) {
                         ZStack(alignment: .bottomTrailing) {
                             petProfileCoverImage
-                                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                             Circle()
                                 .fill(Color.appPink)
@@ -892,26 +891,33 @@ struct PetDetailSheet: View {
         .background(Color(.systemGroupedBackground))
     }
 
-    /// Large square cover for the profile editor (lists still use circular `PetAvatarView`).
+    /// Square tile — user photos fill every pixel inside the rounded rect (aspect fill); placeholder stays padded on gray.
     @ViewBuilder
     private var petProfileCoverImage: some View {
-        ZStack {
+        Group {
             if let data = photoData, let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFill()
+                GeometryReader { proxy in
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFill()
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                        .clipped()
+                }
             } else {
-                Image(animalType.placeholderImage)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFill()
+                ZStack {
+                    Color(.secondarySystemFill)
+                    Image(animalType.placeholderImage)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .padding(20)
+                }
             }
         }
         .frame(maxWidth: .infinity)
         .aspectRatio(1, contentMode: .fit)
-        .scaleEffect(1.05)
-        .clipped()
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
     }
 
     @ViewBuilder

@@ -12,11 +12,11 @@ struct TodayEventsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: TodayEventsWidget.kind, provider: TodayEventsProvider()) { entry in
             TodayEventsWidgetView(entry: entry)
-                .containerBackground(Color(uiColor: .systemGroupedBackground), for: .widget)
+                .containerBackground(widgetPink, for: .widget)
         }
         .configurationDisplayName("Today's schedule")
         .description("Next upcoming events for your pets today.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 
     static let kind = "com.lukebillings.PetSchedule.todayEvents"
@@ -88,14 +88,19 @@ struct TodayEventsWidgetView: View {
 
     private var compactCards: Bool { family == .systemSmall }
 
-    /// At most two upcoming events (defense in depth; payload should already cap).
+    private var isLargeFamily: Bool { family == .systemLarge }
+
+    /// Up to four in the payload for the large widget; small/medium show two.
     private var displayedEvents: [WidgetScheduleEventDTO] {
-        Array(entry.events.prefix(2))
+        let cap = isLargeFamily ? 4 : 2
+        return Array(entry.events.prefix(cap))
     }
 
-    /// Medium + two cards needs tighter rows so nothing clips; small always compact.
+    /// Tighter rows when space is tight (many cards or small widget).
     private var cardLayoutCompact: Bool {
-        compactCards || (family == .systemMedium && displayedEvents.count >= 2)
+        if compactCards { return true }
+        if isLargeFamily { return displayedEvents.count >= 3 }
+        return family == .systemMedium && displayedEvents.count >= 2
     }
 
     private var noEventsToday: Bool {
@@ -107,28 +112,29 @@ struct TodayEventsWidgetView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compactCards ? 6 : 8) {
+        VStack(alignment: .leading, spacing: compactCards ? 6 : (isLargeFamily ? 10 : 8)) {
             if noEventsToday {
                 Text("No events today")
                     .font(compactCards ? .subheadline.bold() : .body.bold())
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.white)
                 Text("Add some in PetSchedule")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.85))
             } else if allDoneToday {
                 Text("All done!")
                     .font(compactCards ? .headline.bold() : .title3.bold())
-                    .foregroundStyle(widgetPink)
+                    .foregroundStyle(.white)
                 Text("\(entry.totalTodayEventCount) completed")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.85))
             } else {
-                VStack(alignment: .leading, spacing: compactCards ? 6 : 6) {
+                VStack(alignment: .leading, spacing: compactCards ? 6 : (isLargeFamily ? 8 : 6)) {
                     ForEach(displayedEvents) { ev in
                         WidgetScheduleEventCard(
                             event: ev,
                             timeFormat24h: entry.timeFormat24h,
-                            compact: cardLayoutCompact
+                            compact: cardLayoutCompact,
+                            widgetFamily: family
                         )
                     }
                 }
@@ -179,7 +185,7 @@ struct TodayEventsWidgetView: View {
     )
 }
 
-// MARK: - White cards on grouped background (quick log: pink stroke; no `glassEffect` in widgets)
+// MARK: - White cards on app-pink background (quick log: pink stroke)
 
 private struct WidgetPetAvatar: View {
     let jpegData: Data?
@@ -200,7 +206,7 @@ private struct WidgetPetAvatar: View {
             }
         }
         .frame(width: size, height: size)
-        .scaleEffect(1.14)
+        .clipped()
         .clipShape(Circle())
     }
 }
@@ -209,24 +215,22 @@ private struct WidgetScheduleEventCard: View {
     let event: WidgetScheduleEventDTO
     let timeFormat24h: Bool
     var compact: Bool
+    var widgetFamily: WidgetFamily
 
     private var isQuickLog: Bool { event.isQuickLog == true }
 
-    private var avatarSize: CGFloat { compact ? 40 : 48 }
-    private var iconWidth: CGFloat { compact ? 20 : 22 }
+    private var avatarSize: CGFloat {
+        if widgetFamily == .systemLarge { return compact ? 52 : 64 }
+        return compact ? 40 : 48
+    }
 
     var body: some View {
-        HStack(spacing: compact ? 10 : 14) {
+        HStack(alignment: .center, spacing: compact ? 10 : 14) {
             WidgetPetAvatar(
                 jpegData: event.petPhotoJPEGData,
                 systemImageName: event.petSystemImage,
                 size: avatarSize
             )
-
-            Image(systemName: event.activitySystemImage ?? "pawprint.fill")
-                .font(compact ? .subheadline.bold() : .body.bold())
-                .foregroundStyle(widgetPink)
-                .frame(width: iconWidth)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(event.timeLabel(timeFormat24h: timeFormat24h))
@@ -238,14 +242,15 @@ private struct WidgetScheduleEventCard: View {
                     .font(compact ? .caption : .subheadline)
                     .foregroundStyle(widgetCardTextSecondary)
                     .lineLimit(2)
+                if widgetFamily == .systemLarge, !event.petName.isEmpty {
+                    Text(event.petName)
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(widgetCardTextSecondary.opacity(0.95))
+                        .lineLimit(1)
+                }
             }
 
             Spacer(minLength: 0)
-
-            Image(systemName: "circle")
-                .font(compact ? .title3 : .title2)
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(widgetCardText.opacity(0.55))
         }
         .padding(.horizontal, compact ? 14 : 18)
         .padding(.vertical, compact ? 11 : 16)

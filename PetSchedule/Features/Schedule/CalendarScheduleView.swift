@@ -130,7 +130,13 @@ struct CalendarScheduleView: View {
             AddEventSheet(viewModel: viewModel, prefilledDate: viewModel.selectedCalendarDate)
         }
         .sheet(item: $editingItem) { item in
-            EditEventSheet(viewModel: viewModel, item: item)
+            Group {
+                if item.quickLogKind != nil {
+                    EditLogSheet(viewModel: viewModel, item: item)
+                } else {
+                    EditEventSheet(viewModel: viewModel, item: item)
+                }
+            }
         }
         .sheet(item: $viewingPet) { pet in
             PetDetailSheet(

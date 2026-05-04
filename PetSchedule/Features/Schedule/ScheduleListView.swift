@@ -105,7 +105,13 @@ struct ScheduleListView: View {
         .padding(.top, 8)
         .onReceive(timer) { t in now = t }
         .sheet(item: $editingItem) { item in
-            EditEventSheet(viewModel: viewModel, item: item)
+            Group {
+                if item.quickLogKind != nil {
+                    EditLogSheet(viewModel: viewModel, item: item)
+                } else {
+                    EditEventSheet(viewModel: viewModel, item: item)
+                }
+            }
         }
         .sheet(item: $viewingPet) { pet in
             PetDetailSheet(

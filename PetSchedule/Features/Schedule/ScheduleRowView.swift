@@ -127,45 +127,53 @@ private struct CareCompliancePill: View {
     var body: some View {
         Group {
             if let accepted {
-                HStack(spacing: 4) {
-                    Image(systemName: accepted ? "checkmark" : "xmark")
-                        .font(.caption2.bold())
-                    Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
-                        .font(.caption2.bold())
-                }
-                .foregroundStyle(accepted ? Color.complianceAccept : Color.complianceDecline)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(
-                    Capsule()
-                        .fill(accepted ? Color.complianceAccept.opacity(0.14) : Color.complianceDecline.opacity(0.14))
-                )
-                .overlay(
-                    Capsule()
-                        .stroke(accepted ? Color.complianceAccept.opacity(0.4) : Color.complianceDecline.opacity(0.4), lineWidth: 1)
-                )
+                Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 9)
+                    .background(
+                        Capsule()
+                            .fill(accepted ? Color.complianceAccept : Color.complianceDecline)
+                    )
             } else {
                 VStack(alignment: .center, spacing: 6) {
                     Text(kind.compliancePrompt)
                         .font(.caption2.bold())
                         .foregroundStyle(.secondary)
 
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
                         Button(action: onAccept) {
-                            Image(systemName: "checkmark")
-                                .font(.caption2.bold())
-                                .foregroundStyle(.white)
-                                .frame(width: 26, height: 26)
-                                .background(Color.complianceAccept, in: Circle())
+                            HStack(spacing: 6) {
+                                Image(systemName: "checkmark")
+                                    .font(.caption2.bold())
+                                    .foregroundStyle(.white)
+                                    .frame(width: 26, height: 26)
+                                    .background(Color.complianceAccept, in: Circle())
+                                Text(kind.acceptedResultLabel)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.complianceAccept)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
                         }
                         .buttonStyle(.plain)
 
                         Button(action: onDecline) {
-                            Image(systemName: "xmark")
-                                .font(.caption2.bold())
-                                .foregroundStyle(.white)
-                                .frame(width: 26, height: 26)
-                                .background(Color.complianceDecline, in: Circle())
+                            HStack(spacing: 6) {
+                                Image(systemName: "xmark")
+                                    .font(.caption2.bold())
+                                    .foregroundStyle(.white)
+                                    .frame(width: 26, height: 26)
+                                    .background(Color.complianceDecline, in: Circle())
+                                Text(kind.declinedResultLabel)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Color.complianceDecline)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
+                            }
                         }
                         .buttonStyle(.plain)
                     }

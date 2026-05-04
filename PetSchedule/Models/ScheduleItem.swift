@@ -15,17 +15,17 @@ enum ScheduleComplianceKind: Equatable, Hashable {
         }
     }
 
-    /// Past-tense outcomes after logging — lowercase chips: took / ate / drank / skipped.
+    /// Past-tense outcomes on schedule rows (buttons + logged chip).
     var acceptedResultLabel: String {
         switch self {
-        case .medicine: return "took"
-        case .feed:     return "ate"
-        case .water:    return "drank"
+        case .medicine: return "Taken"
+        case .feed:     return "Eaten"
+        case .water:    return "Drank"
         }
     }
 
     var declinedResultLabel: String {
-        "skipped"
+        "Skipped"
     }
 
     /// Analytics section titles (schedule yes/no compliance).

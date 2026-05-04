@@ -83,8 +83,8 @@ private struct PetCard: View {
                 }
             }
             .frame(width: 72, height: 72)
-            .scaleEffect(1.14)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
 
             Text(pet.name)
                 .font(.title3.bold())

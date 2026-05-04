@@ -313,9 +313,17 @@ final class HomeViewModel {
     func toggleCompletion(for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         let wasCompleted = scheduleItems[index].isCompleted
-        scheduleItems[index].isCompleted.toggle()
-        if !wasCompleted, scheduleItems[index].isCompleted {
+        if !wasCompleted {
+            scheduleItems[index].isCompleted = true
+            if scheduleItems[index].complianceKind != nil, scheduleItems[index].medicineAccepted == nil {
+                scheduleItems[index].medicineAccepted = true
+            }
             AppRatingPrompt.recordTaskCompleted()
+        } else {
+            scheduleItems[index].isCompleted = false
+            if scheduleItems[index].complianceKind != nil {
+                scheduleItems[index].medicineAccepted = nil
+            }
         }
         syncWidgetSchedule()
     }
@@ -379,7 +387,7 @@ final class HomeViewModel {
     }
 
     /// Small JPEG for the widget extension (keeps App Group payload bounded).
-    private static func widgetPetThumbnailJPEG(from photoData: Data?, maxSide: CGFloat = 128, maxBytes: Int = 48_000) -> Data? {
+    private static func widgetPetThumbnailJPEG(from photoData: Data?, maxSide: CGFloat = 192, maxBytes: Int = 72_000) -> Data? {
         guard let photoData, let image = UIImage(data: photoData) else { return nil }
         let w = image.size.width
         let h = image.size.height
@@ -409,9 +417,9 @@ final class HomeViewModel {
         let merged = (birthdays + regular).sorted { $0.time < $1.time }
         let totalToday = merged.count
         let upcoming = merged.filter { !$0.isCompleted }
-        let nextTwo = Array(upcoming.prefix(2))
+        let nextForWidget = Array(upcoming.prefix(4))
         let tf24 = TimeFormat.current == .twentyFourHour
-        let dtos = nextTwo.map { Self.widgetDTO(from: $0) }
+        let dtos = nextForWidget.map { Self.widgetDTO(from: $0) }
         ScheduleWidgetShared.savePayload(
             WidgetSchedulePayload(
                 updatedAt: Date(),

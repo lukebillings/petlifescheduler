@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import UIKit
 
 // MARK: - Supporting Types
 
@@ -16,27 +17,118 @@ private enum AnalyticsRange: String, CaseIterable {
     }
 }
 
-private struct DayCompletion: Identifiable {
-    let id        = UUID()
-    let date:      Date
-    let completed: Int
-    let total:     Int
-    var rate:    Double { total > 0 ? Double(completed) / Double(total) : 0 }
-    var isEmpty: Bool   { total == 0 }
-}
-
-private struct Insight: Identifiable {
-    enum Tone { case positive, warning }
-    let id      = UUID()
-    let icon:    String
-    let message: String
-    let tone:    Tone
-}
-
 private struct ComplianceLogSheetPayload: Identifiable {
     let kind: ScheduleComplianceKind
     let pet: Pet?
     var id: String { "\(kind)-\(pet?.id.uuidString ?? "all")" }
+}
+
+/// Dots under swipeable trend carousels; tracks `page` as the user swipes.
+private struct PetSwipePageIndicator: View {
+    let count: Int
+    let page: Int
+
+    var body: some View {
+        HStack(spacing: 7) {
+            ForEach(0..<count, id: \.self) { i in
+                Circle()
+                    .fill(i == page ? Color(uiColor: .systemGray) : Color(uiColor: .systemGray5))
+                    .frame(width: i == page ? 8 : 6, height: i == page ? 8 : 6)
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: page)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Pet chart page \(min(page + 1, count)) of \(count)")
+    }
+}
+
+/// Horizontal swipe between pets for a single chart type (one full-width card per page).
+private struct PetSwipePager<Content: View>: View {
+    let pets: [Pet]
+    @Binding var page: Int
+    /// Height of each paged tab; short cards (e.g. compliance) should use a smaller value to avoid a tall empty band above the dots.
+    var pageHeight: CGFloat = AnalyticsSwipeLayout.pageHeight
+    @ViewBuilder let content: (Pet) -> Content
+
+    var body: some View {
+        Group {
+            if pets.isEmpty {
+                EmptyView()
+            } else if pets.count == 1, let only = pets.first {
+                content(only)
+            } else {
+                VStack(spacing: AnalyticsSwipeLayout.dotsSpacingFromPager) {
+                    TabView(selection: $page) {
+                        ForEach(Array(pets.enumerated()), id: \.element.id) { index, pet in
+                            ScrollView {
+                                content(pet)
+                            }
+                            .scrollBounceBehavior(.basedOnSize, axes: [.vertical])
+                            .tag(index)
+                        }
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+                    .frame(height: pageHeight)
+
+                    PetSwipePageIndicator(count: pets.count, page: page)
+                }
+            }
+        }
+        .onChange(of: pets.map(\.id)) { _, _ in page = 0 }
+    }
+}
+
+/// Shared metrics so every trend carousel matches: same pager height + same gap above the dots.
+private enum AnalyticsSwipeLayout {
+    /// Tall sections (weight / height / mood) include a chart plus history table.
+    static let pageHeight: CGFloat = 400
+    /// Compliance charts are shorter (no history table); a smaller pager avoids a large blank strip above the dots.
+    static let compliancePageHeight: CGFloat = 300
+    /// Space between the bottom of the paged area and the page-indicator dots (all sections).
+    static let dotsSpacingFromPager: CGFloat = 8
+}
+
+/// Quick-jump targets for the analytics pill bar (matches `.id` on each anchored block).
+private enum AnalyticsJumpSection: String, CaseIterable, Hashable {
+    case summary
+    case weight
+    case height
+    case mood
+    case medicine
+    case feed
+    case water
+
+    var pillTitle: String {
+        switch self {
+        case .summary: return "Pets"
+        case .weight: return "Weight"
+        case .height: return "Height"
+        case .mood: return "Mood"
+        case .medicine: return "Medicine"
+        case .feed: return "Feeding"
+        case .water: return "Water"
+        }
+    }
+
+    var pillSymbol: String {
+        switch self {
+        case .summary: return "pawprint.fill"
+        case .weight: return "scalemass.fill"
+        case .height: return "ruler.fill"
+        case .mood: return "face.smiling"
+        case .medicine: return "pill.fill"
+        case .feed: return "fork.knife"
+        case .water: return "drop.fill"
+        }
+    }
+
+    static func compliance(_ kind: ScheduleComplianceKind) -> AnalyticsJumpSection {
+        switch kind {
+        case .medicine: return .medicine
+        case .feed: return .feed
+        case .water: return .water
+        }
+    }
 }
 
 // MARK: - AnalyticsView
@@ -46,6 +138,14 @@ struct AnalyticsView: View {
 
     @State private var selectedRange: AnalyticsRange = .week
     @State private var selectedPetID: UUID? = nil
+    @State private var selectedAnalyticsJumpSection: AnalyticsJumpSection?
+
+    @State private var weightSwipePage = 0
+    @State private var heightSwipePage = 0
+    @State private var moodSwipePage = 0
+    @State private var complianceSwipeMedicine = 0
+    @State private var complianceSwipeFeed = 0
+    @State private var complianceSwipeWater = 0
 
     @AppStorage("weightUnit") private var weightUnitRaw = "kg"
     @AppStorage("heightUnit") private var heightUnitRaw = "cm"
@@ -74,151 +174,38 @@ struct AnalyticsView: View {
         return petColor(at: index)
     }
 
-    private var rangeItems: [ScheduleItem] {
-        viewModel.scheduleItems.filter {
-            $0.time >= rangeStart && (selectedPetID == nil || $0.pet.id == selectedPetID)
+    private var weightTrendPets: [Pet] {
+        if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
+            return p.weightHistory.count >= 2 ? [p] : []
         }
+        return viewModel.pets.filter { $0.weightHistory.count >= 2 }
     }
 
-    private var completionByDay: [DayCompletion] {
-        (0..<selectedRange.days).reversed().compactMap { offset in
-            guard let day = calendar.date(
-                byAdding: .day,
-                value: -offset,
-                to: calendar.startOfDay(for: .now)
-            ) else { return nil }
-            let items = rangeItems.filter { calendar.isDate($0.time, inSameDayAs: day) }
-            return DayCompletion(
-                date: day,
-                completed: items.filter(\.isCompleted).count,
-                total: items.count
-            )
+    private var heightTrendPets: [Pet] {
+        if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
+            return p.heightHistory.count >= 2 ? [p] : []
         }
+        return viewModel.pets.filter { $0.heightHistory.count >= 2 }
     }
 
-    private var overallRate: Double {
-        let active = completionByDay.filter { !$0.isEmpty }
-        guard !active.isEmpty else { return 0 }
-        return active.map(\.rate).reduce(0, +) / Double(active.count)
+    private var moodTrendPets: [Pet] {
+        if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
+            return moodQuickLogs(for: p.id).count >= 2 ? [p] : []
+        }
+        return viewModel.pets.filter { moodQuickLogs(for: $0.id).count >= 2 }
     }
 
-    private var insights: [Insight] {
-        var list: [Insight] = []
-        let allItems = viewModel.scheduleItems.filter {
-            selectedPetID == nil || $0.pet.id == selectedPetID
+    private var visibleAnalyticsJumpSections: [AnalyticsJumpSection] {
+        var list: [AnalyticsJumpSection] = []
+        if viewModel.pets.count > 1 {
+            list.append(.summary)
         }
-
-        guard !allItems.isEmpty else {
-            return [Insight(
-                icon: "calendar.badge.plus",
-                message: "Add events to your schedule to start seeing insights here.",
-                tone: .warning
-            )]
-        }
-
-        let todayItems = allItems.filter { calendar.isDateInToday($0.time) }
-        let todayDone  = todayItems.filter(\.isCompleted).count
-        let todayTotal = todayItems.count
-
-        if todayTotal > 0 && todayDone == todayTotal {
-            list.append(Insight(
-                icon: "checkmark.seal.fill",
-                message: "All \(todayTotal) event\(todayTotal == 1 ? "" : "s") completed today!",
-                tone: .positive
-            ))
-        } else if todayTotal > 0 && todayDone == 0 {
-            list.append(Insight(
-                icon: "exclamationmark.circle.fill",
-                message: "\(todayTotal) event\(todayTotal == 1 ? "" : "s") scheduled today — none completed yet.",
-                tone: .warning
-            ))
-        }
-
-        let twoDaysAgo   = calendar.date(byAdding: .day, value: -2, to: .now) ?? .now
-        let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: .now) ?? .now
-        let recentPool   = allItems.filter { $0.time >= sevenDaysAgo }
-
-        func matches(_ item: ScheduleItem, _ kws: [String]) -> Bool {
-            let n = item.activityName.lowercased()
-            return kws.contains { n.contains($0) }
-        }
-
-        let targetPets = selectedPetID != nil
-            ? viewModel.pets.filter { $0.id == selectedPetID }
-            : viewModel.pets
-
-        for pet in targetPets {
-            let petItems = recentPool.filter { $0.pet.id == pet.id }
-
-            // Walk / run gap
-            let walks = petItems.filter { matches($0, ["walk", "run"]) }
-            if walks.count >= 3, let lastWalk = walks.map(\.time).max(), lastWalk < twoDaysAgo {
-                let days = calendar.dateComponents([.day], from: lastWalk, to: .now).day ?? 0
-                list.append(Insight(
-                    icon: "figure.walk",
-                    message: "\(pet.name) hasn't been walked in \(days) day\(days == 1 ? "" : "s").",
-                    tone: .warning
-                ))
-            }
-
-            // Feeding gap
-            let feeds             = petItems.filter { matches($0, ["feed", "meal", "food", "eat"]) }
-            let recentDoneFeeds   = feeds.filter { $0.isCompleted && $0.time >= twoDaysAgo }
-            if feeds.count >= 3 && recentDoneFeeds.isEmpty {
-                list.append(Insight(
-                    icon: "fork.knife",
-                    message: "\(pet.name)'s feeding hasn't been logged recently.",
-                    tone: .warning
-                ))
-            }
-
-            // Missed medications today
-            let missedMeds = allItems.filter {
-                matches($0, ["medic", "tablet", "pill"])
-                    && $0.pet.id == pet.id
-                    && calendar.isDateInToday($0.time)
-                    && !$0.isCompleted
-            }
-            if !missedMeds.isEmpty {
-                list.append(Insight(
-                    icon: "pill.fill",
-                    message: "\(pet.name) has \(missedMeds.count) missed medication\(missedMeds.count == 1 ? "" : "s") today.",
-                    tone: .warning
-                ))
-            }
-        }
-
-        // Completion rate trend
-        if completionByDay.count >= 4 {
-            let half   = completionByDay.count / 2
-            let recent = Array(completionByDay.suffix(half)).filter { !$0.isEmpty }
-            let older  = Array(completionByDay.prefix(half)).filter { !$0.isEmpty }
-            if !recent.isEmpty && !older.isEmpty {
-                let rAvg = recent.map(\.rate).reduce(0, +) / Double(recent.count)
-                let oAvg = older.map(\.rate).reduce(0, +)  / Double(older.count)
-                if rAvg < oAvg - 0.20 {
-                    list.append(Insight(
-                        icon: "arrow.down.circle.fill",
-                        message: "Completion rate is down \(Int((oAvg - rAvg) * 100))% compared to earlier in this period.",
-                        tone: .warning
-                    ))
-                } else if rAvg > oAvg + 0.15 {
-                    list.append(Insight(
-                        icon: "arrow.up.circle.fill",
-                        message: "Completion rate is up \(Int((rAvg - oAvg) * 100))% — momentum is building!",
-                        tone: .positive
-                    ))
-                }
-            }
-        }
-
-        if list.isEmpty {
-            list.append(Insight(
-                icon: "checkmark.circle.fill",
-                message: "Everything looks on track. Keep it up!",
-                tone: .positive
-            ))
-        }
+        if !weightTrendPets.isEmpty { list.append(.weight) }
+        if !heightTrendPets.isEmpty { list.append(.height) }
+        if !moodTrendPets.isEmpty { list.append(.mood) }
+        if !petsWithScheduleCompliance(.medicine).isEmpty { list.append(.medicine) }
+        if !petsWithScheduleCompliance(.feed).isEmpty { list.append(.feed) }
+        if !petsWithScheduleCompliance(.water).isEmpty { list.append(.water) }
         return list
     }
 
@@ -226,43 +213,43 @@ struct AnalyticsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    if viewModel.pets.count > 1 {
-                        petFilterBar
-                    }
+            ScrollViewReader { proxy in
+                VStack(spacing: 0) {
+                    analyticsJumpPillBar(proxy: proxy)
 
-                    Picker("Range", selection: $selectedRange) {
-                        ForEach(AnalyticsRange.allCases, id: \.self) { r in
-                            Text(r.rawValue).tag(r)
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 24) {
+                            if viewModel.pets.count > 1 {
+                                petFilterBar
+                                    .id(AnalyticsJumpSection.summary.rawValue)
+                            }
+
+                            weightSection
+                                .padding(.horizontal)
+
+                            heightSection
+                                .padding(.horizontal)
+
+                            moodSection
+                                .padding(.horizontal)
+
+                            complianceKindSections
+                                .padding(.horizontal)
+
+                            Spacer(minLength: 32)
                         }
+                        .padding(.top, 20)
+                        .modifier(InterfaceContentEntranceModifier(delay: 0.06))
                     }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .animation(.easeInOut(duration: 0.2), value: selectedRange)
-
-                    summaryRow
-                        .padding(.horizontal)
-
-                    insightsSection
-                        .padding(.horizontal)
-
-                    weightSection
-                        .padding(.horizontal)
-
-                    heightSection
-                        .padding(.horizontal)
-
-                    moodSection
-                        .padding(.horizontal)
-
-                    complianceKindSections
-                        .padding(.horizontal)
-
-                    Spacer(minLength: 32)
                 }
-                .padding(.top, 20)
-                .modifier(InterfaceContentEntranceModifier(delay: 0.06))
+            }
+            .onChange(of: selectedPetID) { _, _ in
+                resetAnalyticsSwipePages()
+                selectedAnalyticsJumpSection = nil
+            }
+            .onChange(of: selectedRange) { _, _ in
+                resetAnalyticsSwipePages()
+                selectedAnalyticsJumpSection = nil
             }
             .navigationTitle("Analytics")
             .navigationBarTitleDisplayMode(.large)
@@ -270,6 +257,45 @@ struct AnalyticsView: View {
         .sheet(item: $complianceLogSheet) { payload in
             ComplianceLogSheet(viewModel: viewModel, kind: payload.kind, petFilter: payload.pet)
         }
+    }
+
+    /// Horizontal capsules matching `PetDetailSheet` — scrolls this screen to anchored sections.
+    @ViewBuilder
+    private func analyticsJumpPillBar(proxy: ScrollViewProxy) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(visibleAnalyticsJumpSections, id: \.self) { section in
+                    let sel = selectedAnalyticsJumpSection == section
+                    Button {
+                        HapticManager.impact(.light)
+                        withAnimation(.spring(duration: 0.25)) {
+                            selectedAnalyticsJumpSection = section
+                        }
+                        withAnimation(.easeInOut(duration: 0.28)) {
+                            proxy.scrollTo(section.rawValue, anchor: .top)
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: section.pillSymbol)
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(sel ? Color.white : Color.black)
+                            Text(section.pillTitle)
+                                .font(.subheadline.bold())
+                                .foregroundStyle(sel ? Color.white : Color.black)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(sel ? Color.appPink : Color.white, in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .scrollClipDisabled()
+        .frame(maxWidth: .infinity)
+        .background(Color(.systemGroupedBackground))
     }
 
     // MARK: - Pet filter bar
@@ -336,101 +362,27 @@ struct AnalyticsView: View {
         .scrollClipDisabled()
     }
 
-    // MARK: - Summary stats row
-
-    private var completionRateCaption: String {
-        // Two short lines fit narrow columns; avoids single-line truncation ("…").
-        switch selectedRange {
-        case .day:   return "Today's\nscheduled tasks completed"
-        case .week:  return "This week's\nscheduled tasks completed"
-        case .month: return "This month's\nscheduled tasks completed"
-        }
-    }
-
-    private var summaryRow: some View {
-        let total = rangeItems.count
-        let done  = rangeItems.filter(\.isCompleted).count
-
-        return HStack(alignment: .top, spacing: 10) {
-            miniStat(value: "\(Int(overallRate * 100))%", label: completionRateCaption, accent: rateColor(overallRate))
-            miniStat(value: "\(done)/\(total)",           label: "Tasks done / scheduled", accent: .primary)
-        }
-    }
-
-    private func miniStat(value: String, label: String, accent: Color) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(value)
-                .font(.title2.bold())
-                .foregroundStyle(accent)
-            Text(label)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .multilineTextAlignment(.leading)
-                .lineLimit(5)
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(14)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
-    }
-
-    // MARK: - Insights
-
-    private var insightsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Insights")
-                .font(.headline)
-
-            ForEach(insights) { insight in
-                HStack(spacing: 12) {
-                    Image(systemName: insight.icon)
-                        .font(.body.bold())
-                        .foregroundStyle(insight.tone == .warning ? .orange : Color.appPink)
-                        .frame(width: 28)
-                    Text(insight.message)
-                        .font(.subheadline)
-                    Spacer()
-                }
-                .padding(12)
-                .background(
-                    insight.tone == .warning
-                        ? Color.orange.opacity(0.10)
-                        : Color.appPink.opacity(0.08),
-                    in: RoundedRectangle(cornerRadius: 12)
-                )
-            }
-        }
-    }
-
     // MARK: - Weight trends
 
     @ViewBuilder
     private var weightSection: some View {
-        let petsToShow: [Pet] = {
-            if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
-                return p.weightHistory.count >= 2 ? [p] : []
-            }
-            return viewModel.pets.filter { $0.weightHistory.count >= 2 }
-        }()
-
-        if !petsToShow.isEmpty {
+        if !weightTrendPets.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
                 Text("Weight Trends")
                     .font(.headline)
 
-                ForEach(petsToShow) { pet in
+                PetSwipePager(pets: weightTrendPets, page: $weightSwipePage) { pet in
                     weightCard(for: pet, color: petColor(for: pet.id))
                 }
             }
+            .id(AnalyticsJumpSection.weight.rawValue)
         }
     }
 
     private func weightCard(for pet: Pet, color: Color) -> some View {
         let sorted = pet.weightHistory.sorted { $0.date < $1.date }
-        let diff   = sorted.last!.kg - sorted.first!.kg
+        let diffKg = sorted.last!.kg - sorted[sorted.count - 2].kg
         let displayValues = sorted.map { weightUnit.displayValue(fromKg: $0.kg) }
         let minY   = (displayValues.min() ?? 0) * 0.92
         let maxY   = (displayValues.max() ?? 1) * 1.08
@@ -443,11 +395,17 @@ struct AnalyticsView: View {
                 }
                 Spacer()
                 HStack(spacing: 4) {
-                    Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
-                        .foregroundStyle(diff >= 0 ? .orange : .green)
-                    Text(weightUnit.formatChange(diff))
-                        .foregroundStyle(diff >= 0 ? .orange : .green)
-                    Text("· \(weightUnit.formatValue(sorted.last!.kg)) now")
+                    Image(systemName: diffKg >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .foregroundStyle(diffKg >= 0 ? .orange : .green)
+                    Text(weightUnit.formatChange(diffKg))
+                        .foregroundStyle(diffKg >= 0 ? .orange : .green)
+                    Text("vs previous reading")
+                        .font(.caption2)
+                        .fontWeight(.regular)
+                        .foregroundStyle(.tertiary)
+                    Text("·")
+                        .foregroundStyle(.secondary)
+                    Text("\(weightUnit.formatValue(sorted.last!.kg)) now")
                         .foregroundStyle(.secondary)
                 }
                 .font(.caption.bold())
@@ -497,6 +455,7 @@ struct AnalyticsView: View {
 
             Divider().padding(.top, 4)
             historyTable(
+                valueColumnTitle: "Weight",
                 rows: sorted.reversed().map { (date: $0.date, value: weightUnit.formatValue($0.kg)) }
             )
         }
@@ -508,29 +467,23 @@ struct AnalyticsView: View {
 
     @ViewBuilder
     private var heightSection: some View {
-        let petsToShow: [Pet] = {
-            if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
-                return p.heightHistory.count >= 2 ? [p] : []
-            }
-            return viewModel.pets.filter { $0.heightHistory.count >= 2 }
-        }()
-
-        if !petsToShow.isEmpty {
+        if !heightTrendPets.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
                 Text("Height Trends")
                     .font(.headline)
 
-                ForEach(petsToShow) { pet in
+                PetSwipePager(pets: heightTrendPets, page: $heightSwipePage) { pet in
                     heightCard(for: pet, color: petColor(for: pet.id))
                 }
             }
+            .id(AnalyticsJumpSection.height.rawValue)
         }
     }
 
     private func heightCard(for pet: Pet, color: Color) -> some View {
         let sorted = pet.heightHistory.sorted { $0.date < $1.date }
-        let diff   = sorted.last!.cm - sorted.first!.cm
+        let diffCm = sorted.last!.cm - sorted[sorted.count - 2].cm
         let displayValues = sorted.map { heightUnit.displayValue(fromCm: $0.cm) }
         let minY   = (displayValues.min() ?? 0) * 0.92
         let maxY   = (displayValues.max() ?? 1) * 1.08
@@ -543,11 +496,17 @@ struct AnalyticsView: View {
                 }
                 Spacer()
                 HStack(spacing: 4) {
-                    Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
-                        .foregroundStyle(diff >= 0 ? .orange : .green)
-                    Text(heightUnit.formatChange(diff))
-                        .foregroundStyle(diff >= 0 ? .orange : .green)
-                    Text("· \(heightUnit.formatValue(sorted.last!.cm)) now")
+                    Image(systemName: diffCm >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .foregroundStyle(diffCm >= 0 ? .orange : .green)
+                    Text(heightUnit.formatChange(diffCm))
+                        .foregroundStyle(diffCm >= 0 ? .orange : .green)
+                    Text("vs previous reading")
+                        .font(.caption2)
+                        .fontWeight(.regular)
+                        .foregroundStyle(.tertiary)
+                    Text("·")
+                        .foregroundStyle(.secondary)
+                    Text("\(heightUnit.formatValue(sorted.last!.cm)) now")
                         .foregroundStyle(.secondary)
                 }
                 .font(.caption.bold())
@@ -597,6 +556,7 @@ struct AnalyticsView: View {
 
             Divider().padding(.top, 4)
             historyTable(
+                valueColumnTitle: "Height",
                 rows: sorted.reversed().map { (date: $0.date, value: heightUnit.formatValue($0.cm)) }
             )
         }
@@ -606,22 +566,28 @@ struct AnalyticsView: View {
 
     // MARK: - Mood over time (quick logs)
 
-    /// Keeps emoji in a fixed left column so labels line up vertically (charts + mood tables).
+    /// Keeps emoji in a fixed column so every row/axis tick shares the same horizontal start for the glyph.
     private func moodEmojiAlignedLabel(_ mood: PetMood, font: Font, valueSecondary: Bool = false) -> some View {
         HStack(alignment: .center, spacing: 4) {
             Text(mood.emoji)
                 .font(font)
                 .frame(width: Self.moodEmojiColumnWidth, alignment: .leading)
+                .multilineTextAlignment(.leading)
             Text(mood.rawValue)
                 .font(font)
                 .foregroundStyle(valueSecondary ? .secondary : .primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.85)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(width: Self.moodLabelLayoutWidth, alignment: .leading)
     }
 
-    /// Width reserved so each emoji sits in one column and mood titles share a left edge after it.
-    private static let moodEmojiColumnWidth: CGFloat = 40
+    /// Fixed emoji column width (leading-aligned so each emoji’s box starts at the same x).
+    private static let moodEmojiColumnWidth: CGFloat = 44
+
+    /// One width for chart Y-axis ticks and table mood column so emojis line up on screen across the card.
+    private static let moodLabelLayoutWidth: CGFloat = 128
 
     /// Mood quick logs in the selected analytics window for one pet.
     private func moodQuickLogs(for petID: UUID) -> [ScheduleItem] {
@@ -636,14 +602,7 @@ struct AnalyticsView: View {
 
     @ViewBuilder
     private var moodSection: some View {
-        let petsToShow: [Pet] = {
-            if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
-                return moodQuickLogs(for: p.id).count >= 2 ? [p] : []
-            }
-            return viewModel.pets.filter { moodQuickLogs(for: $0.id).count >= 2 }
-        }()
-
-        if !petsToShow.isEmpty {
+        if !moodTrendPets.isEmpty {
             VStack(alignment: .leading, spacing: 12) {
                 Divider()
                 Text("Mood Over Time")
@@ -653,18 +612,24 @@ struct AnalyticsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
-                ForEach(petsToShow) { pet in
+                PetSwipePager(pets: moodTrendPets, page: $moodSwipePage) { pet in
                     moodCard(for: pet, color: petColor(for: pet.id))
                 }
             }
+            .id(AnalyticsJumpSection.mood.rawValue)
         }
     }
 
     private func moodCard(for pet: Pet, color: Color) -> some View {
         let items = moodQuickLogs(for: pet.id)
-        let first = items.first?.petMood
         let last = items.last?.petMood
-        let delta = (last?.wellbeingChartScore ?? 0) - (first?.wellbeingChartScore ?? 0)
+        let deltaFromPrevious: Double = {
+            guard items.count >= 2,
+                  let lastScore = items.last?.petMood?.wellbeingChartScore,
+                  let prevScore = items[items.count - 2].petMood?.wellbeingChartScore
+            else { return 0 }
+            return lastScore - prevScore
+        }()
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -674,14 +639,22 @@ struct AnalyticsView: View {
                 }
                 Spacer()
                 if let last {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 8) {
                         moodEmojiAlignedLabel(last, font: .caption.bold(), valueSecondary: true)
-                        if items.count >= 2, abs(delta) > 0.001 {
-                            Image(systemName: delta >= 0 ? "arrow.up.right" : "arrow.down.right")
-                                .foregroundStyle(delta >= 0 ? .green : .orange)
-                            Text(delta >= 0 ? "+\(String(format: "%.0f", delta))" : String(format: "%.0f", delta))
-                                .foregroundStyle(delta >= 0 ? .green : .orange)
+                        if items.count >= 2, abs(deltaFromPrevious) > 0.001 {
+                            HStack(spacing: 4) {
+                                Image(systemName: deltaFromPrevious >= 0 ? "arrow.up.right" : "arrow.down.right")
+                                    .foregroundStyle(deltaFromPrevious >= 0 ? .green : .orange)
+                                Text(deltaFromPrevious >= 0 ? "+\(String(format: "%.0f", deltaFromPrevious))" : String(format: "%.0f", deltaFromPrevious))
+                                    .foregroundStyle(deltaFromPrevious >= 0 ? .green : .orange)
+                                Text("vs previous log")
+                                    .font(.caption2)
+                                    .fontWeight(.regular)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .font(.caption.bold())
                         }
+                        Spacer(minLength: 0)
                     }
                 }
             }
@@ -721,9 +694,10 @@ struct AnalyticsView: View {
             .chartYAxis {
                 AxisMarks(position: .leading, values: [1, 2, 3, 4, 5]) { value in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel {
+                    AxisValueLabel(multiLabelAlignment: .leading, horizontalSpacing: 0) {
                         if let i = value.as(Int.self), let m = PetMood.mood(forChartScore: i) {
                             moodEmojiAlignedLabel(m, font: .caption2)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                 }
@@ -737,7 +711,7 @@ struct AnalyticsView: View {
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
 
-    /// Date / value rows for Mood Over Time — value column aligns emoji + text like the chart axis.
+    /// Date / mood rows for Mood Over Time — mood column aligns emoji + text like the chart axis.
     private func moodEntriesHistoryTable(items: [ScheduleItem]) -> some View {
         VStack(spacing: 0) {
             HStack {
@@ -745,9 +719,10 @@ struct AnalyticsView: View {
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("Value")
+                Text("Mood")
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
+                    .frame(width: Self.moodLabelLayoutWidth, alignment: .leading)
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 5)
@@ -850,13 +825,35 @@ struct AnalyticsView: View {
                 Text(kind.analyticsSectionTitle)
                     .font(.headline)
 
-                ForEach(petsListed) { pet in
+                PetSwipePager(
+                    pets: petsListed,
+                    page: complianceSwipeBinding(for: kind),
+                    pageHeight: AnalyticsSwipeLayout.compliancePageHeight
+                ) { pet in
                     complianceRateCard(for: pet, kind: kind, color: petColor(for: pet.id)) {
                         complianceLogSheet = ComplianceLogSheetPayload(kind: kind, pet: pet)
                     }
                 }
             }
+            .id(AnalyticsJumpSection.compliance(kind).rawValue)
         }
+    }
+
+    private func complianceSwipeBinding(for kind: ScheduleComplianceKind) -> Binding<Int> {
+        switch kind {
+        case .medicine: return $complianceSwipeMedicine
+        case .feed:     return $complianceSwipeFeed
+        case .water:    return $complianceSwipeWater
+        }
+    }
+
+    private func resetAnalyticsSwipePages() {
+        weightSwipePage = 0
+        heightSwipePage = 0
+        moodSwipePage = 0
+        complianceSwipeMedicine = 0
+        complianceSwipeFeed = 0
+        complianceSwipeWater = 0
     }
 
     private func complianceRateCard(for pet: Pet, kind: ScheduleComplianceKind, color: Color, onViewLog: @escaping () -> Void) -> some View {
@@ -943,15 +940,15 @@ struct AnalyticsView: View {
 
     // MARK: - Helpers
 
-    /// Renders a two-column (Date | Value) history table used for weight and height cards.
-    private func historyTable(rows: [(date: Date, value: String)]) -> some View {
+    /// Renders a two-column history table (`Date` | labeled value) used for weight and height cards.
+    private func historyTable(valueColumnTitle: String, rows: [(date: Date, value: String)]) -> some View {
         VStack(spacing: 0) {
             HStack {
                 Text("Date")
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text("Value")
+                Text(valueColumnTitle)
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
             }
