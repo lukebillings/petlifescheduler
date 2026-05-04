@@ -234,7 +234,20 @@ final class HomeViewModel {
         selectedPet = nil
         selectedView = .list
         selectedCalendarDate = .now
+        resetPostTutorialHintUserDefaults()
         syncWidgetSchedule()
+    }
+
+    /// Clears post-tutorial hint flags. Keys must stay aligned with `PostTutorialHintPersistence`.
+    private func resetPostTutorialHintUserDefaults() {
+        let ud = UserDefaults.standard
+        ud.removeObject(forKey: "postTutorialHints.bundleStarted")
+        ud.removeObject(forKey: "postTutorialHints.revision")
+        ud.removeObject(forKey: "postTutorialHints.baseline.nonLogCount")
+        ud.removeObject(forKey: "postTutorialHints.baseline.quickLogCount")
+        for raw in ["scheduleTryEvent", "scheduleTryLog", "petsOpenProfileExtras", "petsAddAnother"] {
+            ud.removeObject(forKey: "postTutorialHints.\(raw)")
+        }
     }
 
     // MARK: - Birthday events

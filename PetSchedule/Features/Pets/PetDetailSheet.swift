@@ -470,44 +470,28 @@ struct PetDetailSheet: View {
                             Task { weightEntryImageData = try? await item?.loadTransferable(type: Data.self) }
                         }
 
-                        if !weightHistory.isEmpty {
-                            Divider()
-                        }
-
                     if weightHistory.count >= 2 {
                         WeightChartView(entries: weightHistory, unit: weightUnit)
                             .frame(height: 180)
                             .padding(.vertical, 8)
 
                         weightReadingsList(entries: weightHistory, unit: weightUnit)
+
+                        Button {
+                            withAnimation { weightHistory.removeAll() }
+                        } label: {
+                            Text("Clear all readings")
+                                .font(.caption.bold())
+                                .foregroundStyle(.red)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                     } else if !weightHistory.isEmpty {
                         HStack {
                             Image(systemName: "scalemass.fill")
                                 .foregroundStyle(Color.appPink)
                             Text("Latest: \(weightUnit.formatValue(weightHistory.last!.kg))")
                                 .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Button {
-                                withAnimation { weightHistory.removeAll() }
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(.red)
-                                    .font(.caption)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
-                    if weightHistory.count >= 2 {
-                        let sorted = weightHistory.sorted { $0.date < $1.date }
-                        let diff = sorted.last!.kg - sorted.first!.kg
-                        HStack(spacing: 6) {
-                            Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
-                                .foregroundStyle(diff >= 0 ? .orange : .green)
-                                .font(.caption.bold())
-                            Text("\(weightUnit.formatChange(diff)) since first log")
-                                .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Button {
@@ -528,6 +512,7 @@ struct PetDetailSheet: View {
                     )
                 }
                 .id(JumpSection.weight.rawValue)
+                .listRowSeparator(.hidden)
 
                 Section {
                     VStack(alignment: .leading, spacing: 14) {
@@ -612,44 +597,28 @@ struct PetDetailSheet: View {
                             Task { heightEntryImageData = try? await item?.loadTransferable(type: Data.self) }
                         }
 
-                        if !heightHistory.isEmpty {
-                            Divider()
-                        }
-
                     if heightHistory.count >= 2 {
                         HeightChartView(entries: heightHistory, unit: heightUnit)
                             .frame(height: 180)
                             .padding(.vertical, 8)
 
                         heightReadingsList(entries: heightHistory, unit: heightUnit)
+
+                        Button {
+                            withAnimation { heightHistory.removeAll() }
+                        } label: {
+                            Text("Clear all readings")
+                                .font(.caption.bold())
+                                .foregroundStyle(.red)
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                     } else if !heightHistory.isEmpty {
                         HStack {
                             Image(systemName: "ruler.fill")
                                 .foregroundStyle(Color.appPink)
                             Text("Latest: \(heightUnit.formatValue(heightHistory.last!.cm))")
                                 .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Button {
-                                withAnimation { heightHistory.removeAll() }
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(.red)
-                                    .font(.caption)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-
-                    if heightHistory.count >= 2 {
-                        let sorted = heightHistory.sorted { $0.date < $1.date }
-                        let diff = sorted.last!.cm - sorted.first!.cm
-                        HStack(spacing: 6) {
-                            Image(systemName: diff >= 0 ? "arrow.up.right" : "arrow.down.right")
-                                .foregroundStyle(diff >= 0 ? .orange : .green)
-                                .font(.caption.bold())
-                            Text("\(heightUnit.formatChange(diff)) since first log")
-                                .font(.caption)
                                 .foregroundStyle(.secondary)
                             Spacer()
                             Button {
@@ -670,6 +639,7 @@ struct PetDetailSheet: View {
                     )
                 }
                 .id(JumpSection.height.rawValue)
+                .listRowSeparator(.hidden)
 
                 Section {
                     if let dob = dateOfBirth {
@@ -922,21 +892,20 @@ struct PetDetailSheet: View {
 
     @ViewBuilder
     private func weightReadingsList(entries: [WeightEntry], unit: WeightUnit) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Date")
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(unit.label)
+                Text("Weight")
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 4)
-            .padding(.vertical, 6)
+            .padding(.bottom, 2)
 
             ForEach(entries.sorted { $0.date > $1.date }) { entry in
-                Divider()
                 HStack(alignment: .center, spacing: 10) {
                     if let data = entry.imageData, let uiImage = UIImage(data: data) {
                         Image(uiImage: uiImage)
@@ -964,21 +933,20 @@ struct PetDetailSheet: View {
 
     @ViewBuilder
     private func heightReadingsList(entries: [HeightEntry], unit: HeightUnit) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("Date")
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
                 Spacer()
-                Text(unit.inputLabel)
+                Text("Height")
                     .font(.caption2.bold())
                     .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 4)
-            .padding(.vertical, 6)
+            .padding(.bottom, 2)
 
             ForEach(entries.sorted { $0.date > $1.date }) { entry in
-                Divider()
                 HStack(alignment: .center, spacing: 10) {
                     if let data = entry.imageData, let uiImage = UIImage(data: data) {
                         Image(uiImage: uiImage)

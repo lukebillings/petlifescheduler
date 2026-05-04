@@ -160,6 +160,8 @@ struct ScheduleView: View {
                 .background(Color(.systemBackground))
                 .modifier(InterfaceContentEntranceModifier(delay: 0))
 
+                PostTutorialScheduleHintStack(viewModel: viewModel)
+
                 // ── Scrollable: events only ───────────────────────────────────────
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {

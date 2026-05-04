@@ -134,7 +134,7 @@ private enum AnalyticsJumpSection: String, CaseIterable, Hashable {
 // MARK: - AnalyticsView
 
 struct AnalyticsView: View {
-    let viewModel: HomeViewModel
+    @Bindable var viewModel: HomeViewModel
 
     @State private var selectedRange: AnalyticsRange = .week
     @State private var selectedPetID: UUID? = nil
@@ -147,6 +147,9 @@ struct AnalyticsView: View {
     @State private var complianceSwipeFeed = 0
     @State private var complianceSwipeWater = 0
 
+    /// Opens the pet editor from Analytics empty-state CTAs (weight / height).
+    @State private var petDetailSheetPet: Pet?
+
     @AppStorage("weightUnit") private var weightUnitRaw = "kg"
     @AppStorage("heightUnit") private var heightUnitRaw = "cm"
 
@@ -154,6 +157,18 @@ struct AnalyticsView: View {
     private var heightUnit: HeightUnit { HeightUnit(rawValue: heightUnitRaw) ?? .cm }
 
     @State private var complianceLogSheet: ComplianceLogSheetPayload?
+
+    /// Opens Add Log from mood empty-state CTA (pet pre-selected).
+    @State private var addLogSheetPet: Pet?
+
+    /// Opens Add Event with a preset activity matching medicine / feeding / water compliance.
+    @State private var addEventCompliancePayload: AddEventCompliancePayload?
+
+    private struct AddEventCompliancePayload: Identifiable {
+        let id = UUID()
+        let pet: Pet
+        let presetActivity: String
+    }
 
     private let calendar = Calendar.current
 
@@ -174,25 +189,12 @@ struct AnalyticsView: View {
         return petColor(at: index)
     }
 
-    private var weightTrendPets: [Pet] {
+    /// Pets included when choosing **All** vs a single avatar filter.
+    private var petsForAnalyticsContext: [Pet] {
         if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
-            return p.weightHistory.count >= 2 ? [p] : []
+            return [p]
         }
-        return viewModel.pets.filter { $0.weightHistory.count >= 2 }
-    }
-
-    private var heightTrendPets: [Pet] {
-        if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
-            return p.heightHistory.count >= 2 ? [p] : []
-        }
-        return viewModel.pets.filter { $0.heightHistory.count >= 2 }
-    }
-
-    private var moodTrendPets: [Pet] {
-        if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
-            return moodQuickLogs(for: p.id).count >= 2 ? [p] : []
-        }
-        return viewModel.pets.filter { moodQuickLogs(for: $0.id).count >= 2 }
+        return viewModel.pets
     }
 
     private var visibleAnalyticsJumpSections: [AnalyticsJumpSection] {
@@ -200,12 +202,8 @@ struct AnalyticsView: View {
         if viewModel.pets.count > 1 {
             list.append(.summary)
         }
-        if !weightTrendPets.isEmpty { list.append(.weight) }
-        if !heightTrendPets.isEmpty { list.append(.height) }
-        if !moodTrendPets.isEmpty { list.append(.mood) }
-        if !petsWithScheduleCompliance(.medicine).isEmpty { list.append(.medicine) }
-        if !petsWithScheduleCompliance(.feed).isEmpty { list.append(.feed) }
-        if !petsWithScheduleCompliance(.water).isEmpty { list.append(.water) }
+        guard !viewModel.pets.isEmpty else { return list }
+        list.append(contentsOf: [.weight, .height, .mood, .medicine, .feed, .water])
         return list
     }
 
@@ -219,22 +217,30 @@ struct AnalyticsView: View {
 
                     ScrollView {
                         VStack(alignment: .leading, spacing: 24) {
-                            if viewModel.pets.count > 1 {
-                                petFilterBar
-                                    .id(AnalyticsJumpSection.summary.rawValue)
+                            if viewModel.pets.isEmpty {
+                                emptyPlaceholder(
+                                    icon: "chart.line.uptrend.xyaxis",
+                                    text: "Add a pet under My Pets to unlock weight, height, mood, and schedule trends."
+                                )
+                                .padding(.horizontal)
+                            } else {
+                                if viewModel.pets.count > 1 {
+                                    petFilterBar
+                                        .id(AnalyticsJumpSection.summary.rawValue)
+                                }
+
+                                weightSection
+                                    .padding(.horizontal)
+
+                                heightSection
+                                    .padding(.horizontal)
+
+                                moodSection
+                                    .padding(.horizontal)
+
+                                complianceKindSections
+                                    .padding(.horizontal)
                             }
-
-                            weightSection
-                                .padding(.horizontal)
-
-                            heightSection
-                                .padding(.horizontal)
-
-                            moodSection
-                                .padding(.horizontal)
-
-                            complianceKindSections
-                                .padding(.horizontal)
 
                             Spacer(minLength: 32)
                         }
@@ -256,6 +262,19 @@ struct AnalyticsView: View {
         }
         .sheet(item: $complianceLogSheet) { payload in
             ComplianceLogSheet(viewModel: viewModel, kind: payload.kind, petFilter: payload.pet)
+        }
+        .sheet(item: $petDetailSheetPet) { pet in
+            PetDetailSheet(pet: pet, onSave: { viewModel.updatePet($0) }, onRemovePet: nil)
+        }
+        .sheet(item: $addLogSheetPet) { pet in
+            AddLogSheet(viewModel: viewModel, prefilledPet: pet)
+        }
+        .sheet(item: $addEventCompliancePayload) { payload in
+            AddEventSheet(
+                viewModel: viewModel,
+                prefilledPet: payload.pet,
+                prefilledPresetActivity: payload.presetActivity
+            )
         }
     }
 
@@ -366,17 +385,29 @@ struct AnalyticsView: View {
 
     @ViewBuilder
     private var weightSection: some View {
-        if !weightTrendPets.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                Divider()
-                Text("Weight Trends")
-                    .font(.headline)
+        Group {
+            if !viewModel.pets.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Divider()
+                    Text("Weight Trends")
+                        .font(.headline)
 
-                PetSwipePager(pets: weightTrendPets, page: $weightSwipePage) { pet in
-                    weightCard(for: pet, color: petColor(for: pet.id))
+                    PetSwipePager(pets: petsForAnalyticsContext, page: $weightSwipePage) { pet in
+                        if pet.weightHistory.count >= 2 {
+                            weightCard(for: pet, color: petColor(for: pet.id))
+                        } else {
+                            analyticsMeasurementEmptyCard(
+                                pet: pet,
+                                icon: "scalemass.fill",
+                                title: "No weight chart yet",
+                                message:
+                                    "Add two weigh-ins under Weight in \(pet.name)’s profile."
+                            )
+                        }
+                    }
                 }
+                .id(AnalyticsJumpSection.weight.rawValue)
             }
-            .id(AnalyticsJumpSection.weight.rawValue)
         }
     }
 
@@ -467,17 +498,29 @@ struct AnalyticsView: View {
 
     @ViewBuilder
     private var heightSection: some View {
-        if !heightTrendPets.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                Divider()
-                Text("Height Trends")
-                    .font(.headline)
+        Group {
+            if !viewModel.pets.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Divider()
+                    Text("Height Trends")
+                        .font(.headline)
 
-                PetSwipePager(pets: heightTrendPets, page: $heightSwipePage) { pet in
-                    heightCard(for: pet, color: petColor(for: pet.id))
+                    PetSwipePager(pets: petsForAnalyticsContext, page: $heightSwipePage) { pet in
+                        if pet.heightHistory.count >= 2 {
+                            heightCard(for: pet, color: petColor(for: pet.id))
+                        } else {
+                            analyticsMeasurementEmptyCard(
+                                pet: pet,
+                                icon: "ruler.fill",
+                                title: "No height chart yet",
+                                message:
+                                    "Add two measurements under Height in \(pet.name)’s profile."
+                            )
+                        }
+                    }
                 }
+                .id(AnalyticsJumpSection.height.rawValue)
             }
-            .id(AnalyticsJumpSection.height.rawValue)
         }
     }
 
@@ -602,21 +645,27 @@ struct AnalyticsView: View {
 
     @ViewBuilder
     private var moodSection: some View {
-        if !moodTrendPets.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                Divider()
-                Text("Mood Over Time")
-                    .font(.headline)
+        Group {
+            if !viewModel.pets.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Divider()
+                    Text("Mood Over Time")
+                        .font(.headline)
 
-                Text("From Log → Mood entries in this period (higher is brighter mood).")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    Text("From Log → Mood entries in this period (higher is brighter mood).")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                PetSwipePager(pets: moodTrendPets, page: $moodSwipePage) { pet in
-                    moodCard(for: pet, color: petColor(for: pet.id))
+                    PetSwipePager(pets: petsForAnalyticsContext, page: $moodSwipePage) { pet in
+                        if moodQuickLogs(for: pet.id).count >= 2 {
+                            moodCard(for: pet, color: petColor(for: pet.id))
+                        } else {
+                            moodTrendEmptyCard(for: pet)
+                        }
+                    }
                 }
+                .id(AnalyticsJumpSection.mood.rawValue)
             }
-            .id(AnalyticsJumpSection.mood.rawValue)
         }
     }
 
@@ -799,16 +848,6 @@ struct AnalyticsView: View {
         }
     }
 
-    private func petsWithScheduleCompliance(_ kind: ScheduleComplianceKind) -> [Pet] {
-        if let id = selectedPetID, let p = viewModel.pets.first(where: { $0.id == id }) {
-            let has = viewModel.scheduleItems.contains { $0.pet.id == p.id && $0.complianceKind == kind }
-            return has ? [p] : []
-        }
-        return viewModel.pets.filter { pet in
-            viewModel.scheduleItems.contains { $0.pet.id == pet.id && $0.complianceKind == kind }
-        }
-    }
-
     @ViewBuilder
     private var complianceKindSections: some View {
         ForEach([ScheduleComplianceKind.medicine, .feed, .water], id: \.self) { kind in
@@ -818,24 +857,25 @@ struct AnalyticsView: View {
 
     @ViewBuilder
     private func complianceSection(for kind: ScheduleComplianceKind) -> some View {
-        let petsListed = petsWithScheduleCompliance(kind)
-        if !petsListed.isEmpty {
-            VStack(alignment: .leading, spacing: 12) {
-                Divider()
-                Text(kind.analyticsSectionTitle)
-                    .font(.headline)
+        Group {
+            if !viewModel.pets.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Divider()
+                    Text(kind.analyticsSectionTitle)
+                        .font(.headline)
 
-                PetSwipePager(
-                    pets: petsListed,
-                    page: complianceSwipeBinding(for: kind),
-                    pageHeight: AnalyticsSwipeLayout.compliancePageHeight
-                ) { pet in
-                    complianceRateCard(for: pet, kind: kind, color: petColor(for: pet.id)) {
-                        complianceLogSheet = ComplianceLogSheetPayload(kind: kind, pet: pet)
+                    PetSwipePager(
+                        pets: petsForAnalyticsContext,
+                        page: complianceSwipeBinding(for: kind),
+                        pageHeight: AnalyticsSwipeLayout.compliancePageHeight
+                    ) { pet in
+                        complianceRateCard(for: pet, kind: kind, color: petColor(for: pet.id)) {
+                            complianceLogSheet = ComplianceLogSheetPayload(kind: kind, pet: pet)
+                        }
                     }
                 }
+                .id(AnalyticsJumpSection.compliance(kind).rawValue)
             }
-            .id(AnalyticsJumpSection.compliance(kind).rawValue)
         }
     }
 
@@ -857,6 +897,7 @@ struct AnalyticsView: View {
     }
 
     private func complianceRateCard(for pet: Pet, kind: ScheduleComplianceKind, color: Color, onViewLog: @escaping () -> Void) -> some View {
+        let hasScheduledItems = viewModel.scheduleItems.contains { $0.pet.id == pet.id && $0.complianceKind == kind }
         let points = complianceRatePoints(for: pet, kind: kind)
         let avg = points.isEmpty ? 0.0 : points.map(\.rate).reduce(0, +) / Double(points.count)
 
@@ -867,12 +908,16 @@ struct AnalyticsView: View {
                     Text(pet.name).font(.subheadline.bold())
                 }
                 Spacer()
-                Text("\(Int(avg * 100))% avg compliance")
-                    .font(.caption.bold())
-                    .foregroundStyle(rateColor(avg))
+                if hasScheduledItems {
+                    Text("\(Int(avg * 100))% avg compliance")
+                        .font(.caption.bold())
+                        .foregroundStyle(rateColor(avg))
+                }
             }
 
-            if points.isEmpty {
+            if !hasScheduledItems {
+                complianceNeverScheduledPlaceholder(kind: kind, pet: pet)
+            } else if points.isEmpty {
                 Text(kind.analyticsPeriodEmptyMessage)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -939,6 +984,125 @@ struct AnalyticsView: View {
     }
 
     // MARK: - Helpers
+
+    private static func compliancePresetActivity(_ kind: ScheduleComplianceKind) -> String {
+        switch kind {
+        case .medicine: return "Give Medication"
+        case .feed: return "Feed"
+        case .water: return "Give water"
+        }
+    }
+
+    /// Pink capsule CTAs matching measurement empty-state buttons.
+    private func analyticsCapsuleCTAButton(title: String, accessibilityLabel: String, action: @escaping () -> Void) -> some View {
+        Button {
+            HapticManager.impact(.light)
+            action()
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "plus")
+                    .font(.caption.bold())
+                Text(title)
+                    .font(.subheadline.bold())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.82)
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.appPink, in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    /// Opens the pet profile so the guardian can add weight or height readings.
+    private func analyticsMeasurementEmptyCard(pet: Pet, icon: String, title: String, message: String) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.largeTitle)
+                .foregroundStyle(Color.appPink.opacity(0.45))
+            Text(title)
+                .font(.subheadline.bold())
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+
+            analyticsCapsuleCTAButton(title: "Tap to add", accessibilityLabel: "Tap to add in \(pet.name)'s profile") {
+                petDetailSheetPet = pet
+            }
+            .accessibilityHint("Opens this pet’s profile.")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .padding(.horizontal, 18)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func moodTrendEmptyCard(for pet: Pet) -> some View {
+        VStack(spacing: 16) {
+            Image(systemName: "face.smiling")
+                .font(.largeTitle)
+                .foregroundStyle(Color.appPink.opacity(0.45))
+            Text("No mood chart yet")
+                .font(.subheadline.bold())
+                .foregroundStyle(.primary)
+            Text(
+                "After two Mood logs for \(pet.name) in this \(selectedRange.rawValue.lowercased()), a trend appears here."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+
+            analyticsCapsuleCTAButton(title: "Tap to log", accessibilityLabel: "Tap to log mood for \(pet.name)") {
+                addLogSheetPet = pet
+            }
+            .accessibilityHint("Opens Log with Mood selected.")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+        .padding(.horizontal, 18)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func complianceNeverScheduledPlaceholder(kind: ScheduleComplianceKind, pet: Pet) -> some View {
+        let noun: String = {
+            switch kind {
+            case .medicine: return "medicine"
+            case .feed: return "feeding"
+            case .water: return "water"
+            }
+        }()
+        return VStack(spacing: 16) {
+            Image(systemName: kind.logEmptySystemImage)
+                .font(.largeTitle)
+                .foregroundStyle(Color.appPink.opacity(0.45))
+            Text("No \(noun) tasks for \(pet.name)")
+                .font(.subheadline.bold())
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+            Text(
+                "Add a repeating \(noun) reminder on your timeline. Analytics tracks yes/no once events appear."
+            )
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+
+            analyticsCapsuleCTAButton(title: "Tap to add event", accessibilityLabel: "Add \(noun) event for \(pet.name)") {
+                addEventCompliancePayload = AddEventCompliancePayload(
+                    pet: pet,
+                    presetActivity: Self.compliancePresetActivity(kind)
+                )
+            }
+            .accessibilityHint("Opens New Event with a suggested activity.")
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 12)
+    }
 
     /// Renders a two-column history table (`Date` | labeled value) used for weight and height cards.
     private func historyTable(valueColumnTitle: String, rows: [(date: Date, value: String)]) -> some View {

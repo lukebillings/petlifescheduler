@@ -19,7 +19,7 @@ enum FeatureTutorialStep: Int, CaseIterable, Hashable {
     var detail: String {
         switch self {
         case .schedule:
-            return "Today’s tasks and calendar live here. Use + Log for walks, meals, bathroom visits, and mood notes."
+            return "Today’s tasks and calendar live here. Add events, then use + Log for walks, meals, bathroom visits, and mood notes."
         case .pets:
             return "Keep profiles for each companion—photos, weight, height, documents, and vet details."
         case .analytics:
@@ -73,7 +73,7 @@ struct FeatureTutorialOverlay: View {
                 .padding(.horizontal, 22)
                 .padding(.top, 10)
 
-                Spacer(minLength: 0)
+                Spacer(minLength: 56)
 
                 VStack(spacing: 22) {
                     Image(systemName: step.symbolName)
@@ -123,13 +123,12 @@ struct FeatureTutorialOverlay: View {
                 )
                 .padding(.horizontal, 22)
 
-                Spacer(minLength: 0)
-
                 Text("Tip: switch tabs anytime using the bar below.")
                     .font(.footnote)
                     .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 28)
+                    .padding(.top, 18)
                     .padding(.bottom, 14)
             }
         }
@@ -153,6 +152,7 @@ struct FeatureTutorialOverlay: View {
 
     private func dismissTutorial() {
         HapticManager.impact(.medium)
+        onHighlightTab(.schedule)
         withAnimation(.easeOut(duration: 0.28)) {
             isPresented = false
         }

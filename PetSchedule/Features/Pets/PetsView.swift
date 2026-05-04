@@ -7,30 +7,36 @@ struct PetsView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if viewModel.pets.isEmpty {
-                    ContentUnavailableView(
-                        "No pets yet",
-                        systemImage: "pawprint.fill",
-                        description: Text("Tap + to add your first pet.")
-                    )
-                } else {
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(Array(viewModel.pets.enumerated()), id: \.element.id) { index, pet in
-                                PetCard(pet: pet)
-                                    .onTapGesture { editingPet = pet }
-                                    .modifier(SlideInRowModifier(index: index))
-                                    .contextMenu {
-                                        Button(role: .destructive) {
-                                            withAnimation { viewModel.deletePet(pet) }
-                                        } label: {
-                                            Label("Delete", systemImage: "trash")
+            VStack(spacing: 0) {
+                Group {
+                    if viewModel.pets.isEmpty {
+                        ContentUnavailableView(
+                            "No pets yet",
+                            systemImage: "pawprint.fill",
+                            description: Text("Tap + to add your first pet.")
+                        )
+                    } else {
+                        ScrollView {
+                            LazyVStack(spacing: 16) {
+                                ForEach(Array(viewModel.pets.enumerated()), id: \.element.id) { index, pet in
+                                    PetCard(pet: pet)
+                                        .onTapGesture { editingPet = pet }
+                                        .modifier(SlideInRowModifier(index: index))
+                                        .contextMenu {
+                                            Button(role: .destructive) {
+                                                withAnimation { viewModel.deletePet(pet) }
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
                                         }
+
+                                    if index == 0 {
+                                        PostTutorialPetsHintStack(viewModel: viewModel)
                                     }
+                                }
                             }
+                            .padding()
                         }
-                        .padding()
                     }
                 }
             }

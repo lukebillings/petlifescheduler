@@ -4,6 +4,8 @@ import StoreKit
 
 struct SettingsView: View {
     @Bindable var viewModel: HomeViewModel
+    var onLaunchFeedbackCheckIn: () -> Void
+
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
     @AppStorage("remindersEnabled") private var remindersEnabled = false
     @AppStorage("reminderMinutes") private var reminderMinutes = 10
@@ -21,6 +23,11 @@ struct SettingsView: View {
     @State private var showingResetConfirm = false
     @State private var customMinutes: Int = 15
     @State private var showCustomField = false
+
+    init(viewModel: HomeViewModel, onLaunchFeedbackCheckIn: @escaping () -> Void = {}) {
+        self.viewModel = viewModel
+        self.onLaunchFeedbackCheckIn = onLaunchFeedbackCheckIn
+    }
 
     private enum ReminderOption: Int, CaseIterable {
         case one = 1, ten = 10, thirty = 30, custom = -1
@@ -123,6 +130,20 @@ struct SettingsView: View {
                     Text("App")
                 } footer: {
                     Text("Lists and panels slide in subtly when they load. Turn off here for less motion; Settings › Accessibility › Motion › Reduce Motion also disables these animations.")
+                }
+
+                Section {
+                    Button {
+                        HapticManager.impact(.light)
+                        onLaunchFeedbackCheckIn()
+                    } label: {
+                        Label("Quick check-in", systemImage: "bubble.left.and.bubble.right.fill")
+                            .foregroundStyle(.primary)
+                    }
+                } header: {
+                    Text("Feedback")
+                } footer: {
+                    Text("Say how things are going, get focused tips for Schedule, Pets, Analytics, or Settings—or send a feature idea by email.")
                 }
 
                 Section("Units") {

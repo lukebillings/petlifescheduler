@@ -6,6 +6,9 @@ struct AddEventSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var viewModel: HomeViewModel
     var prefilledDate: Date? = nil
+    var prefilledPet: Pet? = nil
+    /// Must match `commonActivities` for the preset picker.
+    var prefilledPresetActivity: String? = nil
 
     @State private var selectedPet: Pet?
     @State private var activityName = ""
@@ -70,9 +73,6 @@ struct AddEventSheet: View {
                                 Label(activity, systemImage: ScheduleItem.icon(for: activity)).tag(activity)
                             }
                         }
-                        .onAppear {
-                            if activityName.isEmpty { activityName = commonActivities[0] }
-                        }
                     }
                 }
 
@@ -129,6 +129,19 @@ struct AddEventSheet: View {
                 Task { attachmentImageData = try? await pickerItem?.loadTransferable(type: Data.self) }
             }
             .onAppear {
+                if selectedPet == nil {
+                    if let prefilledPet {
+                        selectedPet = prefilledPet
+                    } else if viewModel.pets.count == 1 {
+                        selectedPet = viewModel.pets.first
+                    }
+                }
+                if let preset = prefilledPresetActivity, commonActivities.contains(preset) {
+                    customActivity = false
+                    activityName = preset
+                } else if activityName.isEmpty {
+                    activityName = commonActivities[0]
+                }
                 if let date = prefilledDate {
                     eventDate = date
                     endTime = Calendar.current.date(byAdding: .hour, value: 1, to: date) ?? date

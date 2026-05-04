@@ -31,6 +31,9 @@
 		D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */; };
 		D72C7128A019801C00BF8732 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
 		F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */; };
+		B1E2E3F40506070809101112 /* SatisfactionCheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */; };
+		D0E1F203040506070809010A /* PostTutorialHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E1F203040506070809010B /* PostTutorialHints.swift */; };
+		E1E2E303040506070809020A /* PostTutorialHintPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */; };
 		C7D8E9F01234567890123457 /* ScheduleReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */; };
 		D7497F803AB294807D80630D /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */; };
 		E344CC248B2F9819D2ABAB82 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C629F5BF9352863F3F86CEF /* OnboardingView.swift */; };
@@ -50,6 +53,9 @@
 		004BEB5D563AD507764446BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
 		F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPrompt.swift; sourceTree = "<group>"; };
+		B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SatisfactionCheckIn.swift; sourceTree = "<group>"; };
+		D0E1F203040506070809010B /* PostTutorialHints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHints.swift; sourceTree = "<group>"; };
+		E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHintPersistence.swift; sourceTree = "<group>"; };
 		C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleReminderScheduler.swift; sourceTree = "<group>"; };
 		085D2996E216446E27F6CDA6 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
 		12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetailSheet.swift; sourceTree = "<group>"; };
@@ -154,6 +160,9 @@
 			children = (
 				082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */,
 				F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */,
+				E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */,
+				D0E1F203040506070809010B /* PostTutorialHints.swift */,
+				B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */,
 				1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */,
 				4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */,
 				217BD314318A028856956D09 /* PetPDFGenerator.swift */,
@@ -397,10 +406,13 @@
 				11B47882BF4C76FA955FA604 /* PetPDFGenerator.swift in Sources */,
 				627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */,
 				D7497F803AB294807D80630D /* PetsView.swift in Sources */,
+				E1E2E303040506070809020A /* PostTutorialHintPersistence.swift in Sources */,
+				D0E1F203040506070809010A /* PostTutorialHints.swift in Sources */,
 				3B7BE9095CD18A9921E2F7DD /* ScheduleItem.swift in Sources */,
 				E92F4B81D406413472DFCEDF /* ScheduleListView.swift in Sources */,
 				2BFEE6C53A95BA2B09F2D732 /* ScheduleRowView.swift in Sources */,
 				2E00AC531EA5D3BC68C52653 /* ScheduleView.swift in Sources */,
+				B1E2E3F40506070809101112 /* SatisfactionCheckIn.swift in Sources */,
 				E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */,
 				F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */,
 				F86A00D102A14D00A2000001 /* ScheduleWidgetShared.swift in Sources */,

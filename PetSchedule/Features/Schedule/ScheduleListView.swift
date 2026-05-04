@@ -131,30 +131,31 @@ struct ScheduleListView: View {
 private struct NowDivider: View {
     let time: Date
 
-    var body: some View {
-        HStack(spacing: 8) {
-            // Dot
-            Circle()
-                .fill(Color.appPink)
-                .frame(width: 10, height: 10)
+    /// Matches leading inset of the time vs the dot + gap (`10 + 8`), plus `4` pt past the line start (prior overlay padding).
+    private let timeLeadingInset: CGFloat = 22
 
-            // Line
-            Rectangle()
-                .fill(
-                    LinearGradient(colors: [Color.appPink, Color.appPink.opacity(0.15)],
-                                   startPoint: .leading, endPoint: .trailing)
-                )
-                .frame(height: 2)
-                .overlay(alignment: .leading) {
-                    // Time label
-                    Text(time.formatted(.dateTime.hour().minute()))
-                        .font(.caption2.bold())
-                        .foregroundStyle(Color.appPink)
-                        .padding(.leading, 4)
-                        .offset(y: -14)
-                }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(time.formatted(.dateTime.hour().minute()))
+                .font(.caption2.bold())
+                .foregroundStyle(Color.appPink)
+                .padding(.leading, timeLeadingInset)
+
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(Color.appPink)
+                    .frame(width: 10, height: 10)
+
+                Rectangle()
+                    .fill(
+                        LinearGradient(colors: [Color.appPink, Color.appPink.opacity(0.15)],
+                                       startPoint: .leading, endPoint: .trailing)
+                    )
+                    .frame(height: 2)
+            }
         }
-        .padding(.vertical, 2)
+        .padding(.top, 10)
+        .padding(.bottom, 2)
         .animation(.none, value: time)
     }
 }

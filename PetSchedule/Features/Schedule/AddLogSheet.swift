@@ -9,9 +9,11 @@ struct AddLogSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Bindable var viewModel: HomeViewModel
     var prefilledDate: Date? = nil
+    /// Pre-select this pet when opening from Analytics or elsewhere.
+    var prefilledPet: Pet? = nil
 
     @State private var selectedPet: Pet?
-    @State private var logKind: QuickLogKind = .poo
+    @State private var logKind: QuickLogKind = .mood
     @State private var customTitle = ""
     @State private var detail = ""
     @State private var occurredAt = Date.now
@@ -123,6 +125,13 @@ struct AddLogSheet: View {
                 }
             }
             .onAppear {
+                if selectedPet == nil {
+                    if let prefilledPet {
+                        selectedPet = prefilledPet
+                    } else if viewModel.pets.count == 1 {
+                        selectedPet = viewModel.pets.first
+                    }
+                }
                 if let date = prefilledDate {
                     occurredAt = Calendar.current.date(
                         bySettingHour: Calendar.current.component(.hour, from: .now),
