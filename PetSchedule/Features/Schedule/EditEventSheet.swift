@@ -17,8 +17,9 @@ struct EditEventSheet: View {
     @State private var attachmentImageData: Data?
     @State private var attachmentPhotoItem: PhotosPickerItem?
     @State private var mood: PetMood
+    @State private var isCompleted: Bool
 
-    private let commonActivities = ["Walk", "Feed", "Give water", "Sleep", "Play", "Vet", "Groom", "Give Medication"]
+    private let commonActivities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Vet", "Groom", "Give Medication"]
     private static let legacyPresetNames: Set<String> = ["Eat", "Medicine"]
 
     init(viewModel: HomeViewModel, item: ScheduleItem) {
@@ -34,11 +35,17 @@ struct EditEventSheet: View {
         _customActivity  = State(initialValue: item.quickLogKind != nil || !presets.contains(item.activityName))
         _attachmentImageData = State(initialValue: item.attachmentImageData)
         _mood = State(initialValue: item.petMood ?? .okay)
+        _isCompleted = State(initialValue: item.isCompleted)
     }
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Toggle("Completed", isOn: $isCompleted.animation())
+                        .tint(Color.appPink)
+                }
+
                 Section("Activity") {
                     Toggle("Custom activity", isOn: $customActivity.animation())
 
@@ -138,6 +145,15 @@ struct EditEventSheet: View {
                             viewModel.scheduleItems[idx].quickLogKind = item.quickLogKind
                             viewModel.scheduleItems[idx].petMood = item.quickLogKind == .mood ? mood : nil
                             viewModel.scheduleItems[idx].attachmentImageData = attachmentImageData
+                            viewModel.scheduleItems[idx].isCompleted = isCompleted
+                            if viewModel.scheduleItems[idx].complianceKind != nil {
+                                if isCompleted, viewModel.scheduleItems[idx].medicineAccepted == nil {
+                                    viewModel.scheduleItems[idx].medicineAccepted = true
+                                }
+                                if !isCompleted {
+                                    viewModel.scheduleItems[idx].medicineAccepted = nil
+                                }
+                            }
                         }
                         viewModel.syncWidgetSchedule()
                         dismiss()

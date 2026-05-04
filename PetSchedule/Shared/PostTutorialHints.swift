@@ -13,9 +13,9 @@ private extension PostTutorialHintID {
     var message: String {
         switch self {
         case .scheduleTryEvent:
-            return "Tap + Event to add walks, visits, medications, or anything that repeats."
+            return "Tap + Event for walks, visits, meds, and repeating plans."
         case .scheduleTryLog:
-            return "Tap + Log to record walks, meals, bathroom trips, mood, and quick notes."
+            return "Tap + Log for meals, walks, bathroom, mood, and quick notes."
         case .petsOpenProfileExtras:
             return "Tap a pet for vet details, documents, and weight or height logs."
         case .petsAddAnother:
@@ -149,7 +149,8 @@ private struct PostTutorialHintCard: View {
                 Text(id.message)
                     .font(AppTypography.supportingText)
                     .foregroundStyle(.white.opacity(0.92))
-                    .fixedSize(horizontal: false, vertical: true)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 

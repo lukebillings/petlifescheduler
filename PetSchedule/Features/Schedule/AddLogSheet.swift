@@ -191,6 +191,7 @@ struct EditLogSheet: View {
     @State private var attachmentPhotoItem: PhotosPickerItem?
     @State private var attachmentImageData: Data?
     @State private var mood: PetMood
+    @State private var isCompleted: Bool
 
     private var resolvedTitle: String {
         switch logKind {
@@ -217,11 +218,17 @@ struct EditLogSheet: View {
         _occurredAt       = State(initialValue: item.time)
         _attachmentImageData = State(initialValue: item.attachmentImageData)
         _mood             = State(initialValue: item.petMood ?? .okay)
+        _isCompleted      = State(initialValue: item.isCompleted)
     }
 
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Toggle("Completed", isOn: $isCompleted.animation())
+                        .tint(Color.appPink)
+                }
+
                 Section("Pet") {
                     if viewModel.pets.isEmpty {
                         Text("Add a pet first in the My Pets tab.")
@@ -341,6 +348,15 @@ struct EditLogSheet: View {
                             viewModel.scheduleItems[idx].repeatRule = .never
                             viewModel.scheduleItems[idx].endTime = nil
                             viewModel.scheduleItems[idx].isAllDay = false
+                            viewModel.scheduleItems[idx].isCompleted = isCompleted
+                            if viewModel.scheduleItems[idx].complianceKind != nil {
+                                if isCompleted, viewModel.scheduleItems[idx].medicineAccepted == nil {
+                                    viewModel.scheduleItems[idx].medicineAccepted = true
+                                }
+                                if !isCompleted {
+                                    viewModel.scheduleItems[idx].medicineAccepted = nil
+                                }
+                            }
                         }
                         viewModel.syncWidgetSchedule()
                         dismiss()

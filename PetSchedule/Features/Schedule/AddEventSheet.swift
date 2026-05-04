@@ -21,7 +21,7 @@ struct AddEventSheet: View {
     @State private var attachmentPhotoItem: PhotosPickerItem?
     @State private var attachmentImageData: Data?
 
-    private let commonActivities = ["Walk", "Feed", "Give water", "Sleep", "Play", "Vet", "Groom", "Give Medication"]
+    private let commonActivities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Vet", "Groom", "Give Medication"]
 
     var body: some View {
         NavigationStack {

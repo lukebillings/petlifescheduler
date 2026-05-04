@@ -557,7 +557,7 @@ private struct Step3AddSchedule: View {
     @Binding var activityName: String
     @Binding var activityTime: Date
 
-    private let activities = ["Walk", "Feed", "Give water", "Sleep", "Play", "Give Medication"]
+    private let activities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Give Medication"]
 
     var body: some View {
         ScrollView(showsIndicators: false) {

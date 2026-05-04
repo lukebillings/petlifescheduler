@@ -282,7 +282,7 @@ struct ScheduleItem: Identifiable {
         if n.contains("water") || n.contains("drink")                      { return "drop.fill" }
         if n.contains("groom") || n.contains("bath") || n.contains("wash") { return "bubbles.and.sparkles" }
         if n.contains("vet") || n.contains("doctor") || n.contains("health") { return "stethoscope" }
-        if n.contains("sleep") || n.contains("nap") || n.contains("rest")  { return "moon.zzz.fill" }
+        if n.contains("sleep") || n.contains("nap") || n.contains("rest") || n.contains("bed") { return "moon.zzz.fill" }
         if n.contains("play") || n.contains("toy")                         { return "tennisball.fill" }
         if n.contains("train") || n.contains("trick")                      { return "star.fill" }
         if n.contains("medic") || n.contains("tablet") || n.contains("pill") { return "pill.fill" }

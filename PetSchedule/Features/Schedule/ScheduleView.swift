@@ -13,7 +13,7 @@ struct ScheduleView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     // My Pets row
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("My pets")
+                        Text("My Pets")
                             .font(AppTypography.screenTitle)
                             .padding(.horizontal)
 
@@ -83,21 +83,23 @@ struct ScheduleView: View {
                     // Today header (list mode only)
                     if viewModel.selectedView == .list {
                         HStack(alignment: .center, spacing: 6) {
-                            Text("Today")
-                                .font(AppTypography.sectionHeading)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.85)
-
-                            Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
-                                .font(AppTypography.compactControl)
-                                .foregroundStyle(.white)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.8)
-                                .fixedSize(horizontal: true, vertical: false)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(.blue, in: Capsule())
-                                .layoutPriority(1)
+                            HStack(spacing: 6) {
+                                Text("Today")
+                                    .font(AppTypography.sectionHeading)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(1)
+                                Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
+                                    .font(AppTypography.compactControl)
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(.blue, in: Capsule())
+                            }
+                            .layoutPriority(2)
+                            .fixedSize(horizontal: true, vertical: false)
 
                             Spacer(minLength: 4)
 
@@ -122,7 +124,7 @@ struct ScheduleView: View {
                                     Text(hideCompleted ? "Pending" : "All")
                                         .font(AppTypography.compactControl)
                                         .lineLimit(1)
-                                        .minimumScaleFactor(0.85)
+                                        .minimumScaleFactor(1)
                                 }
                                 .foregroundStyle(hideCompleted ? Color.appPink : .secondary)
                                 .padding(.horizontal, 10)
@@ -160,7 +162,9 @@ struct ScheduleView: View {
                 .background(Color(.systemBackground))
                 .modifier(InterfaceContentEntranceModifier(delay: 0))
 
-                PostTutorialScheduleHintStack(viewModel: viewModel)
+                if viewModel.selectedView == .list {
+                    PostTutorialScheduleHintStack(viewModel: viewModel)
+                }
 
                 // ── Scrollable: events only ───────────────────────────────────────
                 ScrollView {
@@ -202,7 +206,7 @@ struct ScheduleView: View {
                 Text(title)
                     .font(AppTypography.compactControl)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.85)
+                    .minimumScaleFactor(1)
             }
             .foregroundStyle(.white)
             .padding(.horizontal, 10)

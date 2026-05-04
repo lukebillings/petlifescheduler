@@ -40,8 +40,8 @@ final class HomeViewModel {
         vm.scheduleItems = [
             ScheduleItem(time: time(hour: 8),  activityName: "Walk",  pet: max,  isCompleted: true),
             ScheduleItem(time: time(hour: 14), activityName: "Feed",  pet: luna, isCompleted: true),
-            ScheduleItem(time: time(hour: 22), activityName: "Sleep", pet: max),
-            ScheduleItem(time: time(hour: 22), activityName: "Sleep", pet: nemo),
+            ScheduleItem(time: time(hour: 22), activityName: "Put to Bed", pet: max),
+            ScheduleItem(time: time(hour: 22), activityName: "Put to Bed", pet: nemo),
         ]
         return vm
     }
