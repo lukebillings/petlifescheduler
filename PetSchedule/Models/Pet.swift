@@ -1,7 +1,7 @@
 import SwiftUI
 import Foundation
 
-struct VetDetails: Hashable {
+struct VetDetails: Hashable, Codable {
     var organisation: String = ""
     var address: String = ""
     var email: String = ""
@@ -12,7 +12,7 @@ struct VetDetails: Hashable {
     }
 }
 
-struct Pet: Identifiable, Hashable {
+struct Pet: Identifiable, Hashable, Codable {
     let id: UUID
     var name: String
     var animalType: AnimalType

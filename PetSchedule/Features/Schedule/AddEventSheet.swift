@@ -20,13 +20,17 @@ struct AddEventSheet: View {
     @State private var customActivity = false
     @State private var attachmentPhotoItem: PhotosPickerItem?
     @State private var attachmentImageData: Data?
+    @State private var createdBy: String = ""
+    @State private var assignedTo: String = ""
+    @State private var completedBy: String = ""
+    @State private var assigneeAccent: ScheduleAssigneeAccent = .pink
 
     private let commonActivities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Vet", "Groom", "Give Medication"]
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Pet") {
+                Section {
                     if viewModel.pets.isEmpty {
                         Text("Add a pet first in the My Pets tab.")
                             .foregroundStyle(.secondary)
@@ -60,11 +64,13 @@ struct AddEventSheet: View {
                             .padding(.vertical, 8)
                         }
                     }
+                } header: {
+                    Text("Planned for")
+                } footer: {
+                    Text("Choose which pet this event applies to.")
                 }
 
                 Section("Activity") {
-                    Toggle("Custom activity", isOn: $customActivity.animation())
-
                     if customActivity {
                         TextField("Activity name", text: $activityName)
                     } else {
@@ -74,7 +80,18 @@ struct AddEventSheet: View {
                             }
                         }
                     }
+
+                    Toggle("Custom activity", isOn: $customActivity.animation())
                 }
+
+                HouseholdEventPeopleSingleSection(
+                    createdBy: $createdBy,
+                    assignedTo: $assignedTo,
+                    completedBy: $completedBy,
+                    assigneeAccent: $assigneeAccent,
+                    viewModel: viewModel,
+                    showCompletedBy: false
+                )
 
                 Section("Description") {
                     TextField("Optional notes…", text: $eventDescription, axis: .vertical)
@@ -102,9 +119,9 @@ struct AddEventSheet: View {
                         }
                     }
                 } header: {
-                    Text("Memory")
+                    Text("Event photo")
                 } footer: {
-                    Text("Optional—a snapshot tied to this event.")
+                    Text("Optional—attach a picture to this event.")
                 }
 
                 Section("When") {
@@ -123,6 +140,16 @@ struct AddEventSheet: View {
                         }
                     }
                     .pickerStyle(.navigationLink)
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        dismiss()
+                    } label: {
+                        Label("Discard new event", systemImage: "trash")
+                    }
+                } footer: {
+                    Text("Close without adding this event to your schedule.")
                 }
             }
             .onChange(of: attachmentPhotoItem) { _, pickerItem in
@@ -146,6 +173,13 @@ struct AddEventSheet: View {
                     eventDate = date
                     endTime = Calendar.current.date(byAdding: .hour, value: 1, to: date) ?? date
                 }
+                let trimmedProfile = UserProfileStorage.trimmedDisplayName()
+                if createdBy.isEmpty, !trimmedProfile.isEmpty {
+                    createdBy = trimmedProfile
+                }
+                if assignedTo.isEmpty, !trimmedProfile.isEmpty {
+                    assignedTo = trimmedProfile
+                }
             }
             .navigationTitle("New Event")
             .navigationBarTitleDisplayMode(.inline)
@@ -164,7 +198,11 @@ struct AddEventSheet: View {
                                 description: eventDescription,
                                 repeatRule: repeatRule,
                                 pet: pet,
-                                attachmentImageData: attachmentImageData
+                                attachmentImageData: attachmentImageData,
+                                createdByDisplayName: createdBy.trimmingCharacters(in: .whitespacesAndNewlines),
+                                assignedToDisplayName: assignedTo.trimmingCharacters(in: .whitespacesAndNewlines),
+                                completedByDisplayName: completedBy.trimmingCharacters(in: .whitespacesAndNewlines),
+                                assigneeAccent: assigneeAccent
                             )
                         )
                         viewModel.syncWidgetSchedule()

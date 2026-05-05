@@ -1,6 +1,6 @@
 import Foundation
 
-struct PetDocument: Identifiable, Hashable {
+struct PetDocument: Identifiable, Hashable, Codable {
     let id: UUID
     var name: String
     var data: Data

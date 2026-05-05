@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum AnimalType: String, CaseIterable, Identifiable, Hashable {
+enum AnimalType: String, CaseIterable, Identifiable, Hashable, Codable {
     case dog, cat, fish, rabbit, bird, tortoise, other
 
     var id: String { rawValue }

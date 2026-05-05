@@ -20,6 +20,10 @@ struct AddLogSheet: View {
     @State private var attachmentPhotoItem: PhotosPickerItem?
     @State private var attachmentImageData: Data?
     @State private var mood: PetMood = .okay
+    @State private var createdBy: String = ""
+    @State private var assignedTo: String = ""
+    @State private var completedBy: String = ""
+    @State private var assigneeAccent: ScheduleAssigneeAccent = .pink
 
     private var resolvedTitle: String {
         switch logKind {
@@ -38,7 +42,7 @@ struct AddLogSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Pet") {
+                Section {
                     if viewModel.pets.isEmpty {
                         Text("Add a pet first in the My Pets tab.")
                             .foregroundStyle(.secondary)
@@ -72,7 +76,18 @@ struct AddLogSheet: View {
                             .padding(.vertical, 8)
                         }
                     }
+                } header: {
+                    Text("Planned for")
                 }
+
+                HouseholdEventPeopleSingleSection(
+                    createdBy: $createdBy,
+                    assignedTo: $assignedTo,
+                    completedBy: $completedBy,
+                    assigneeAccent: $assigneeAccent,
+                    viewModel: viewModel,
+                    showCompletedBy: false
+                )
 
                 Section("Type") {
                     Picker("Log type", selection: $logKind) {
@@ -140,6 +155,13 @@ struct AddLogSheet: View {
                         of: date
                     ) ?? date
                 }
+                let trimmedProfile = UserProfileStorage.trimmedDisplayName()
+                if createdBy.isEmpty, !trimmedProfile.isEmpty {
+                    createdBy = trimmedProfile
+                }
+                if assignedTo.isEmpty, !trimmedProfile.isEmpty {
+                    assignedTo = trimmedProfile
+                }
             }
             .onChange(of: attachmentPhotoItem) { _, item in
                 Task { attachmentImageData = try? await item?.loadTransferable(type: Data.self) }
@@ -153,6 +175,9 @@ struct AddLogSheet: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
                         guard let pet = selectedPet, canSave else { return }
+                        let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
+                        let trimmedCompleted = completedBy.trimmingCharacters(in: .whitespacesAndNewlines)
+                        let resolvedCompletedBy = trimmedCompleted.isEmpty ? profile : trimmedCompleted
                         viewModel.scheduleItems.append(
                             ScheduleItem(
                                 time: occurredAt,
@@ -163,7 +188,11 @@ struct AddLogSheet: View {
                                 isCompleted: true,
                                 quickLogKind: logKind,
                                 petMood: logKind == .mood ? mood : nil,
-                                attachmentImageData: attachmentImageData
+                                attachmentImageData: attachmentImageData,
+                                createdByDisplayName: createdBy.trimmingCharacters(in: .whitespacesAndNewlines),
+                                assignedToDisplayName: assignedTo.trimmingCharacters(in: .whitespacesAndNewlines),
+                                completedByDisplayName: resolvedCompletedBy,
+                                assigneeAccent: assigneeAccent
                             )
                         )
                         viewModel.syncWidgetSchedule()
@@ -192,6 +221,10 @@ struct EditLogSheet: View {
     @State private var attachmentImageData: Data?
     @State private var mood: PetMood
     @State private var isCompleted: Bool
+    @State private var createdBy: String
+    @State private var assignedTo: String
+    @State private var completedBy: String
+    @State private var assigneeAccent: ScheduleAssigneeAccent
 
     private var resolvedTitle: String {
         switch logKind {
@@ -219,17 +252,20 @@ struct EditLogSheet: View {
         _attachmentImageData = State(initialValue: item.attachmentImageData)
         _mood             = State(initialValue: item.petMood ?? .okay)
         _isCompleted      = State(initialValue: item.isCompleted)
+        _createdBy         = State(initialValue: item.createdByDisplayName)
+        _assignedTo        = State(initialValue: item.assignedToDisplayName)
+        _completedBy       = State(initialValue: item.completedByDisplayName)
+        _assigneeAccent    = State(initialValue: item.assigneeAccent)
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    Toggle("Completed", isOn: $isCompleted.animation())
-                        .tint(Color.appPink)
+                    FormCompletedCheckboxRow(isCompleted: $isCompleted)
                 }
 
-                Section("Pet") {
+                Section {
                     if viewModel.pets.isEmpty {
                         Text("Add a pet first in the My Pets tab.")
                             .foregroundStyle(.secondary)
@@ -263,7 +299,18 @@ struct EditLogSheet: View {
                             .padding(.vertical, 8)
                         }
                     }
+                } header: {
+                    Text("Planned for")
                 }
+
+                HouseholdEventPeopleSingleSection(
+                    createdBy: $createdBy,
+                    assignedTo: $assignedTo,
+                    completedBy: $completedBy,
+                    assigneeAccent: $assigneeAccent,
+                    viewModel: viewModel,
+                    showCompletedBy: isCompleted
+                )
 
                 Section("Type") {
                     Picker("Log type", selection: $logKind) {
@@ -328,6 +375,16 @@ struct EditLogSheet: View {
             .onChange(of: attachmentPhotoItem) { _, pickerItem in
                 Task { attachmentImageData = try? await pickerItem?.loadTransferable(type: Data.self) }
             }
+            .onChange(of: isCompleted) { _, newValue in
+                if newValue {
+                    let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
+                    if completedBy.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !profile.isEmpty {
+                        completedBy = profile
+                    }
+                } else {
+                    completedBy = ""
+                }
+            }
             .navigationTitle("Edit Log")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -338,6 +395,12 @@ struct EditLogSheet: View {
                     Button("Save") {
                         guard let pet = selectedPet, canSave else { return }
                         if let idx = viewModel.scheduleItems.firstIndex(where: { $0.id == item.id }) {
+                            let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
+                            let trimmedCompleted = completedBy.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let resolvedCompletedBy: String = {
+                                guard isCompleted else { return "" }
+                                return trimmedCompleted.isEmpty ? profile : trimmedCompleted
+                            }()
                             viewModel.scheduleItems[idx].pet = pet
                             viewModel.scheduleItems[idx].activityName = resolvedTitle
                             viewModel.scheduleItems[idx].description = detail
@@ -349,6 +412,10 @@ struct EditLogSheet: View {
                             viewModel.scheduleItems[idx].endTime = nil
                             viewModel.scheduleItems[idx].isAllDay = false
                             viewModel.scheduleItems[idx].isCompleted = isCompleted
+                            viewModel.scheduleItems[idx].createdByDisplayName = createdBy.trimmingCharacters(in: .whitespacesAndNewlines)
+                            viewModel.scheduleItems[idx].assignedToDisplayName = assignedTo.trimmingCharacters(in: .whitespacesAndNewlines)
+                            viewModel.scheduleItems[idx].completedByDisplayName = resolvedCompletedBy
+                            viewModel.scheduleItems[idx].assigneeAccent = assigneeAccent
                             if viewModel.scheduleItems[idx].complianceKind != nil {
                                 if isCompleted, viewModel.scheduleItems[idx].medicineAccepted == nil {
                                     viewModel.scheduleItems[idx].medicineAccepted = true
@@ -365,6 +432,30 @@ struct EditLogSheet: View {
                     .disabled(!canSave)
                 }
             }
+        }
+    }
+}
+
+private struct FormCompletedCheckboxRow: View {
+    @Binding var isCompleted: Bool
+
+    var body: some View {
+        HStack(alignment: .center) {
+            Text("Completed")
+            Spacer(minLength: 8)
+            Button {
+                withAnimation(.spring(duration: 0.25)) {
+                    isCompleted.toggle()
+                }
+            } label: {
+                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(AppTypography.completionControl)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isCompleted ? Color.complianceAccept : .primary)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isCompleted ? "Completed" : "Mark as completed")
         }
     }
 }

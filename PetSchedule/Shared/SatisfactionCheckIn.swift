@@ -87,7 +87,6 @@ enum SatisfactionCheckIn {
 private enum SatisfactionSheetStep {
     case primary
     case pickGoal
-    case tutorial(FeatureTutorialStep)
     case featureRequest
 }
 
@@ -98,6 +97,8 @@ struct SatisfactionCheckInSheet: View {
     let milestoneToPersistOnDismiss: SatisfactionPromptMilestone?
     /// Highlights the relevant tab behind the sheet (same mapping as the tab tour).
     let onHighlightTab: (FeatureTutorialStep) -> Void
+    /// After the user picks a help topic, the sheet dismisses and this runs so the tip can appear on the main screen above the tab bar.
+    let onPresentContextualTip: (FeatureTutorialStep) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
@@ -111,8 +112,6 @@ struct SatisfactionCheckInSheet: View {
                     primaryPane
                 case .pickGoal:
                     goalsPane
-                case .tutorial(let tutorialStep):
-                    tutorialPane(for: tutorialStep)
                 case .featureRequest:
                     featureRequestPane
                 }
@@ -196,6 +195,7 @@ struct SatisfactionCheckInSheet: View {
                 )
             } header: {
                 Text("What are you mainly trying to do?")
+                    .foregroundStyle(Color.appPink)
             }
 
             Section {
@@ -207,6 +207,7 @@ struct SatisfactionCheckInSheet: View {
                 }
             }
         }
+        .tint(Color.appPink)
         .navigationTitle("Help")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -222,61 +223,13 @@ struct SatisfactionCheckInSheet: View {
         Button {
             HapticManager.impact(.light)
             onHighlightTab(tutorial)
-            step = .tutorial(tutorial)
+            dismiss()
+            let chosen = tutorial
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                onPresentContextualTip(chosen)
+            }
         } label: {
             Label(title, systemImage: symbol)
-        }
-    }
-
-    private func tutorialPane(for tutorialStep: FeatureTutorialStep) -> some View {
-        ScrollView {
-            VStack(spacing: 22) {
-                Image(systemName: tutorialStep.symbolName)
-                    .font(.system(size: 48))
-                    .foregroundStyle(Color.appPink)
-                    .symbolRenderingMode(.hierarchical)
-                    .padding(.top, 12)
-
-                Text(tutorialStep.title)
-                    .font(AppTypography.panelTitle)
-
-                Text(tutorialStep.detail)
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Button {
-                    HapticManager.impact(.medium)
-                    dismissFlow()
-                } label: {
-                    Text("Got it")
-                        .font(AppTypography.primaryLabel)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Color.appPink, in: RoundedRectangle(cornerRadius: 26))
-                }
-                .padding(.top, 8)
-            }
-            .padding(26)
-            .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.12), radius: 18, y: 8)
-            )
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-        }
-        .navigationTitle("Tips")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Back") {
-                    step = .pickGoal
-                    onHighlightTab(.schedule)
-                }
-            }
         }
     }
 
@@ -336,7 +289,7 @@ struct SatisfactionCheckInSheet: View {
 }
 
 /// Wrapper so `HomeView` can present `.sheet(item:)`.
-enum SatisfactionCheckInPresentation: Identifiable {
+enum SatisfactionCheckInPresentation: Identifiable, Equatable {
     /// Shown after the 3rd / 10th foreground session; persisted when dismissed.
     case automated(SatisfactionPromptMilestone)
     /// Opened from Settings; same UI without advancing milestone flags.

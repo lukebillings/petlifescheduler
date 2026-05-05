@@ -53,6 +53,7 @@ struct OnboardingView: View {
     @AppStorage("timeFormat")  private var timeFormatRaw  = "24h"
     @AppStorage("weightUnit")  private var weightUnitRaw  = "kg"
     @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
+    @AppStorage(UserProfileStorage.displayNameKey) private var userDisplayName = ""
 
     @State private var subscriptionProducts = SubscriptionProductLoader()
     @State private var step = 0
@@ -69,7 +70,7 @@ struct OnboardingView: View {
     @State private var householdPetCount: HouseholdPetCount = .one
     @State private var selectedFeatureInterest: OnboardingFeatureInterest?
 
-    private let totalSteps = 10
+    private let totalSteps = 12
 
     var body: some View {
         VStack(spacing: 0) {
@@ -79,6 +80,9 @@ struct OnboardingView: View {
                     Step0HouseholdPetCount(householdPetCount: $householdPetCount)
                         .transition(slideTransition)
                 case 1:
+                    StepYourName(userDisplayName: $userDisplayName)
+                        .transition(slideTransition)
+                case 2:
                     Step1AddPet(
                         householdPetCount: householdPetCount,
                         petName: $petName,
@@ -86,10 +90,10 @@ struct OnboardingView: View {
                         customAnimalType: $customAnimalType
                     )
                         .transition(slideTransition)
-                case 2:
+                case 3:
                     Step2AddPhoto(petName: petName, animalType: animalType, photoData: $petPhotoData, triggerPicker: $triggerPhotoPicker)
                         .transition(slideTransition)
-                case 3:
+                case 4:
                     Step3AddSchedule(
                         petName: petName,
                         animalType: animalType,
@@ -97,22 +101,25 @@ struct OnboardingView: View {
                         activityTime: $activityTime
                     )
                     .transition(slideTransition)
-                case 4:
+                case 5:
                     Step4Notifications()
                         .transition(slideTransition)
-                case 5:
+                case 6:
                     StepTimeFormat(timeFormatRaw: $timeFormatRaw)
                         .transition(slideTransition)
-                case 6:
+                case 7:
                     StepWeightUnits(weightUnitRaw: $weightUnitRaw)
                         .transition(slideTransition)
-                case 7:
+                case 8:
                     StepHeightUnits(heightUnitRaw: $heightUnitRaw)
                         .transition(slideTransition)
-                case 8:
+                case 9:
                     StepFeatureInterest(selection: $selectedFeatureInterest)
                         .transition(slideTransition)
-                case 9:
+                case 10:
+                    StepHouseholdInvite()
+                        .transition(slideTransition)
+                case 11:
                     Step5Paywall(
                         pet: previewPet,
                         ownsMultiplePets: householdPetCount == .two || householdPetCount == .threePlus,
@@ -128,11 +135,11 @@ struct OnboardingView: View {
             .animation(.spring(duration: 0.4), value: step)
 
             // Fixed bottom bar — identical position on every screen
-            VStack(spacing: step == 9 ? 8 : 14) {
-                // Skip — optional photo, schedule, or notifications
-                if step == 2 || step == 3 || step == 4 {
+            VStack(spacing: step == 11 ? 8 : 14) {
+                // Skip — optional photo, schedule, notifications, or household invite
+                if step == 3 || step == 4 || step == 5 || step == 10 {
                     Button {
-                        if step == 2 {
+                        if step == 3 {
                             addPetIfNeeded()
                         }
                         withAnimation { step += 1 }
@@ -143,7 +150,7 @@ struct OnboardingView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    Color.clear.frame(height: step == 9 ? 4 : 20)
+                    Color.clear.frame(height: step == 11 ? 4 : 20)
                 }
 
                 HStack(spacing: 8) {
@@ -156,7 +163,7 @@ struct OnboardingView: View {
                 }
 
                 VStack(spacing: 8) {
-                    if step == 9 {
+                    if step == 11 {
                         Text("Cancel anytime in Settings · Subscriptions.")
                             .font(AppTypography.supportingText)
                             .foregroundStyle(.secondary)
@@ -201,7 +208,7 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 28)
             .padding(.bottom, 52)
-            .padding(.top, step == 9 ? 2 : 8)
+            .padding(.top, step == 11 ? 2 : 8)
         }
         .background(Color(.systemBackground))
         .overlay(alignment: .top) {
@@ -211,7 +218,7 @@ struct OnboardingView: View {
                 .allowsHitTesting(false)
         }
         .onChange(of: step) { _, newStep in
-            if newStep == 9 {
+            if newStep == 11 {
                 Task { await subscriptionProducts.refresh() }
             }
         }
@@ -219,9 +226,9 @@ struct OnboardingView: View {
 
     private var buttonLabel: String {
         switch step {
-        case 2: return petPhotoData == nil ? "Add Photo" : "Continue"
-        case 4: return "Enable Notifications"
-        case 9:
+        case 3: return petPhotoData == nil ? "Add Photo" : "Continue"
+        case 5: return "Enable Notifications"
+        case 11:
             if paywallPlan == .yearly {
                 return "Start my 7 Day Free Trial"
             }
@@ -246,8 +253,10 @@ struct OnboardingView: View {
         case 0:
             return householdPetCount == .unspecified
         case 1:
+            return userDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case 2:
             return petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case 8:
+        case 9:
             return selectedFeatureInterest == nil
         default:
             return false
@@ -261,22 +270,28 @@ struct OnboardingView: View {
         switch step {
         case 0:
             break // pet count chosen
-        case 2 where petPhotoData == nil:
+        case 3 where petPhotoData == nil:
             // "Add Photo" tapped with no photo yet — open the picker instead of advancing
             triggerPhotoPicker = true
             return
-        case 2:
-            addPetIfNeeded()
         case 3:
+            addPetIfNeeded()
+        case 4:
             if let pet = viewModel.pets.first {
                 viewModel.scheduleItems.append(
-                    ScheduleItem(time: activityTime, activityName: activityName, pet: pet)
+                    ScheduleItem(
+                        time: activityTime,
+                        activityName: activityName,
+                        pet: pet,
+                        createdByDisplayName: UserProfileStorage.trimmedDisplayName(),
+                        assignedToDisplayName: UserProfileStorage.trimmedDisplayName()
+                    )
                 )
                 viewModel.syncWidgetSchedule()
             }
-        case 4:
+        case 5:
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
-        case 9:
+        case 11:
             completeOnboarding()
             return
         default:
@@ -296,8 +311,45 @@ struct OnboardingView: View {
     }
 
     private func completeOnboarding() {
+        HouseholdLocalStore.save(viewModel: viewModel)
         viewModel.syncWidgetSchedule()
         onComplete()
+    }
+}
+
+// MARK: - Step 1: Your name
+
+private struct StepYourName: View {
+    @Binding var userDisplayName: String
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 28) {
+                Spacer().frame(minHeight: 56)
+
+                Text("What's your name?")
+                    .font(AppTypography.screenTitle)
+                    .multilineTextAlignment(.center)
+
+                Text("When you share your household, everyone can see who logged walks, feeds, and reminders.")
+                    .font(AppTypography.secondaryLabel)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                TextField("Your name", text: $userDisplayName)
+                    .textContentType(.name)
+                    .font(AppTypography.primaryLabel)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 14)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color(.secondarySystemBackground))
+                    )
+
+                Spacer(minLength: 120)
+            }
+            .padding(.horizontal, 28)
+        }
     }
 }
 
@@ -945,6 +997,71 @@ private struct StepFeatureInterest: View {
     }
 }
 
+// MARK: - Household invite (before paywall)
+
+private struct StepHouseholdInvite: View {
+    @State private var showInviteSheet = false
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 28) {
+                Spacer().frame(minHeight: 44)
+
+                ZStack {
+                    Circle()
+                        .fill(Color.appPink.opacity(0.12))
+                        .frame(width: 120, height: 120)
+                    Image(systemName: "person.3.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(Color.appPink.gradient)
+                        .padding(30)
+                        .frame(width: 120, height: 120)
+                }
+
+                VStack(spacing: 10) {
+                    Text("Invite your household")
+                        .font(AppTypography.screenTitle)
+                        .multilineTextAlignment(.center)
+                    Text("Share your PetSchedule with partners, family, or roommates so everyone sees the same pets, schedules, and logs. They need iCloud on their device to join.")
+                        .font(AppTypography.secondaryLabel)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+
+                Button {
+                    showInviteSheet = true
+                } label: {
+                    Label("Invite household members", systemImage: "person.badge.plus")
+                        .font(AppTypography.primaryLabel)
+                        .foregroundStyle(Color.appPink)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(
+                            RoundedRectangle(cornerRadius: 26)
+                                .strokeBorder(Color.appPink, lineWidth: 2)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                Text("You can skip for now or add people anytime in Settings → Household.")
+                    .font(AppTypography.supportingText)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
+
+                Spacer(minLength: 120)
+            }
+            .padding(.horizontal, 28)
+        }
+        .sheet(isPresented: $showInviteSheet) {
+            CloudSharingSheet(isPresented: $showInviteSheet, container: HouseholdCloudKitService.shared.container)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+}
+
 // MARK: - Paywall
 
 private struct Step5Paywall: View {
@@ -1005,7 +1122,7 @@ private struct Step5Paywall: View {
                             Spacer()
                         }
                         .padding(.vertical, 16)
-                    } else if let err = products.loadError {
+                    } else if products.loadError != nil {
                         VStack(spacing: 8) {
                             Text("Couldn’t load prices")
                                 .font(AppTypography.secondaryLabel)

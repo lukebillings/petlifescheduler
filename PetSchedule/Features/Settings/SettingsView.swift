@@ -146,6 +146,16 @@ struct SettingsView: View {
                     Text("Say how things are going, get focused tips for Schedule, Pets, Analytics, or Settings—or send a feature idea by email.")
                 }
 
+                Section {
+                    NavigationLink {
+                        FamilySharingSettingsView(viewModel: viewModel)
+                    } label: {
+                        Label("Household sharing", systemImage: "person.3.fill")
+                    }
+                } footer: {
+                    Text("Invite family via iCloud so pets and schedules stay in sync. Each person uses their own Apple ID.")
+                }
+
                 Section("Units") {
                     Picker(selection: $timeFormatRaw) {
                         ForEach([TimeFormat.twelveHour, .twentyFourHour], id: \.rawValue) { fmt in

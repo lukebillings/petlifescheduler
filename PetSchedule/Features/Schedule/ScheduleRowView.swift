@@ -8,6 +8,10 @@ struct ScheduleRowView: View {
     var onPetTap: (() -> Void)? = nil
     var onMedicineAccept: ((Bool) -> Void)? = nil
 
+    private var assigneeNameTrimmed: String {
+        item.assignedToDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             PetAvatarView(pet: item.pet, size: 52)
@@ -19,13 +23,40 @@ struct ScheduleRowView: View {
                 .frame(width: 22)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(item.timeString)
-                    .font(AppTypography.primaryLabel)
+                HStack(alignment: .center, spacing: 8) {
+                    Text(item.timeString)
+                        .font(AppTypography.primaryLabel)
+                    if item.quickLogKind == nil, !assigneeNameTrimmed.isEmpty {
+                        Text(assigneeNameTrimmed)
+                            .font(AppTypography.micro)
+                            .fontWeight(.medium)
+                            .foregroundStyle(item.assigneeAccent.pillLabelColor)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(item.assigneeAccent.swatchColor))
+                    }
+                }
                 Text(item.activityName)
                     .font(AppTypography.secondaryLabel)
                     .opacity(0.85)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
+                if item.quickLogKind != nil {
+                    ForEach(
+                        [
+                            ("Created by", item.createdByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)),
+                            ("Assigned to", item.assignedToDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)),
+                            ("Completed by", item.completedByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)),
+                        ].filter { !$0.1.isEmpty },
+                        id: \.0
+                    ) { row in
+                        Text("\(row.0) \(row.1)")
+                            .font(AppTypography.micro)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 if let mood = item.petMood {
                     Text("\(mood.emoji) \(mood.rawValue)")
                         .font(AppTypography.secondaryEmphasis)
@@ -188,6 +219,7 @@ private struct CareCompliancePill: View {
     let pet = Pet(name: "Max", animalType: .dog)
     VStack(spacing: 12) {
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Walk", pet: pet, isCompleted: true)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Walk", pet: pet, assignedToDisplayName: "Bob")) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet, medicineAccepted: true)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet, medicineAccepted: false)) {}

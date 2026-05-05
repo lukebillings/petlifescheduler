@@ -234,6 +234,10 @@ final class HomeViewModel {
         selectedPet = nil
         selectedView = .list
         selectedCalendarDate = .now
+        HouseholdLocalStore.clear()
+        Task { @MainActor in
+            HouseholdSyncCoordinator.shared.clearModificationCache()
+        }
         resetPostTutorialHintUserDefaults()
         syncWidgetSchedule()
     }
@@ -326,14 +330,21 @@ final class HomeViewModel {
     func toggleCompletion(for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         let wasCompleted = scheduleItems[index].isCompleted
+        let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
         if !wasCompleted {
             scheduleItems[index].isCompleted = true
             if scheduleItems[index].complianceKind != nil, scheduleItems[index].medicineAccepted == nil {
                 scheduleItems[index].medicineAccepted = true
             }
+            if scheduleItems[index].completedByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+               !profile.isEmpty
+            {
+                scheduleItems[index].completedByDisplayName = profile
+            }
             AppRatingPrompt.recordTaskCompleted()
         } else {
             scheduleItems[index].isCompleted = false
+            scheduleItems[index].completedByDisplayName = ""
             if scheduleItems[index].complianceKind != nil {
                 scheduleItems[index].medicineAccepted = nil
             }
@@ -345,8 +356,14 @@ final class HomeViewModel {
     func setMedicineAccepted(_ accepted: Bool, for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         let wasIncomplete = !scheduleItems[index].isCompleted
+        let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
         scheduleItems[index].medicineAccepted = accepted
         scheduleItems[index].isCompleted = true
+        if scheduleItems[index].completedByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+           !profile.isEmpty
+        {
+            scheduleItems[index].completedByDisplayName = profile
+        }
         if wasIncomplete {
             AppRatingPrompt.recordTaskCompleted()
         }
@@ -443,5 +460,15 @@ final class HomeViewModel {
         )
         WidgetCenter.shared.reloadAllTimelines()
         ScheduleReminderScheduler.reschedule(for: scheduleItems)
+        Task { @MainActor in
+            HouseholdSyncCoordinator.shared.scheduleCloudSync(from: self)
+        }
+    }
+
+    /// Initial launch restores saved pets and schedule before CloudKit merges run.
+    static func bootstrapFromPersistence() -> HomeViewModel {
+        let vm = HomeViewModel()
+        _ = HouseholdLocalStore.applyIfAvailable(to: vm)
+        return vm
     }
 }

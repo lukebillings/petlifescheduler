@@ -46,6 +46,54 @@ enum FeatureTutorialStep: Int, CaseIterable, Hashable {
     }
 }
 
+/// Compact tip anchored to the bottom of the screen after the user picks a help topic (separate from the full tab tour overlay).
+struct ContextualHelpTipCard: View {
+    let step: FeatureTutorialStep
+    let onGotIt: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: step.symbolName)
+                    .font(.system(size: 28))
+                    .foregroundStyle(Color.appPink)
+                    .symbolRenderingMode(.hierarchical)
+                    .frame(width: 36, alignment: .center)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(step.title)
+                        .font(AppTypography.panelTitle)
+                    Text(step.detail)
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Button {
+                HapticManager.impact(.medium)
+                onGotIt()
+            } label: {
+                Text("Got it")
+                    .font(AppTypography.primaryLabel)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color.appPink, in: RoundedRectangle(cornerRadius: 25))
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color(.systemBackground))
+                .shadow(color: .black.opacity(0.15), radius: 20, y: 6)
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityHint("Tip for the \(step.title) tab. Dismiss to keep using the app.")
+    }
+}
+
 /// Full-screen tap-through tour of main tabs after onboarding paywall.
 struct FeatureTutorialOverlay: View {
     @Binding var isPresented: Bool

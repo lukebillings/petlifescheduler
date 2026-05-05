@@ -18,6 +18,7 @@ struct HomeView: View {
     @State private var countedActivationThisSlice = false
     @State private var satisfactionPresentation: SatisfactionCheckInPresentation?
     @State private var satisfactionPromptScheduleToken = 0
+    @State private var satisfactionContextualTip: FeatureTutorialStep?
 
     init(viewModel: HomeViewModel, showFeatureTutorial: Binding<Bool> = .constant(false)) {
         self.viewModel = viewModel
@@ -29,7 +30,8 @@ struct HomeView: View {
         interfaceAnimationsEnabled && !accessibilityReduceMotion
     }
 
-    var body: some View {
+    @ViewBuilder
+    private var mainTabView: some View {
         TabView(selection: $selectedTab) {
             Tab("Schedule", systemImage: "calendar", value: MainTab.schedule) {
                 ScheduleView(viewModel: viewModel)
@@ -47,63 +49,103 @@ struct HomeView: View {
                 }
             }
         }
-        .tint(.appPink)
-        .onAppear {
-            viewModel.syncWidgetSchedule()
-            consumeForegroundActivationIfNeeded()
-            scheduleSatisfactionCheckInIfEligible()
-        }
-        .onChange(of: scenePhase) { _, phase in
-            if phase == .background {
-                countedActivationThisSlice = false
+    }
+
+    var body: some View {
+        mainTabView
+            .tint(.appPink)
+            .onAppear {
                 viewModel.syncWidgetSchedule()
-            }
-            if phase == .inactive {
-                viewModel.syncWidgetSchedule()
-            }
-            if phase == .active {
                 consumeForegroundActivationIfNeeded()
                 scheduleSatisfactionCheckInIfEligible()
             }
-        }
-        .onChange(of: selectedTab) { _, _ in
-            if !showFeatureTutorial {
-                HapticManager.impact(.light)
+            .onReceive(NotificationCenter.default.publisher(for: .householdCloudShareAccepted)) { _ in
+                Task { await HouseholdSyncCoordinator.shared.syncNow(viewModel) }
             }
-        }
-        .onChange(of: showFeatureTutorial) { _, showing in
-            if !showing {
-                PostTutorialHints.startHintBundleIfNeeded()
-                scheduleSatisfactionCheckInIfEligible(delay: 0.55)
+            .task {
+                await HouseholdSyncCoordinator.shared.syncNow(viewModel)
             }
-        }
-        .overlay {
-            if showFeatureTutorial {
-                FeatureTutorialOverlay(isPresented: $showFeatureTutorial) { tutorialStep in
-                    switch tutorialStep {
-                    case .schedule: selectedTab = .schedule
-                    case .pets: selectedTab = .pets
-                    case .analytics: selectedTab = .analytics
-                    case .settings: selectedTab = .settings
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .background {
+                    countedActivationThisSlice = false
+                    viewModel.syncWidgetSchedule()
+                }
+                if phase == .inactive {
+                    viewModel.syncWidgetSchedule()
+                }
+                if phase == .active {
+                    consumeForegroundActivationIfNeeded()
+                    scheduleSatisfactionCheckInIfEligible()
+                }
+            }
+            .onChange(of: satisfactionPresentation) { _, newValue in
+                if newValue != nil {
+                    satisfactionContextualTip = nil
+                }
+            }
+            .onChange(of: showFeatureTutorial) { _, showing in
+                if showing {
+                    satisfactionContextualTip = nil
+                } else {
+                    PostTutorialHints.startHintBundleIfNeeded()
+                    scheduleSatisfactionCheckInIfEligible(delay: 0.55)
+                }
+            }
+            .onChange(of: selectedTab) { _, _ in
+                if !showFeatureTutorial {
+                    HapticManager.impact(.light)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if let tip = satisfactionContextualTip, !showFeatureTutorial {
+                    ContextualHelpTipCard(step: tip) {
+                        withAnimation(.spring(duration: 0.35)) {
+                            satisfactionContextualTip = nil
+                        }
+                        selectedTab = .schedule
                     }
-                }
-                .transition(.opacity)
-                .zIndex(1)
-            }
-        }
-        .sheet(item: $satisfactionPresentation) { item in
-            SatisfactionCheckInSheet(milestoneToPersistOnDismiss: item.milestoneToPersistOnDismiss) { tutorialStep in
-                switch tutorialStep {
-                case .schedule: selectedTab = .schedule
-                case .pets: selectedTab = .pets
-                case .analytics: selectedTab = .analytics
-                case .settings: selectedTab = .settings
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 64)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(2)
                 }
             }
-        }
-        .transformEnvironment(\.petScheduleInterfaceMotionEnabled) { enabled in
-            enabled = effectiveInterfaceMotion
-        }
+            .animation(.spring(duration: 0.38), value: satisfactionContextualTip)
+            .overlay {
+                if showFeatureTutorial {
+                    FeatureTutorialOverlay(isPresented: $showFeatureTutorial) { tutorialStep in
+                        switch tutorialStep {
+                        case .schedule: selectedTab = .schedule
+                        case .pets: selectedTab = .pets
+                        case .analytics: selectedTab = .analytics
+                        case .settings: selectedTab = .settings
+                        }
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
+                }
+            }
+            .sheet(item: $satisfactionPresentation) { item in
+                SatisfactionCheckInSheet(
+                    milestoneToPersistOnDismiss: item.milestoneToPersistOnDismiss,
+                    onHighlightTab: { tutorialStep in
+                        switch tutorialStep {
+                        case .schedule: selectedTab = .schedule
+                        case .pets: selectedTab = .pets
+                        case .analytics: selectedTab = .analytics
+                        case .settings: selectedTab = .settings
+                        }
+                    },
+                    onPresentContextualTip: { step in
+                        withAnimation(.spring(duration: 0.38)) {
+                            satisfactionContextualTip = step
+                        }
+                    }
+                )
+            }
+            .transformEnvironment(\.petScheduleInterfaceMotionEnabled) { enabled in
+                enabled = effectiveInterfaceMotion
+            }
     }
 
     private func consumeForegroundActivationIfNeeded() {
@@ -119,6 +161,7 @@ struct HomeView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             guard token == satisfactionPromptScheduleToken else { return }
             guard satisfactionPresentation == nil else { return }
+            guard satisfactionContextualTip == nil else { return }
             guard !showFeatureTutorial else { return }
             guard let milestone = SatisfactionCheckIn.nextEligibleMilestone() else { return }
             satisfactionPresentation = SatisfactionCheckInPresentation.automated(milestone)

@@ -93,7 +93,7 @@ enum ScheduleComplianceKind: Equatable, Hashable {
     }
 }
 
-enum RepeatRule: String, CaseIterable, Identifiable {
+enum RepeatRule: String, CaseIterable, Identifiable, Codable {
     case never     = "Never"
     case daily     = "Every day"
     case weekdays  = "Weekdays"
@@ -116,7 +116,7 @@ enum RepeatRule: String, CaseIterable, Identifiable {
 }
 
 /// One-off bathroom / care logs from **+ Log**; shown with a pink-tinted row.
-enum QuickLogKind: String, CaseIterable, Identifiable {
+enum QuickLogKind: String, CaseIterable, Identifiable, Codable {
     case poo = "Poo"
     case wee = "Wee"
     case mood = "Mood"
@@ -135,7 +135,7 @@ enum QuickLogKind: String, CaseIterable, Identifiable {
 }
 
 /// Recorded with **Log → Mood** for behaviour / wellbeing notes.
-enum PetMood: String, CaseIterable, Identifiable, Hashable {
+enum PetMood: String, CaseIterable, Identifiable, Hashable, Codable {
     case great = "Great"
     case good = "Good"
     case okay = "Okay"
@@ -197,6 +197,14 @@ struct ScheduleItem: Identifiable {
     var petMood: PetMood?
     /// Optional photo (“memory”) attached to this event or quick log.
     var attachmentImageData: Data?
+    /// Household member who created this event or log (names are visible to household participants).
+    var createdByDisplayName: String
+    /// Who is expected to perform the task.
+    var assignedToDisplayName: String
+    /// Who completed or logged the outcome.
+    var completedByDisplayName: String
+    /// Highlight color for the assignee name pill on event cards.
+    var assigneeAccent: ScheduleAssigneeAccent
 
     init(
         id: UUID = UUID(),
@@ -212,7 +220,11 @@ struct ScheduleItem: Identifiable {
         medicineAccepted: Bool? = nil,
         quickLogKind: QuickLogKind? = nil,
         petMood: PetMood? = nil,
-        attachmentImageData: Data? = nil
+        attachmentImageData: Data? = nil,
+        createdByDisplayName: String = "",
+        assignedToDisplayName: String = "",
+        completedByDisplayName: String = "",
+        assigneeAccent: ScheduleAssigneeAccent = .pink
     ) {
         self.id = id
         self.time = time
@@ -228,6 +240,10 @@ struct ScheduleItem: Identifiable {
         self.quickLogKind = quickLogKind
         self.petMood = petMood
         self.attachmentImageData = attachmentImageData
+        self.createdByDisplayName = createdByDisplayName
+        self.assignedToDisplayName = assignedToDisplayName
+        self.completedByDisplayName = completedByDisplayName
+        self.assigneeAccent = assigneeAccent
     }
 
     var isMedicineEvent: Bool {

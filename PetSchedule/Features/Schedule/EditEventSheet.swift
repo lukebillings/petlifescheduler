@@ -18,6 +18,11 @@ struct EditEventSheet: View {
     @State private var attachmentPhotoItem: PhotosPickerItem?
     @State private var mood: PetMood
     @State private var isCompleted: Bool
+    @State private var selectedPet: Pet?
+    @State private var createdBy: String
+    @State private var assignedTo: String
+    @State private var completedBy: String
+    @State private var assigneeAccent: ScheduleAssigneeAccent
 
     private let commonActivities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Vet", "Groom", "Give Medication"]
     private static let legacyPresetNames: Set<String> = ["Eat", "Medicine"]
@@ -36,19 +41,59 @@ struct EditEventSheet: View {
         _attachmentImageData = State(initialValue: item.attachmentImageData)
         _mood = State(initialValue: item.petMood ?? .okay)
         _isCompleted = State(initialValue: item.isCompleted)
+        _selectedPet = State(initialValue: item.pet)
+        _createdBy = State(initialValue: item.createdByDisplayName)
+        _assignedTo = State(initialValue: item.assignedToDisplayName)
+        _completedBy = State(initialValue: item.completedByDisplayName)
+        _assigneeAccent = State(initialValue: item.assigneeAccent)
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    Toggle("Completed", isOn: $isCompleted.animation())
-                        .tint(Color.appPink)
+                    FormCompletedCheckboxRow(isCompleted: $isCompleted)
+                }
+
+                Section {
+                    if viewModel.pets.isEmpty {
+                        Text("Add a pet first in the My Pets tab.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 16) {
+                                ForEach(viewModel.pets) { pet in
+                                    let isSelected = selectedPet?.id == pet.id
+                                    Button {
+                                        withAnimation(.spring(duration: 0.2)) {
+                                            selectedPet = isSelected ? nil : pet
+                                        }
+                                    } label: {
+                                        VStack(spacing: 6) {
+                                            PetAvatarView(pet: pet, size: 52)
+                                                .overlay {
+                                                    if isSelected {
+                                                        Circle()
+                                                            .strokeBorder(Color.appPink, lineWidth: 3)
+                                                    }
+                                                }
+                                                .scaleEffect(isSelected ? 1.05 : 1.0)
+                                            Text(pet.name)
+                                                .font(AppTypography.compactControl)
+                                                .foregroundStyle(isSelected ? Color.appPink : Color.secondary)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.vertical, 8)
+                        }
+                    }
+                } header: {
+                    Text("Planned for")
                 }
 
                 Section("Activity") {
-                    Toggle("Custom activity", isOn: $customActivity.animation())
-
                     if customActivity {
                         TextField("Activity name", text: $activityName)
                     } else {
@@ -58,7 +103,18 @@ struct EditEventSheet: View {
                             }
                         }
                     }
+
+                    Toggle("Custom activity", isOn: $customActivity.animation())
                 }
+
+                HouseholdEventPeopleSingleSection(
+                    createdBy: $createdBy,
+                    assignedTo: $assignedTo,
+                    completedBy: $completedBy,
+                    assigneeAccent: $assigneeAccent,
+                    viewModel: viewModel,
+                    showCompletedBy: isCompleted
+                )
 
                 Section("Description") {
                     TextField("Optional notes…", text: $eventDescription, axis: .vertical)
@@ -92,9 +148,9 @@ struct EditEventSheet: View {
                         }
                     }
                 } header: {
-                    Text("Memory")
+                    Text("Event photo")
                 } footer: {
-                    Text("Optional—a snapshot tied to this event.")
+                    Text("Optional—attach a picture to this event.")
                 }
 
                 Section("When") {
@@ -128,6 +184,16 @@ struct EditEventSheet: View {
             .onChange(of: attachmentPhotoItem) { _, pickerItem in
                 Task { attachmentImageData = try? await pickerItem?.loadTransferable(type: Data.self) }
             }
+            .onChange(of: isCompleted) { _, newValue in
+                if newValue {
+                    let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
+                    if completedBy.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !profile.isEmpty {
+                        completedBy = profile
+                    }
+                } else {
+                    completedBy = ""
+                }
+            }
             .navigationTitle("Edit Event")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -136,7 +202,14 @@ struct EditEventSheet: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Save") {
+                        guard let pet = selectedPet else { return }
                         if let idx = viewModel.scheduleItems.firstIndex(where: { $0.id == item.id }) {
+                            let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
+                            let trimmedCompleted = completedBy.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let resolvedCompletedBy = isCompleted
+                                ? (trimmedCompleted.isEmpty ? profile : trimmedCompleted)
+                                : ""
+                            viewModel.scheduleItems[idx].pet = pet
                             viewModel.scheduleItems[idx].activityName = activityName
                             viewModel.scheduleItems[idx].description = eventDescription
                             viewModel.scheduleItems[idx].time = eventDate
@@ -146,6 +219,10 @@ struct EditEventSheet: View {
                             viewModel.scheduleItems[idx].petMood = item.quickLogKind == .mood ? mood : nil
                             viewModel.scheduleItems[idx].attachmentImageData = attachmentImageData
                             viewModel.scheduleItems[idx].isCompleted = isCompleted
+                            viewModel.scheduleItems[idx].createdByDisplayName = createdBy.trimmingCharacters(in: .whitespacesAndNewlines)
+                            viewModel.scheduleItems[idx].assignedToDisplayName = assignedTo.trimmingCharacters(in: .whitespacesAndNewlines)
+                            viewModel.scheduleItems[idx].completedByDisplayName = resolvedCompletedBy
+                            viewModel.scheduleItems[idx].assigneeAccent = assigneeAccent
                             if viewModel.scheduleItems[idx].complianceKind != nil {
                                 if isCompleted, viewModel.scheduleItems[idx].medicineAccepted == nil {
                                     viewModel.scheduleItems[idx].medicineAccepted = true
@@ -159,9 +236,33 @@ struct EditEventSheet: View {
                         dismiss()
                     }
                     .fontWeight(.semibold)
-                    .disabled(activityName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(activityName.trimmingCharacters(in: .whitespaces).isEmpty || selectedPet == nil)
                 }
             }
+        }
+    }
+}
+
+private struct FormCompletedCheckboxRow: View {
+    @Binding var isCompleted: Bool
+
+    var body: some View {
+        HStack(alignment: .center) {
+            Text("Completed")
+            Spacer(minLength: 8)
+            Button {
+                withAnimation(.spring(duration: 0.25)) {
+                    isCompleted.toggle()
+                }
+            } label: {
+                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(AppTypography.completionControl)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(isCompleted ? Color.complianceAccept : .primary)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isCompleted ? "Completed" : "Mark as completed")
         }
     }
 }

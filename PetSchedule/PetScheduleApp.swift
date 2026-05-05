@@ -2,13 +2,8 @@ import SwiftUI
 
 @main
 struct PetScheduleApp: App {
-    @State private var homeViewModel: HomeViewModel = {
-        #if DEBUG
-        return HomeViewModel.analyticsPreview
-        #else
-        return HomeViewModel()
-        #endif
-    }()
+    @UIApplicationDelegateAdaptor(PetScheduleAppDelegate.self) private var appDelegate
+    @State private var homeViewModel = HomeViewModel.bootstrapFromPersistence()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var showSplash = true
     /// One-shot tour of main tabs after the onboarding paywall (same session only).
