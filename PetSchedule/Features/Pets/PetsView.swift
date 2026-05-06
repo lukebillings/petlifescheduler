@@ -8,6 +8,18 @@ struct PetsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
+                PinkWaveScreenHeader("My Pets", trailing: {
+                    Button {
+                        showingAddPet = true
+                    } label: {
+                        Image(systemName: "plus")
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                    }
+                    .padding(.trailing, 4)
+                    .accessibilityLabel("Add pet")
+                })
+
                 Group {
                     if viewModel.pets.isEmpty {
                         ContentUnavailableView(
@@ -40,17 +52,7 @@ struct PetsView: View {
                     }
                 }
             }
-            .navigationTitle("My Pets")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingAddPet = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .fontWeight(.semibold)
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $editingPet) { pet in
                 PetDetailSheet(
                     pet: pet,

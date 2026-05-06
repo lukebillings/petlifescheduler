@@ -129,7 +129,7 @@ enum TimeFormat: String {
 
     var dateFormat: String {
         switch self {
-        case .twelveHour:     return "ha"
+        case .twelveHour:     return "h:mm a"
         case .twentyFourHour: return "HH:mm"
         }
     }

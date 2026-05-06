@@ -44,6 +44,73 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
             return "Keep meals, water, and everyday tasks on track"
         }
     }
+
+    /// Rotating headline + icon on the paywall — tied to onboarding “main reason”.
+    var paywallRotatingFields: (text: String, systemImage: String) {
+        switch self {
+        case .medicationCompliance:
+            return (
+                "Medication reminders and routines tailored to your pets—fewer misses, calmer routines.",
+                "pills.circle.fill"
+            )
+        case .petDetailsAndProfiles:
+            return (
+                "Profiles for each pet—vet info, identifiers, allergies, notes, whenever you need them.",
+                "text.book.closed.fill"
+            )
+        case .weightLogging:
+            return (
+                "Weights on a timeline so you spot changes early—with context per pet.",
+                "scalemass.fill"
+            )
+        case .walksAndActivities:
+            return (
+                "Walks and play in one timeline—nothing slips between handoffs or busy days.",
+                "figure.walk.circle.fill"
+            )
+        case .feedingAndDailyCare:
+            return (
+                "Meals, water, and daily care on a single schedule—simple to follow and share.",
+                "fork.knife.circle.fill"
+            )
+        }
+    }
+}
+
+/// Diagonal shimmer across the onboarding bottom CTA; `TimelineView` keeps animation reliable on every step (including paywall).
+private struct OnboardingPrimaryCTAShimmerOverlay: View {
+    var disabled: Bool
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let sweepDuration: TimeInterval = 3.5
+
+    private var paused: Bool { disabled || reduceMotion }
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let height = geo.size.height
+
+            TimelineView(.animation(minimumInterval: 1.0 / 60, paused: paused)) { context in
+                let elapsed = context.date.timeIntervalSinceReferenceDate / sweepDuration
+                let cycle = CGFloat(elapsed - floor(elapsed))
+
+                LinearGradient(
+                    colors: [.clear, .white.opacity(0.45), .clear],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: 16, height: height * 3)
+                .rotationEffect(.degrees(20))
+                .offset(x: cycle * (width + 40) - 20, y: -height)
+                .allowsHitTesting(false)
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 28))
+        .opacity(paused ? 0 : 1)
+        .allowsHitTesting(false)
+    }
 }
 
 struct OnboardingView: View {
@@ -57,8 +124,6 @@ struct OnboardingView: View {
 
     @State private var subscriptionProducts = SubscriptionProductLoader()
     @State private var step = 0
-    @State private var confettiTrigger = 0
-    @State private var shimmerPhase: CGFloat = -1
     @State private var petName = ""
     @State private var animalType: AnimalType = .dog
     @State private var customAnimalType = ""
@@ -69,6 +134,14 @@ struct OnboardingView: View {
     @State private var paywallPlan: Step5Paywall.Plan = .yearly
     @State private var householdPetCount: HouseholdPetCount = .one
     @State private var selectedFeatureInterest: OnboardingFeatureInterest?
+    @State private var showHouseholdInviteSheet = false
+    /// Draft for step 1 — avoid `@AppStorage` on every keystroke with `@Bindable` (device crashes).
+    @State private var displayNameDraft = ""
+    /// Draft for step 6 — avoids writing `@AppStorage` on every chip tap (can re-enter with `@Bindable` and crash on device).
+    @State private var timeFormatDraft = TimeFormat.twentyFourHour.rawValue
+    /// Drafts for steps 7–8 — same pattern as time format.
+    @State private var weightUnitDraft = WeightUnit.kg.rawValue
+    @State private var heightUnitDraft = HeightUnit.cm.rawValue
 
     private let totalSteps = 12
 
@@ -80,7 +153,7 @@ struct OnboardingView: View {
                     Step0HouseholdPetCount(householdPetCount: $householdPetCount)
                         .transition(slideTransition)
                 case 1:
-                    StepYourName(userDisplayName: $userDisplayName)
+                    StepYourName(displayName: $displayNameDraft)
                         .transition(slideTransition)
                 case 2:
                     Step1AddPet(
@@ -105,24 +178,25 @@ struct OnboardingView: View {
                     Step4Notifications()
                         .transition(slideTransition)
                 case 6:
-                    StepTimeFormat(timeFormatRaw: $timeFormatRaw)
+                    StepTimeFormat(timeFormatRaw: $timeFormatDraft)
                         .transition(slideTransition)
                 case 7:
-                    StepWeightUnits(weightUnitRaw: $weightUnitRaw)
+                    StepWeightUnits(weightUnitRaw: $weightUnitDraft)
                         .transition(slideTransition)
                 case 8:
-                    StepHeightUnits(heightUnitRaw: $heightUnitRaw)
+                    StepHeightUnits(heightUnitRaw: $heightUnitDraft)
                         .transition(slideTransition)
                 case 9:
                     StepFeatureInterest(selection: $selectedFeatureInterest)
                         .transition(slideTransition)
                 case 10:
-                    StepHouseholdInvite()
+                    StepHouseholdInvite(showInviteSheet: $showHouseholdInviteSheet)
                         .transition(slideTransition)
                 case 11:
                     Step5Paywall(
                         pet: previewPet,
                         ownsMultiplePets: householdPetCount == .two || householdPetCount == .threePlus,
+                        featureInterest: selectedFeatureInterest,
                         products: subscriptionProducts,
                         selectedPlan: $paywallPlan
                     )
@@ -135,7 +209,7 @@ struct OnboardingView: View {
             .animation(.spring(duration: 0.4), value: step)
 
             // Fixed bottom bar — identical position on every screen
-            VStack(spacing: step == 11 ? 8 : 14) {
+            VStack(spacing: 14) {
                 // Skip — optional photo, schedule, notifications, or household invite
                 if step == 3 || step == 4 || step == 5 || step == 10 {
                     Button {
@@ -150,7 +224,7 @@ struct OnboardingView: View {
                     }
                     .buttonStyle(.plain)
                 } else {
-                    Color.clear.frame(height: step == 11 ? 4 : 20)
+                    Color.clear.frame(height: 20)
                 }
 
                 HStack(spacing: 8) {
@@ -162,17 +236,14 @@ struct OnboardingView: View {
                     }
                 }
 
-                VStack(spacing: 8) {
-                    if step == 11 {
-                        Text("Cancel anytime in Settings · Subscriptions.")
-                            .font(AppTypography.supportingText)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    Button(action: advance) {
-                        Text(buttonLabel)
+                Button(action: advance) {
+                        Group {
+                            if step == 10 {
+                                Label("Invite household members", systemImage: "person.badge.plus")
+                            } else {
+                                Text(buttonLabel)
+                            }
+                        }
                             .font(AppTypography.primaryLabel)
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
@@ -181,43 +252,28 @@ struct OnboardingView: View {
                                 RoundedRectangle(cornerRadius: 28)
                                     .fill(continueDisabled ? Color.gray.opacity(0.3) : Color.appPink)
                             )
-                            .overlay(
-                                GeometryReader { geo in
-                                    LinearGradient(
-                                        colors: [.clear, .white.opacity(0.45), .clear],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                    .frame(width: 16, height: geo.size.height * 3)
-                                    .rotationEffect(.degrees(20))
-                                    .offset(x: shimmerPhase * (geo.size.width + 40) - 20,
-                                            y: -(geo.size.height))
-                                }
-                                .clipShape(RoundedRectangle(cornerRadius: 28))
-                                .allowsHitTesting(false)
-                                .opacity(continueDisabled ? 0 : 1)
-                            )
+                            .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: continueDisabled))
                     }
                     .disabled(continueDisabled)
-                    .onAppear {
-                        withAnimation(.linear(duration: 3.5).repeatForever(autoreverses: false)) {
-                            shimmerPhase = 1.6
-                        }
-                    }
-                }
             }
             .padding(.horizontal, 28)
             .padding(.bottom, 52)
-            .padding(.top, step == 11 ? 2 : 8)
+            .padding(.top, 8)
         }
         .background(Color(.systemBackground))
-        .overlay(alignment: .top) {
-            ConfettiView(trigger: confettiTrigger)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea()
-                .allowsHitTesting(false)
-        }
         .onChange(of: step) { _, newStep in
+            if newStep == 1 {
+                displayNameDraft = userDisplayName
+            }
+            if newStep == 6 {
+                timeFormatDraft = timeFormatRaw
+            }
+            if newStep == 7 {
+                weightUnitDraft = weightUnitRaw
+            }
+            if newStep == 8 {
+                heightUnitDraft = heightUnitRaw
+            }
             if newStep == 11 {
                 Task { await subscriptionProducts.refresh() }
             }
@@ -229,9 +285,6 @@ struct OnboardingView: View {
         case 3: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 5: return "Enable Notifications"
         case 11:
-            if paywallPlan == .yearly {
-                return "Start my 7 Day Free Trial"
-            }
             return "Continue"
         default: return "Continue"
         }
@@ -253,7 +306,7 @@ struct OnboardingView: View {
         case 0:
             return householdPetCount == .unspecified
         case 1:
-            return userDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return displayNameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 2:
             return petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 9:
@@ -264,12 +317,19 @@ struct OnboardingView: View {
     }
 
     private func advance() {
+        if step == 10 {
+            HapticManager.impact(.light)
+            showHouseholdInviteSheet = true
+            return
+        }
+
         HapticManager.impact(.medium)
-        confettiTrigger += 1
 
         switch step {
         case 0:
             break // pet count chosen
+        case 1:
+            userDisplayName = displayNameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         case 3 where petPhotoData == nil:
             // "Add Photo" tapped with no photo yet — open the picker instead of advancing
             triggerPhotoPicker = true
@@ -291,6 +351,12 @@ struct OnboardingView: View {
             }
         case 5:
             UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
+        case 6:
+            timeFormatRaw = timeFormatDraft
+        case 7:
+            weightUnitRaw = weightUnitDraft
+        case 8:
+            heightUnitRaw = heightUnitDraft
         case 11:
             completeOnboarding()
             return
@@ -320,7 +386,7 @@ struct OnboardingView: View {
 // MARK: - Step 1: Your name
 
 private struct StepYourName: View {
-    @Binding var userDisplayName: String
+    @Binding var displayName: String
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -331,12 +397,13 @@ private struct StepYourName: View {
                     .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
 
-                Text("When you share your household, everyone can see who logged walks, feeds, and reminders.")
+                Text("This name appears on shared tasks so household members know who logged each item.")
                     .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
 
-                TextField("Your name", text: $userDisplayName)
+                TextField("Your name", text: $displayName)
                     .textContentType(.name)
                     .font(AppTypography.primaryLabel)
                     .padding(.horizontal, 18)
@@ -367,7 +434,7 @@ private struct Step0HouseholdPetCount: View {
                     .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
 
-                Text("We'll personalize your setup. You can add every pet any time.")
+                Text("We'll personalize your setup.")
                     .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -450,10 +517,6 @@ private struct Step1AddPet: View {
                 VStack(spacing: 10) {
                     Text(addPetHeadline)
                         .font(AppTypography.screenTitle)
-                        .multilineTextAlignment(.center)
-                    Text("Tell us a little about your companion\nto get things set up. You can add more pets later.")
-                        .font(AppTypography.secondaryLabel)
-                        .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
 
@@ -774,7 +837,7 @@ private struct StepTimeFormat: View {
                     Image(systemName: "clock")
                         .resizable()
                         .scaledToFit()
-                        .foregroundStyle(Color.appPink.gradient)
+                        .foregroundStyle(Color.appPink)
                         .padding(36)
                         .frame(width: 140, height: 140)
                 }
@@ -832,7 +895,7 @@ private struct StepWeightUnits: View {
                     Image(systemName: "scalemass")
                         .resizable()
                         .scaledToFit()
-                        .foregroundStyle(Color.orange.gradient)
+                        .foregroundStyle(Color.orange)
                         .padding(36)
                         .frame(width: 140, height: 140)
                 }
@@ -890,7 +953,7 @@ private struct StepHeightUnits: View {
                     Image(systemName: "ruler")
                         .resizable()
                         .scaledToFit()
-                        .foregroundStyle(Color.cyan.gradient)
+                        .foregroundStyle(Color.cyan)
                         .padding(36)
                         .frame(width: 140, height: 140)
                 }
@@ -960,10 +1023,15 @@ private struct StepFeatureInterest: View {
                     Text("What's the main reason you're using Pet Schedule?")
                         .font(AppTypography.screenTitle)
                         .multilineTextAlignment(.center)
-                    Text("Pick the closest match—for example meds, pet records, weight, walks, or feeding.")
+                        .minimumScaleFactor(0.78)
+                        .lineLimit(4)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity)
+                    Text("Pick the closest match, for example meds, pet records, weight, walks, or feeding.")
                         .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(.horizontal, 28)
@@ -986,10 +1054,11 @@ private struct StepFeatureInterest: View {
             }
             .frame(maxHeight: .infinity)
 
-            Text("You'll still have access to every feature—this just tells us what you care about most.")
+            Text("You'll still have access to every feature. This just tells us what you care about most.")
                 .font(AppTypography.supportingText)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 28)
                 .padding(.top, 12)
                 .padding(.bottom, 8)
@@ -1000,7 +1069,7 @@ private struct StepFeatureInterest: View {
 // MARK: - Household invite (before paywall)
 
 private struct StepHouseholdInvite: View {
-    @State private var showInviteSheet = false
+    @Binding var showInviteSheet: Bool
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -1029,21 +1098,6 @@ private struct StepHouseholdInvite: View {
                         .multilineTextAlignment(.center)
                 }
 
-                Button {
-                    showInviteSheet = true
-                } label: {
-                    Label("Invite household members", systemImage: "person.badge.plus")
-                        .font(AppTypography.primaryLabel)
-                        .foregroundStyle(Color.appPink)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(
-                            RoundedRectangle(cornerRadius: 26)
-                                .strokeBorder(Color.appPink, lineWidth: 2)
-                        )
-                }
-                .buttonStyle(.plain)
-
                 Text("You can skip for now or add people anytime in Settings → Household.")
                     .font(AppTypography.supportingText)
                     .foregroundStyle(.tertiary)
@@ -1067,13 +1121,13 @@ private struct StepHouseholdInvite: View {
 private struct Step5Paywall: View {
     let pet: Pet
     var ownsMultiplePets: Bool
+    var featureInterest: OnboardingFeatureInterest?
     var products: SubscriptionProductLoader
     @Binding var selectedPlan: Plan
 
     enum Plan { case monthly, yearly }
 
-    /// Large rotating benefit lines—one at a time on the paywall, each with an icon below.
-    private let rotatingBenefits: [PaywallRotatingBenefitItem] = [
+    private static let defaultRotatingBenefits: [PaywallRotatingBenefitItem] = [
         PaywallRotatingBenefitItem(
             text: "Every walk, meal, and med—in one timeline per pet.",
             systemImage: "calendar.badge.clock"
@@ -1087,6 +1141,18 @@ private struct Step5Paywall: View {
             systemImage: "hand.thumbsup.fill"
         ),
     ]
+
+    private var rotatingBenefits: [PaywallRotatingBenefitItem] {
+        var items: [PaywallRotatingBenefitItem] = []
+        if let featureInterest {
+            let f = featureInterest.paywallRotatingFields
+            items.append(PaywallRotatingBenefitItem(text: f.text, systemImage: f.systemImage))
+        }
+        for item in Self.defaultRotatingBenefits where !items.contains(item) {
+            items.append(item)
+        }
+        return items
+    }
 
     private var paywallHeadline: String {
         let name = pet.name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1112,8 +1178,6 @@ private struct Step5Paywall: View {
 
                 PaywallRotatingBenefits(items: rotatingBenefits, interval: 3.5)
 
-                Spacer(minLength: 40)
-
                 Group {
                     if products.isLoading {
                         HStack {
@@ -1138,21 +1202,22 @@ private struct Step5Paywall: View {
                     }
                 }
                 .padding(.horizontal, 28)
+                .padding(.top, 18)
+
+                PaywallSubscriptionFooter(
+                    includeFreeTrialMention: products.isLoading
+                        ? nil
+                        : (products.yearlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial)
+                )
+                .padding(.horizontal, 28)
+                .padding(.top, 14)
+                .padding(.bottom, 0)
+                .background(Color(.systemBackground))
             }
-            .padding(.top, 36)
+            .padding(.top, 20)
             .frame(maxWidth: .infinity, alignment: .top)
 
             Spacer(minLength: 0)
-
-            PaywallSubscriptionFooter(
-                includeFreeTrialMention: products.isLoading
-                    ? nil
-                    : (products.yearlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial)
-            )
-                .padding(.horizontal, 28)
-                .padding(.top, 28)
-                .padding(.bottom, 0)
-                .background(Color(.systemBackground))
         }
     }
 
@@ -1162,6 +1227,7 @@ private struct Step5Paywall: View {
             if let y = products.yearlyProduct {
                 PaywallYearlyCard(
                     yearly: y,
+                    monthly: products.monthlyProduct,
                     isSelected: selectedPlan == .yearly
                 ) { selectedPlan = .yearly }
             }
@@ -1172,6 +1238,8 @@ private struct Step5Paywall: View {
                 ) { selectedPlan = .monthly }
             }
         }
+        // Extra space so the selected plan’s stroke isn’t clipped against the footer region.
+        .padding(.bottom, 4)
     }
 }
 
@@ -1223,63 +1291,95 @@ private struct PaywallRotatingBenefits: View {
     }
 }
 
-/// Yearly option with free-trial headline; pink border when selected (prices from StoreKit).
+/// Yearly option; pink border when selected (prices from StoreKit).
 private struct PaywallYearlyCard: View {
     let yearly: Product
+    /// Compared to \(monthly.price × 12) for savings copy; omit if unavailable.
+    var monthly: Product?
     var isSelected: Bool
     var onSelect: () -> Void
-
-    private let titleText = "7 Day Free Trial"
-
-    private var yearSubtitleLeading: String {
-        "renews yearly at"
-    }
 
     private var effectivePerMonthFormatted: String {
         let perMonth = yearly.price / Decimal(12)
         return perMonth.formatted(yearly.priceFormatStyle)
     }
 
+    /// Rounded percent off 12× monthly (`nil` if not cheaper / no monthly product).
+    private var yearlySavingsPercent: Int? {
+        guard let monthly else { return nil }
+        let annualizedMonthly = monthly.price * Decimal(12)
+        guard annualizedMonthly > yearly.price else { return nil }
+        let savings = annualizedMonthly - yearly.price
+        guard savings > 0 else { return nil }
+        let percentDecimal = (savings / annualizedMonthly) * Decimal(100)
+        let percent = Int(NSDecimalNumber(decimal: percentDecimal).doubleValue.rounded())
+        guard percent >= 1 else { return nil }
+        return percent
+    }
+
+    private var savingsBadgeCaption: String? {
+        guard let p = yearlySavingsPercent else { return nil }
+        return "SAVE \(p)%"
+    }
+
     private var accessibilitySubtitle: String {
-        "\(yearSubtitleLeading) \(yearly.displayPrice) per year. Approximately \(effectivePerMonthFormatted) per month."
+        let base = "\(yearly.displayPrice) per year. Approximately \(effectivePerMonthFormatted) per month."
+        if let yearlySavingsPercent {
+            return "\(base) Save \(yearlySavingsPercent) percent versus twelve months billed monthly."
+        }
+        return base
     }
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(titleText)
-                    .font(AppTypography.sectionHeading)
-                    .multilineTextAlignment(.leading)
-                HStack(alignment: .firstTextBaseline) {
-                    Text(yearSubtitleLeading)
-                        .font(AppTypography.secondaryLabel)
-                        .foregroundStyle(.primary)
+            ZStack(alignment: .top) {
+                HStack(alignment: .center, spacing: 8) {
+                    Text("Yearly")
+                        .font(AppTypography.secondaryEmphasis)
                         .multilineTextAlignment(.leading)
                     Spacer(minLength: 8)
-                    Text("\(yearly.displayPrice) per year")
-                        .font(.footnote)
-                        .fontWeight(.regular)
-                        .foregroundStyle(.primary)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("\(yearly.displayPrice) per year")
+                            .font(.footnote)
+                            .fontWeight(.regular)
+                            .foregroundStyle(.primary)
+                        Text("~\(effectivePerMonthFormatted) per month")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-                Text("~\(effectivePerMonthFormatted) per month")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
+                .padding(.top, savingsBadgeCaption != nil ? 22 : 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(.secondarySystemBackground))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .strokeBorder(isSelected ? Color.appPink : Color.clear, lineWidth: 2)
+                )
+                .overlay(alignment: .top) {
+                    if let savingsBadgeCaption {
+                        Text(savingsBadgeCaption)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 13)
+                            .padding(.vertical, 6)
+                            .background(Capsule(style: .continuous).fill(Color.appPink))
+                            .shadow(color: .black.opacity(0.07), radius: 3, y: 2)
+                            .offset(y: -13)
+                            .accessibilityHidden(true)
+                    }
+                }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(.secondarySystemBackground))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(isSelected ? Color.appPink : Color.clear, lineWidth: 2)
-                    )
-            )
         }
         .buttonStyle(.plain)
+        .padding(.top, savingsBadgeCaption != nil ? 8 : 0)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(titleText). \(accessibilitySubtitle)")
+        .accessibilityLabel("Yearly. \(accessibilitySubtitle)")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
@@ -1306,10 +1406,10 @@ private struct PaywallMonthlyCard: View {
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color(.secondarySystemBackground))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(isSelected ? Color.appPink : Color.clear, lineWidth: 2)
-                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(isSelected ? Color.appPink : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)
@@ -1319,46 +1419,101 @@ private struct PaywallMonthlyCard: View {
 }
 
 private struct PaywallSubscriptionFooter: View {
-    /// `nil` while loading: uses trial-style disclosure until product metadata resolves.
+    /// `nil` while loading — show non-trial wording until product metadata resolves (avoids flashing trial copy).
     var includeFreeTrialMention: Bool? = nil
 
-    private var disclosureText: String {
-        let trialBody = "Payment will be charged to your Apple Account at the end of the trial period. Subscriptions auto-renew until cancelled. Manage or cancel in Account Settings · Subscriptions at least 24 hours before the current period ends. If you cancel, you keep access until the end of the billing period."
-        let noTrialBody = "Payment will be charged to your Apple Account at the start of the subscription period. Subscriptions auto-renew until cancelled. Manage or cancel in Account Settings · Subscriptions at least 24 hours before the current period ends. If you cancel, you keep access until the end of the billing period."
+    private static let disclosureNoTrialLines: [String] = [
+        "Charges your Apple Account when you subscribe.",
+        "Auto-renews until you cancel at least 24 hours before renewal in Account Settings · Subscriptions.",
+        "If you cancel, access continues until the billing period ends.",
+    ]
 
+    /// One line per sentence; trial path uses two sentences.
+    private static let disclosureTrialLines: [String] = [
+        "When a trial or introductory offer applies, your Apple Account is charged when it converts unless you cancel at least 24 hours before renewal in Account Settings · Subscriptions.",
+        "Auto-renews until cancelled; access continues until the billing period ends if you cancel.",
+    ]
+
+    private var disclosureLines: [String] {
         switch includeFreeTrialMention {
-        case .none, .some(true):
-            return trialBody
-        case .some(false):
-            return noTrialBody
+        case .some(true): return Self.disclosureTrialLines
+        case .none, .some(false): return Self.disclosureNoTrialLines
         }
     }
 
     var body: some View {
-        VStack(spacing: 8) {
-            Button("Restore Purchases") {}
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .buttonStyle(.plain)
-
-            Text(disclosureText)
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 14)
-
-            HStack(spacing: 4) {
-                Button("Privacy Policy") {}
-                Text("·").foregroundStyle(.secondary.opacity(0.8))
-                Button("Terms and Conditions") {}
-                Text("·").foregroundStyle(.secondary.opacity(0.8))
-                Button("Terms of Use (EULA)") {}
+        VStack(spacing: 14) {
+            VStack(spacing: 4) {
+                ForEach(Array(disclosureLines.enumerated()), id: \.offset) { _, line in
+                    Text(line)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
-            .font(.caption2)
-            .foregroundStyle(.secondary)
-            .buttonStyle(.plain)
+
+            VStack(spacing: 8) {
+                HStack {
+                    Spacer(minLength: 0)
+                    footerLink(title: "Restore Purchases", font: .caption2, minScale: 1.0) {}
+                    Spacer(minLength: 0)
+                }
+
+                HStack {
+                    Spacer(minLength: 0)
+                    ViewThatFits(in: .horizontal) {
+                        paywallPolicyLinkStrip(spacingBetweenItems: 4, captionFont: .caption2)
+                        paywallPolicyLinkStrip(spacingBetweenItems: 2, captionFont: .caption2)
+                        paywallPolicyLinkStrip(spacingBetweenItems: 2, captionFont: .caption2, minScale: 0.88)
+                        paywallPolicyLinkStrip(spacingBetweenItems: 2, captionFont: .caption2, minScale: 0.78)
+                        paywallPolicyLinkStrip(spacingBetweenItems: 2, captionFont: .system(size: 10), minScale: 0.95)
+                    }
+                    Spacer(minLength: 0)
+                }
+            }
         }
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity)
+    }
+
+    /// Privacy / terms row only (Restore is on its own line above).
+    private func paywallPolicyLinkStrip(
+        spacingBetweenItems: CGFloat,
+        captionFont: Font,
+        minScale: CGFloat = 1.0
+    ) -> some View {
+        HStack(spacing: spacingBetweenItems) {
+            footerLink(title: "Privacy Policy", font: captionFont, minScale: minScale) {}
+            middotDivider(font: captionFont)
+            footerLink(title: "Terms and Conditions", font: captionFont, minScale: minScale) {}
+            middotDivider(font: captionFont)
+            footerLink(title: "Terms of Use (EULA)", font: captionFont, minScale: minScale) {}
+        }
+    }
+
+    private func middotDivider(font: Font) -> some View {
+        Text("\u{00B7}") // interpunct ·
+            .font(font)
+            .foregroundStyle(.secondary.opacity(0.8))
+            .baselineOffset(-0.5)
+    }
+
+    private func footerLink(
+        title: String,
+        font: Font,
+        minScale: CGFloat,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(font)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .allowsTightening(true)
+                .minimumScaleFactor(minScale)
+        }
+        .buttonStyle(.plain)
     }
 }
 

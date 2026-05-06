@@ -5,18 +5,13 @@ struct PetScheduleApp: App {
     @UIApplicationDelegateAdaptor(PetScheduleAppDelegate.self) private var appDelegate
     @State private var homeViewModel = HomeViewModel.bootstrapFromPersistence()
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var showSplash = true
     /// One-shot tour of main tabs after the onboarding paywall (same session only).
     @State private var showPostPaywallFeatureTutorial = false
 
     var body: some Scene {
         WindowGroup {
             Group {
-                if showSplash {
-                    LaunchSplashView {
-                        showSplash = false
-                    }
-                } else if hasCompletedOnboarding {
+                if hasCompletedOnboarding {
                     HomeView(viewModel: homeViewModel, showFeatureTutorial: $showPostPaywallFeatureTutorial)
                 } else {
                     OnboardingView(viewModel: homeViewModel) {
@@ -25,7 +20,6 @@ struct PetScheduleApp: App {
                     }
                 }
             }
-            .animation(.easeOut(duration: 0.35), value: showSplash)
         }
     }
 }

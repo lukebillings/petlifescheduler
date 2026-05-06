@@ -26,17 +26,6 @@ struct ScheduleRowView: View {
                 HStack(alignment: .center, spacing: 8) {
                     Text(item.timeString)
                         .font(AppTypography.primaryLabel)
-                    if item.quickLogKind == nil, !assigneeNameTrimmed.isEmpty {
-                        Text(assigneeNameTrimmed)
-                            .font(AppTypography.micro)
-                            .fontWeight(.medium)
-                            .foregroundStyle(item.assigneeAccent.pillLabelColor)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Capsule().fill(item.assigneeAccent.swatchColor))
-                    }
                 }
                 Text(item.activityName)
                     .font(AppTypography.secondaryLabel)
@@ -47,7 +36,6 @@ struct ScheduleRowView: View {
                     ForEach(
                         [
                             ("Created by", item.createdByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)),
-                            ("Assigned to", item.assignedToDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)),
                             ("Completed by", item.completedByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)),
                         ].filter { !$0.1.isEmpty },
                         id: \.0
@@ -86,6 +74,25 @@ struct ScheduleRowView: View {
                                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
                         )
                         .padding(.top, 4)
+                }
+                if !assigneeNameTrimmed.isEmpty {
+                    if item.quickLogKind != nil {
+                        Text("Assigned to \(assigneeNameTrimmed)")
+                            .font(AppTypography.micro)
+                            .foregroundStyle(.secondary)
+                            .padding(.top, item.petMood != nil || !item.description.isEmpty || item.repeatRule != .never || item.attachmentImageData != nil ? 2 : 0)
+                    } else {
+                        Text(assigneeNameTrimmed)
+                            .font(AppTypography.micro)
+                            .fontWeight(.medium)
+                            .foregroundStyle(item.assigneeAccent.pillLabelColor)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.85)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(item.assigneeAccent.swatchColor))
+                            .padding(.top, item.petMood != nil || !item.description.isEmpty || item.repeatRule != .never || item.attachmentImageData != nil ? 4 : 1)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -158,17 +165,23 @@ private struct CareCompliancePill: View {
     var body: some View {
         Group {
             if let accepted {
-                Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
-                    .font(AppTypography.secondaryEmphasis)
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 9)
-                    .background(
-                        Capsule()
-                            .fill(accepted ? Color.complianceAccept : Color.complianceDecline)
-                    )
+                HStack(spacing: 6) {
+                    Image(systemName: kind.resultSymbolName)
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.white.opacity(0.95))
+                    Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
+                        .font(AppTypography.secondaryEmphasis)
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(
+                    Capsule()
+                        .fill(accepted ? Color.complianceAccept : Color.complianceDecline)
+                )
             } else {
                 VStack(alignment: .center, spacing: 6) {
                     Text(kind.compliancePrompt)

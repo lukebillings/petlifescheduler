@@ -11,12 +11,12 @@ struct ScheduleView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // ── Sticky header (never scrolls) ─────────────────────────────────
                 VStack(alignment: .leading, spacing: 0) {
-                    // My Pets row
-                    VStack(alignment: .leading, spacing: 14) {
-                        Text("My Pets")
-                            .font(AppTypography.screenTitle)
-                            .padding(.horizontal)
-
+                    // My Pets row (pink wave header — aligned with other tabs)
+                    PinkWaveScreenHeader(
+                        "My Pets",
+                        titleAccessorySpacing: 6,
+                        contentBottomPadding: 10,
+                        accessory: {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 14) {
                                 ForEach(viewModel.pets) { pet in
@@ -34,7 +34,7 @@ struct ScheduleView: View {
                                                     .overlay {
                                                         if isSelected {
                                                             Circle()
-                                                                .strokeBorder(Color.appPink, lineWidth: 3)
+                                                                .strokeBorder(Color.white, lineWidth: 3)
                                                         }
                                                     }
                                                     .scaleEffect(isSelected ? 1.05 : 1.0)
@@ -55,17 +55,17 @@ struct ScheduleView: View {
                                             }
                                             Text(pet.name)
                                                 .font(AppTypography.compactControl)
-                                                .foregroundStyle(isSelected ? Color.appPink : Color.secondary)
+                                                .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.78))
                                         }
                                     }
                                     .buttonStyle(.plain)
                                 }
                             }
                             .padding(.horizontal)
-                            .padding(.vertical, 16)
+                            .padding(.top, 2)
+                            .padding(.bottom, 4)
                         }
-                    }
-                    .padding(.top, 20)
+                    })
 
                     // View mode picker
                     Picker("View", selection: $viewModel.selectedView) {

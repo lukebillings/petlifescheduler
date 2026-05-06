@@ -35,8 +35,12 @@ final class ConfettiUIView: UIView {
         // Clear any in-flight emitters
         layer.sublayers?.filter { $0 is CAEmitterLayer }.forEach { $0.removeFromSuperlayer() }
 
-        let screenWidth = window?.windowScene?.screen.bounds.width ?? 390
-        let width = bounds.width > 0 ? bounds.width : screenWidth
+        let screenBounds = window?.windowScene?.screen.bounds ?? .zero
+        let screenWidth = screenBounds.width
+        let fallback: CGFloat = 390
+        var width = bounds.width > 0 ? bounds.width : (screenWidth > 0 ? screenWidth : fallback)
+        if !width.isFinite || width <= 0 { width = fallback }
+        width = min(max(width, 1), 10_000)
 
         let emitter = CAEmitterLayer()
         emitter.emitterPosition = CGPoint(x: width / 2, y: -10)

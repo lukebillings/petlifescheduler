@@ -213,6 +213,7 @@ struct AnalyticsView: View {
         NavigationStack {
             ScrollViewReader { proxy in
                 VStack(spacing: 0) {
+                    PinkWaveScreenHeader("Analytics")
                     analyticsJumpPillBar(proxy: proxy)
 
                     ScrollView {
@@ -244,11 +245,12 @@ struct AnalyticsView: View {
 
                             Spacer(minLength: 32)
                         }
-                        .padding(.top, 20)
+                        .padding(.top, 12)
                         .modifier(InterfaceContentEntranceModifier(delay: 0.06))
                     }
                 }
             }
+            .toolbar(.hidden, for: .navigationBar)
             .onChange(of: selectedPetID) { _, _ in
                 resetAnalyticsSwipePages()
                 selectedAnalyticsJumpSection = nil
@@ -257,8 +259,6 @@ struct AnalyticsView: View {
                 resetAnalyticsSwipePages()
                 selectedAnalyticsJumpSection = nil
             }
-            .navigationTitle("Analytics")
-            .navigationBarTitleDisplayMode(.large)
         }
         .sheet(item: $complianceLogSheet) { payload in
             ComplianceLogSheet(viewModel: viewModel, kind: payload.kind, petFilter: payload.pet)
@@ -1420,7 +1420,7 @@ private struct ComplianceLogRow: View {
             switch item.complianceKind {
             case .medicine: return "Yes — taken"
             case .feed:     return "Yes — ate"
-            case .water:    return "Yes — drank"
+            case .water:    return "Yes — drank water"
             case nil:        return "Yes"
             }
         case false: return "No — skipped"

@@ -20,7 +20,16 @@ enum ScheduleComplianceKind: Equatable, Hashable {
         switch self {
         case .medicine: return "Taken"
         case .feed:     return "Eaten"
-        case .water:    return "Drank"
+        case .water:    return "Drank water"
+        }
+    }
+
+    /// Shown on schedule row after user logs compliance.
+    var resultSymbolName: String {
+        switch self {
+        case .medicine: return "pills.fill"
+        case .feed:     return "fork.knife"
+        case .water:    return "drop.fill"
         }
     }
 
@@ -275,6 +284,7 @@ struct ScheduleItem: Identifiable {
     var timeString: String {
         if isAllDay { return "All day" }
         let f = DateFormatter()
+        f.locale = .autoupdatingCurrent
         f.dateFormat = TimeFormat.current.dateFormat
         let start = f.string(from: time).lowercased()
         if let end = endTime {

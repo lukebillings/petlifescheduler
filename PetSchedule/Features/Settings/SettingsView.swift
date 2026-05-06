@@ -48,7 +48,9 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            VStack(spacing: 0) {
+                PinkWaveScreenHeader("Settings")
+                List {
                 Section("Notifications") {
                     Toggle("Enable event reminders", isOn: $remindersEnabled.animation())
                         .tint(Color.appPink)
@@ -156,6 +158,31 @@ struct SettingsView: View {
                     Text("Invite family via iCloud so pets and schedules stay in sync. Each person uses their own Apple ID.")
                 }
 
+                Section {
+                    Link(destination: URL(string: "https://support.apple.com/guide/iphone/add-widgets-iphb8ca0114/ios")!) {
+                        HStack {
+                            Label("Widgets on Home Screen", systemImage: "square.grid.2x2.fill")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(AppTypography.supportingText)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    Link(destination: URL(string: "https://support.apple.com/guide/shortcuts/get-started-apdf90c652a48/ios")!) {
+                        HStack {
+                            Label("Shortcuts icon on Home Screen", systemImage: "arrow.turn.up.right.circle.fill")
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .font(AppTypography.supportingText)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                } header: {
+                    Text("Widgets & shortcuts")
+                } footer: {
+                    Text("Hold the Lock Screen or Home Screen, tap + , search PetSchedule, then pin any widget sizes you like. Shortcuts lets you bookmark common actions beside your apps.")
+                }
+
                 Section("Units") {
                     Picker(selection: $timeFormatRaw) {
                         ForEach([TimeFormat.twelveHour, .twentyFourHour], id: \.rawValue) { fmt in
@@ -245,8 +272,11 @@ struct SettingsView: View {
                 } footer: {
                     Text("This will clear all pets and schedules and restart the setup flow.")
                 }
+                }
+                .scrollContentBackground(.hidden)
+                .background(Color(.systemGroupedBackground))
             }
-            .navigationTitle("Settings")
+            .toolbar(.hidden, for: .navigationBar)
             .confirmationDialog(
                 "Reset all data?",
                 isPresented: $showingResetConfirm,

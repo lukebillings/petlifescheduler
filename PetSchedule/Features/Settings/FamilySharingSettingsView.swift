@@ -97,6 +97,7 @@ struct FamilySharingSettingsView: View {
         }
         .navigationTitle("Household")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .sheet(isPresented: $showInviteSheet) {
             CloudSharingSheet(isPresented: $showInviteSheet, container: HouseholdCloudKitService.shared.container)
                 .presentationDetents([.medium, .large])

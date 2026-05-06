@@ -291,7 +291,8 @@ final class HouseholdCloudKitService {
         } catch let error as CKError where error.code == .unknownItem {
             record = CKRecord(recordType: RecordType.pet, recordID: rid)
         }
-        record.parent = CKRecord.Reference(recordID: rootRecordID, action: .deleteSelf)
+        // Hierarchical `parent` requires `CKReferenceAction.none`; `.deleteSelf` is only for normal reference fields.
+        record.parent = CKRecord.Reference(recordID: rootRecordID, action: .none)
 
         var petCopy = pet
         let photo = petCopy.photoData
@@ -320,7 +321,7 @@ final class HouseholdCloudKitService {
         } catch let error as CKError where error.code == .unknownItem {
             record = CKRecord(recordType: RecordType.schedule, recordID: rid)
         }
-        record.parent = CKRecord.Reference(recordID: rootRecordID, action: .deleteSelf)
+        record.parent = CKRecord.Reference(recordID: rootRecordID, action: .none)
 
         let payload = item.syncPayload
         let json = try JSONEncoder().encode(payload)
@@ -363,6 +364,8 @@ final class HouseholdCloudKitService {
                 if let share = existing as? CKShare {
                     return share
                 }
+                // Stale name pointed at a non-share record; avoid handing a bad object to UICloudSharingController.
+                UserDefaults.standard.removeObject(forKey: Constants.shareRecordNameKey)
             } catch {
                 // Fall through to create a new share.
             }
@@ -372,8 +375,18 @@ final class HouseholdCloudKitService {
         share[CKShare.SystemFieldKey.title] = "PetSchedule household" as CKRecordValue
         share.publicPermission = .none
 
-        let saved = try await database.save(share)
-        guard let ckShare = saved as? CKShare else {
+        // CloudKit requires the share and its root to be saved together the first time; saving only the share can fail or destabilize on device.
+        let (saveResults, _) = try await database.modifyRecords(saving: [root, share], deleting: [])
+        var savedShare: CKShare?
+        for (_, result) in saveResults {
+            switch result {
+            case .success(let record):
+                if let s = record as? CKShare { savedShare = s }
+            case .failure(let error):
+                throw error
+            }
+        }
+        guard let ckShare = savedShare else {
             throw HouseholdCloudError.decodeFailed
         }
         UserDefaults.standard.set(ckShare.recordID.recordName, forKey: Constants.shareRecordNameKey)
