@@ -50,7 +50,7 @@ struct ScheduleListView: View {
                     Spacer()
                 }
             } else {
-                VStack(spacing: 12) {
+                VStack(spacing: 18) {
                     // ── All-day events (birthdays) ────────────────────────────
                     if !allDayItems.isEmpty {
                         ForEach(Array(allDayItems.enumerated()), id: \.element.id) { dayIndex, item in

@@ -3,10 +3,19 @@ import SwiftUI
 private extension PostTutorialHintID {
     var title: String {
         switch self {
-        case .scheduleTryEvent: return "Plan something on the timeline"
+        case .scheduleTryEvent: return "Add an Event"
         case .scheduleTryLog: return "Log a moment"
         case .petsOpenProfileExtras: return "Finish a pet profile"
         case .petsAddAnother: return "Add another pet"
+        }
+    }
+
+    /// Leading SF Symbol for the card title (schedule hints only).
+    var titleIconSystemName: String? {
+        switch self {
+        case .scheduleTryEvent: return "calendar.badge.plus"
+        case .scheduleTryLog: return "doc.text"
+        case .petsOpenProfileExtras, .petsAddAnother: return nil
         }
     }
 
@@ -143,9 +152,17 @@ private struct PostTutorialHintCard: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 6) {
-                Text(id.title)
-                    .font(AppTypography.cardTitle)
-                    .foregroundStyle(.white)
+                HStack(alignment: .center, spacing: 8) {
+                    if let symbol = id.titleIconSystemName {
+                        Image(systemName: symbol)
+                            .font(AppTypography.cardTitle)
+                            .foregroundStyle(.white)
+                            .imageScale(.medium)
+                    }
+                    Text(id.title)
+                        .font(AppTypography.cardTitle)
+                        .foregroundStyle(.white)
+                }
                 Text(id.message)
                     .font(AppTypography.supportingText)
                     .foregroundStyle(.white.opacity(0.92))

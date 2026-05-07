@@ -5,6 +5,13 @@ private struct PinkWaveHeaderCapShape: Shape {
     var waveAmplitude: CGFloat = 9
     /// Number of full wave cycles across the width.
     var cycles: CGFloat = 2.5
+    /// Horizontal phase (radians) — advances over time so the wave appears to travel.
+    var wavePhase: CGFloat = 0
+
+    var animatableData: CGFloat {
+        get { wavePhase }
+        set { wavePhase = newValue }
+    }
 
     func path(in rect: CGRect) -> Path {
         var path = Path()
@@ -26,7 +33,7 @@ private struct PinkWaveHeaderCapShape: Shape {
     }
 
     private func waveY(x: CGFloat, baseline: CGFloat, width: CGFloat) -> CGFloat {
-        let phase = Double((x / width) * cycles * 2 * CGFloat.pi)
+        let phase = Double((x / width) * cycles * 2 * CGFloat.pi + wavePhase)
         return baseline + CGFloat(sin(phase)) * waveAmplitude
     }
 }
@@ -76,12 +83,23 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
         /// Keeps clock / cellular / battery legible against `appPink` when the header reaches into the status bar.
         .toolbarColorScheme(.dark, for: .navigationBar)
         .background {
-            GeometryReader { proxy in
-                let topInset = proxy.safeAreaInsets.top
-                PinkWaveHeaderCapShape()
-                    .fill(Color.appPink)
-                    .frame(width: proxy.size.width, height: proxy.size.height + topInset)
-                    .offset(y: -topInset)
+            TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+                GeometryReader { proxy in
+                    let topInset = proxy.safeAreaInsets.top
+                    let phase = CGFloat(timeline.date.timeIntervalSinceReferenceDate * 1.15)
+                    let width = proxy.size.width
+                    let height = proxy.size.height + topInset
+                    ZStack(alignment: .top) {
+                        // Wave path leaves the troughs unfilled; match the screen body (grouped grey).
+                        Color(.systemGroupedBackground)
+                            .frame(width: width, height: height)
+                            .offset(y: -topInset)
+                        PinkWaveHeaderCapShape(wavePhase: phase)
+                            .fill(Color.appPink)
+                            .frame(width: width, height: height)
+                            .offset(y: -topInset)
+                    }
+                }
             }
             .allowsHitTesting(false)
             .ignoresSafeArea(edges: .top)

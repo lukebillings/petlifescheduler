@@ -52,6 +52,7 @@ struct PetsView: View {
                     }
                 }
             }
+            .background(Color(.systemGroupedBackground))
             .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $editingPet) { pet in
                 PetDetailSheet(

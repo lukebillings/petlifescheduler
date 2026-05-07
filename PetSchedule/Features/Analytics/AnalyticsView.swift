@@ -1424,7 +1424,7 @@ private struct ComplianceLogRow: View {
             case nil:        return "Yes"
             }
         case false: return "No — skipped"
-        case nil:   return item.isCompleted ? "Done" : "Pending"
+        case nil:   return item.isCompleted ? "Done" : "To Do"
         }
     }
 }

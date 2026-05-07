@@ -174,7 +174,7 @@ enum PetPDFGenerator {
                         switch item.medicineAccepted {
                         case true:  status = "Yes — taken"
                         case false: status = "No — skipped"
-                        case nil:   status = item.isCompleted ? "Done" : "Pending"
+                        case nil:   status = item.isCompleted ? "Done" : "To Do"
                         }
                         logLines.append("\(dateStr)  \(timeStr)  \(item.activityName)  →  \(status)")
                     }

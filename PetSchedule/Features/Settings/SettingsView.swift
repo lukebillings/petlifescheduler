@@ -276,6 +276,7 @@ struct SettingsView: View {
                 .scrollContentBackground(.hidden)
                 .background(Color(.systemGroupedBackground))
             }
+            .background(Color(.systemGroupedBackground))
             .toolbar(.hidden, for: .navigationBar)
             .confirmationDialog(
                 "Reset all data?",

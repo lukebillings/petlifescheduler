@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct ScheduleRowView: View {
     let item: ScheduleItem
@@ -12,9 +11,32 @@ struct ScheduleRowView: View {
         item.assignedToDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Single compact secondary line so cards stay short.
+    private var compactDetailLine: String? {
+        if !item.description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return item.description
+        }
+        if let mood = item.petMood {
+            return "\(mood.emoji) \(mood.rawValue)"
+        }
+        if item.repeatRule != .never {
+            return item.repeatRule.rawValue
+        }
+        if item.quickLogKind != nil {
+            let createdBy = item.createdByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let completedBy = item.completedByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !createdBy.isEmpty { return "Created by \(createdBy)" }
+            if !completedBy.isEmpty { return "Completed by \(completedBy)" }
+        }
+        if item.quickLogKind != nil, !assigneeNameTrimmed.isEmpty {
+            return "Assigned to \(assigneeNameTrimmed)"
+        }
+        return nil
+    }
+
     var body: some View {
-        HStack(spacing: 14) {
-            PetAvatarView(pet: item.pet, size: 52)
+        HStack(spacing: 12) {
+            PetAvatarView(pet: item.pet, size: 48)
                 .onTapGesture { onPetTap?() }
 
             Image(systemName: item.activityIcon)
@@ -22,66 +44,31 @@ struct ScheduleRowView: View {
                 .foregroundStyle(Color.appPink)
                 .frame(width: 22)
 
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(item.timeString)
                         .font(AppTypography.primaryLabel)
+                        .lineLimit(1)
+                        .monospacedDigit()
+                        .fixedSize(horizontal: true, vertical: false)
+
+                    Text(item.activityName)
+                        .font(AppTypography.secondaryLabel)
+                        .opacity(0.9)
+                        .lineLimit(1)
+                        .truncationMode(.clip)
                 }
-                Text(item.activityName)
-                    .font(AppTypography.secondaryLabel)
-                    .opacity(0.85)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                if item.quickLogKind != nil {
-                    ForEach(
-                        [
-                            ("Created by", item.createdByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)),
-                            ("Completed by", item.completedByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)),
-                        ].filter { !$0.1.isEmpty },
-                        id: \.0
-                    ) { row in
-                        Text("\(row.0) \(row.1)")
-                            .font(AppTypography.micro)
+
+                HStack(spacing: 8) {
+                    if let detail = compactDetailLine {
+                        Text(detail)
+                            .font(AppTypography.supportingText)
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.clip)
                     }
-                }
-                if let mood = item.petMood {
-                    Text("\(mood.emoji) \(mood.rawValue)")
-                        .font(AppTypography.secondaryEmphasis)
-                        .foregroundStyle(Color.appPink.opacity(0.95))
-                }
-                if !item.description.isEmpty {
-                    Text(item.description)
-                        .font(AppTypography.supportingText)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .lineLimit(4)
-                }
-                if item.repeatRule != .never {
-                    Label(item.repeatRule.rawValue, systemImage: item.repeatRule.icon)
-                        .font(AppTypography.micro)
-                        .foregroundStyle(Color.appPink)
-                }
-                if let data = item.attachmentImageData, let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 56, height: 56)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                        )
-                        .padding(.top, 4)
-                }
-                if !assigneeNameTrimmed.isEmpty {
-                    if item.quickLogKind != nil {
-                        Text("Assigned to \(assigneeNameTrimmed)")
-                            .font(AppTypography.micro)
-                            .foregroundStyle(.secondary)
-                            .padding(.top, item.petMood != nil || !item.description.isEmpty || item.repeatRule != .never || item.attachmentImageData != nil ? 2 : 0)
-                    } else {
+
+                    if !assigneeNameTrimmed.isEmpty, item.quickLogKind == nil {
                         Text(assigneeNameTrimmed)
                             .font(AppTypography.micro)
                             .fontWeight(.medium)
@@ -91,7 +78,6 @@ struct ScheduleRowView: View {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .background(Capsule().fill(item.assigneeAccent.swatchColor))
-                            .padding(.top, item.petMood != nil || !item.description.isEmpty || item.repeatRule != .never || item.attachmentImageData != nil ? 4 : 1)
                     }
                 }
             }
@@ -120,7 +106,7 @@ struct ScheduleRowView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .background {
             if item.quickLogKind != nil {
@@ -167,17 +153,17 @@ private struct CareCompliancePill: View {
             if let accepted {
                 HStack(spacing: 6) {
                     Image(systemName: kind.resultSymbolName)
-                        .font(.caption.weight(.bold))
+                        .font(.caption2.weight(.bold))
                         .foregroundStyle(.white.opacity(0.95))
                     Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
-                        .font(AppTypography.secondaryEmphasis)
+                        .font(AppTypography.compactControl)
                         .foregroundStyle(.white)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.8)
+                        .minimumScaleFactor(0.9)
                 }
                 .fixedSize(horizontal: true, vertical: false)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
                 .background(
                     Capsule()
                         .fill(accepted ? Color.complianceAccept : Color.complianceDecline)

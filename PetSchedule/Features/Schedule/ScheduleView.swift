@@ -11,61 +11,58 @@ struct ScheduleView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // ── Sticky header (never scrolls) ─────────────────────────────────
                 VStack(alignment: .leading, spacing: 0) {
-                    // My Pets row (pink wave header — aligned with other tabs)
-                    PinkWaveScreenHeader(
-                        "My Pets",
-                        titleAccessorySpacing: 6,
-                        contentBottomPadding: 10,
-                        accessory: {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 14) {
-                                ForEach(viewModel.pets) { pet in
-                                    let isSelected = viewModel.selectedPet?.id == pet.id
-                                    let pending = viewModel.pendingTodayTaskCount(for: pet)
-                                    Button {
-                                        HapticManager.impact(.light)
-                                        withAnimation(.spring(duration: 0.25)) {
-                                            viewModel.togglePetFilter(pet)
-                                        }
-                                    } label: {
-                                        VStack(spacing: 6) {
-                                            ZStack(alignment: .topTrailing) {
-                                                PetAvatarView(pet: pet, size: 60)
-                                                    .overlay {
-                                                        if isSelected {
-                                                            Circle()
-                                                                .strokeBorder(Color.white, lineWidth: 3)
-                                                        }
-                                                    }
-                                                    .scaleEffect(isSelected ? 1.05 : 1.0)
+                    // Title only — pets sit below the wave on the sheet background.
+                    PinkWaveScreenHeader("My Pets")
 
-                                                if pending > 0 {
-                                                    Text(pending > 99 ? "99+" : "\(pending)")
-                                                        .font(AppTypography.micro)
-                                                        .foregroundStyle(.white)
-                                                        .padding(.horizontal, pending > 9 ? 5 : 0)
-                                                        .frame(minWidth: 18, minHeight: 18)
-                                                        .background(Color.appPink, in: Capsule())
-                                                        .overlay(
-                                                            Capsule()
-                                                                .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
-                                                        )
-                                                        .offset(x: 8, y: -8)
-                                                }
-                                            }
-                                            Text(pet.name)
-                                                .font(AppTypography.compactControl)
-                                                .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.78))
-                                        }
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 14) {
+                            ForEach(viewModel.pets) { pet in
+                                let isSelected = viewModel.selectedPet?.id == pet.id
+                                let pending = viewModel.pendingTodayTaskCount(for: pet)
+                                Button {
+                                    HapticManager.impact(.light)
+                                    withAnimation(.spring(duration: 0.25)) {
+                                        viewModel.togglePetFilter(pet)
                                     }
-                                    .buttonStyle(.plain)
+                                } label: {
+                                    VStack(spacing: 6) {
+                                        ZStack(alignment: .topTrailing) {
+                                            PetAvatarView(pet: pet, size: 60)
+                                                .overlay {
+                                                    if isSelected {
+                                                        Circle()
+                                                            .strokeBorder(Color.appPink, lineWidth: 3)
+                                                    }
+                                                }
+                                                .scaleEffect(isSelected ? 1.05 : 1.0)
+
+                                            if pending > 0 {
+                                                Text(pending > 99 ? "99+" : "\(pending)")
+                                                    .font(AppTypography.micro)
+                                                    .foregroundStyle(.white)
+                                                    .padding(.horizontal, pending > 9 ? 5 : 0)
+                                                    .frame(minWidth: 18, minHeight: 18)
+                                                    .background(Color.appPink, in: Capsule())
+                                                    .overlay(
+                                                        Capsule()
+                                                            .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
+                                                    )
+                                                    .offset(x: 8, y: -8)
+                                            }
+                                        }
+                                        Text(pet.name)
+                                            .font(AppTypography.compactControl)
+                                            .foregroundStyle(isSelected ? Color.appPink : Color.secondary)
+                                    }
                                 }
+                                .buttonStyle(.plain)
                             }
-                            .padding(.horizontal)
-                            .padding(.top, 2)
-                            .padding(.bottom, 4)
                         }
-                    })
+                        .padding(.horizontal)
+                        .padding(.top, 12)
+                        .padding(.bottom, 10)
+                    }
+                    .background(Color(.systemGroupedBackground))
 
                     // View mode picker
                     Picker("View", selection: $viewModel.selectedView) {
@@ -104,10 +101,10 @@ struct ScheduleView: View {
                             Spacer(minLength: 4)
 
                             HStack(spacing: 4) {
-                                scheduleHeaderCapsuleButton(title: "Event", tint: Color.appPink) {
+                                scheduleHeaderCapsuleButton(title: "Event", systemImage: "calendar.badge.plus", tint: Color.appPink) {
                                     showingAddEvent = true
                                 }
-                                scheduleHeaderCapsuleButton(title: "Log", tint: Color.appPink.opacity(0.85)) {
+                                scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink.opacity(0.85)) {
                                     showingAddLog = true
                                 }
                             }
@@ -121,7 +118,7 @@ struct ScheduleView: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: hideCompleted ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
                                         .font(AppTypography.navControl)
-                                    Text(hideCompleted ? "Pending" : "All")
+                                    Text(hideCompleted ? "To Do" : "All")
                                         .font(AppTypography.compactControl)
                                         .lineLimit(1)
                                         .minimumScaleFactor(1)
@@ -147,10 +144,10 @@ struct ScheduleView: View {
                     if viewModel.selectedView == .calendar {
                         HStack(spacing: 6) {
                             Spacer()
-                            scheduleHeaderCapsuleButton(title: "Event", tint: Color.appPink) {
+                            scheduleHeaderCapsuleButton(title: "Event", systemImage: "calendar.badge.plus", tint: Color.appPink) {
                                 showingAddEvent = true
                             }
-                            scheduleHeaderCapsuleButton(title: "Log", tint: Color.appPink.opacity(0.85)) {
+                            scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink.opacity(0.85)) {
                                 showingAddLog = true
                             }
                         }
@@ -159,7 +156,7 @@ struct ScheduleView: View {
                         .padding(.bottom, 4)
                     }
                 }
-                .background(Color(.systemBackground))
+                .background(Color(.systemGroupedBackground))
                 .modifier(InterfaceContentEntranceModifier(delay: 0))
 
                 if viewModel.selectedView == .list {
@@ -181,6 +178,7 @@ struct ScheduleView: View {
 
 
             }
+            .background(Color(.systemGroupedBackground))
             .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingAddEvent) {
                 AddEventSheet(
@@ -198,10 +196,10 @@ struct ScheduleView: View {
     }
 
     /// Header action chip: keep **+** and title on one line when horizontal space is tight.
-    private func scheduleHeaderCapsuleButton(title: String, tint: Color, action: @escaping () -> Void) -> some View {
+    private func scheduleHeaderCapsuleButton(title: String, systemImage: String, tint: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 4) {
-                Image(systemName: "plus")
+                Image(systemName: systemImage)
                     .font(AppTypography.compactControl)
                 Text(title)
                     .font(AppTypography.compactControl)
