@@ -71,13 +71,17 @@ struct HouseholdEventPeopleSingleSection: View {
     @Binding var completedBy: String
     @Binding var assigneeAccent: ScheduleAssigneeAccent
     var viewModel: HomeViewModel
+    /// When `false`, hides the "Assigned to" row (used by logs).
+    var showAssignedTo: Bool = true
     /// When `false`, the row is hidden until the task is completed; completion flow sets the name automatically.
     var showCompletedBy: Bool = true
 
     var body: some View {
         Section {
             HouseholdPersonInlineField(title: "Created by", name: $createdBy, viewModel: viewModel)
-            HouseholdPersonInlineField(title: "Assigned to", name: $assignedTo, viewModel: viewModel)
+            if showAssignedTo {
+                HouseholdPersonInlineField(title: "Assigned to", name: $assignedTo, viewModel: viewModel)
+            }
             VStack(alignment: .leading, spacing: 10) {
                 Text("Assignee pill color")
                     .font(.subheadline)
@@ -112,8 +116,6 @@ struct HouseholdEventPeopleSingleSection: View {
             }
         } header: {
             Text("People")
-        } footer: {
-            Text("The assigned name appears on the event card as a colored pill. All names are visible to everyone you share the household with.")
         }
     }
 }

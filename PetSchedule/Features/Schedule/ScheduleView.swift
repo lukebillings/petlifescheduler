@@ -104,7 +104,7 @@ struct ScheduleView: View {
                                 scheduleHeaderCapsuleButton(title: "Event", systemImage: "calendar.badge.plus", tint: Color.appPink) {
                                     showingAddEvent = true
                                 }
-                                scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink.opacity(0.85)) {
+                                scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink) {
                                     showingAddLog = true
                                 }
                             }
@@ -140,20 +140,67 @@ struct ScheduleView: View {
                         .padding(.bottom, 8)
                     }
 
-                    // Calendar header — + Event button (calendar mode only)
+                    // Calendar header — mirrors list header layout (calendar mode only)
                     if viewModel.selectedView == .calendar {
-                        HStack(spacing: 6) {
-                            Spacer()
-                            scheduleHeaderCapsuleButton(title: "Event", systemImage: "calendar.badge.plus", tint: Color.appPink) {
-                                showingAddEvent = true
+                        HStack(alignment: .center, spacing: 6) {
+                            HStack(spacing: 6) {
+                                Text("Today")
+                                    .font(AppTypography.sectionHeading)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(1)
+                                Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
+                                    .font(AppTypography.compactControl)
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(1)
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(.blue, in: Capsule())
                             }
-                            scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink.opacity(0.85)) {
-                                showingAddLog = true
+                            .layoutPriority(2)
+                            .fixedSize(horizontal: true, vertical: false)
+
+                            Spacer(minLength: 4)
+
+                            HStack(spacing: 4) {
+                                scheduleHeaderCapsuleButton(title: "Event", systemImage: "calendar.badge.plus", tint: Color.appPink) {
+                                    showingAddEvent = true
+                                }
+                                scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink) {
+                                    showingAddLog = true
+                                }
                             }
+                            .layoutPriority(1)
+
+                            Button {
+                                withAnimation(.spring(duration: 0.25)) {
+                                    hideCompleted.toggle()
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: hideCompleted ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                                        .font(AppTypography.navControl)
+                                    Text(hideCompleted ? "To Do" : "All")
+                                        .font(AppTypography.compactControl)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(1)
+                                }
+                                .foregroundStyle(hideCompleted ? Color.appPink : .secondary)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    Capsule()
+                                        .fill(hideCompleted ? Color.appPink.opacity(0.12) : Color(.secondarySystemBackground))
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .layoutPriority(1)
                         }
                         .padding(.horizontal)
-                        .padding(.top, 16)
-                        .padding(.bottom, 4)
+                        .padding(.top, 20)
+                        .padding(.bottom, 8)
                     }
                 }
                 .background(Color(.systemGroupedBackground))
@@ -170,7 +217,7 @@ struct ScheduleView: View {
                         case .list:
                             ScheduleListView(viewModel: viewModel, hideCompleted: $hideCompleted)
                         case .calendar:
-                            CalendarScheduleView(viewModel: viewModel)
+                            CalendarScheduleView(viewModel: viewModel, hideCompleted: $hideCompleted)
                         }
                         Spacer(minLength: 100)
                     }

@@ -643,6 +643,12 @@ struct AnalyticsView: View {
         .sorted { $0.time < $1.time }
     }
 
+    /// Match compliance spacing when every mood page is in empty-state mode.
+    private var moodPagerHeight: CGFloat {
+        let hasAnyTrendData = petsForAnalyticsContext.contains { moodQuickLogs(for: $0.id).count >= 2 }
+        return hasAnyTrendData ? AnalyticsSwipeLayout.pageHeight : AnalyticsSwipeLayout.compliancePageHeight
+    }
+
     @ViewBuilder
     private var moodSection: some View {
         Group {
@@ -656,7 +662,11 @@ struct AnalyticsView: View {
                         .font(AppTypography.supportingText)
                         .foregroundStyle(.secondary)
 
-                    PetSwipePager(pets: petsForAnalyticsContext, page: $moodSwipePage) { pet in
+                    PetSwipePager(
+                        pets: petsForAnalyticsContext,
+                        page: $moodSwipePage,
+                        pageHeight: moodPagerHeight
+                    ) { pet in
                         if moodQuickLogs(for: pet.id).count >= 2 {
                             moodCard(for: pet, color: petColor(for: pet.id))
                         } else {

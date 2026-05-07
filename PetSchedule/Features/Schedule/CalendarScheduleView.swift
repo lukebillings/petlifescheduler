@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CalendarScheduleView: View {
     @Bindable var viewModel: HomeViewModel
+    @Binding var hideCompleted: Bool
     @State private var showingAddEvent = false
     @State private var editingItem: ScheduleItem? = nil
     @State private var viewingPet: Pet? = nil
@@ -84,7 +85,9 @@ struct CalendarScheduleView: View {
             .padding(.horizontal)
 
             // Items for selected date
-            let selectedItems = viewModel.items(for: viewModel.selectedCalendarDate)
+            let selectedItems = hideCompleted
+                ? viewModel.items(for: viewModel.selectedCalendarDate).filter { !$0.isCompleted }
+                : viewModel.items(for: viewModel.selectedCalendarDate)
             VStack(alignment: .leading, spacing: 16) {
                 Text(viewModel.selectedCalendarDate.formatted(.dateTime.weekday(.wide).month().day()))
                     .font(AppTypography.groupTitle)
@@ -214,7 +217,7 @@ private struct CalendarDayCell: View {
 
 #Preview {
     ScrollView {
-        CalendarScheduleView(viewModel: HomeViewModel.preview)
+        CalendarScheduleView(viewModel: HomeViewModel.preview, hideCompleted: .constant(false))
             .padding(.top)
     }
 }

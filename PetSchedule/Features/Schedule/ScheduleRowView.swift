@@ -28,9 +28,6 @@ struct ScheduleRowView: View {
             if !createdBy.isEmpty { return "Created by \(createdBy)" }
             if !completedBy.isEmpty { return "Completed by \(completedBy)" }
         }
-        if item.quickLogKind != nil, !assigneeNameTrimmed.isEmpty {
-            return "Assigned to \(assigneeNameTrimmed)"
-        }
         return nil
     }
 
@@ -56,18 +53,10 @@ struct ScheduleRowView: View {
                         .font(AppTypography.secondaryLabel)
                         .opacity(0.9)
                         .lineLimit(1)
-                        .truncationMode(.clip)
+                        .truncationMode(.middle)
                 }
 
                 HStack(spacing: 8) {
-                    if let detail = compactDetailLine {
-                        Text(detail)
-                            .font(AppTypography.supportingText)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.clip)
-                    }
-
                     if !assigneeNameTrimmed.isEmpty, item.quickLogKind == nil {
                         Text(assigneeNameTrimmed)
                             .font(AppTypography.micro)
@@ -78,6 +67,14 @@ struct ScheduleRowView: View {
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
                             .background(Capsule().fill(item.assigneeAccent.swatchColor))
+                    }
+
+                    if let detail = compactDetailLine {
+                        Text(detail)
+                            .font(AppTypography.supportingText)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                     }
                 }
             }
@@ -152,9 +149,6 @@ private struct CareCompliancePill: View {
         Group {
             if let accepted {
                 HStack(spacing: 6) {
-                    Image(systemName: kind.resultSymbolName)
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(.white.opacity(0.95))
                     Text(accepted ? kind.acceptedResultLabel : kind.declinedResultLabel)
                         .font(AppTypography.compactControl)
                         .foregroundStyle(.white)

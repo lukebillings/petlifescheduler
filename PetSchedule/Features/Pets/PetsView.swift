@@ -91,13 +91,14 @@ private struct PetCard: View {
                         .scaledToFill()
                 }
             }
-            .frame(width: 72, height: 72)
+            .frame(width: 78, height: 78)
             .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
             Text(pet.name)
                 .font(AppTypography.primaryLabel)
                 .foregroundStyle(.primary)
+                .lineLimit(1)
 
             Spacer()
 
@@ -105,10 +106,18 @@ private struct PetCard: View {
                 .font(AppTypography.compactControl)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
-        .contentShape(RoundedRectangle(cornerRadius: 20))
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                .stroke(Color.white.opacity(0.6), lineWidth: 1)
+        )
+        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
 

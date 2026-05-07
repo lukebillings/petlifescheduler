@@ -86,6 +86,7 @@ struct AddLogSheet: View {
                     completedBy: $completedBy,
                     assigneeAccent: $assigneeAccent,
                     viewModel: viewModel,
+                    showAssignedTo: false,
                     showCompletedBy: false
                 )
 
@@ -309,6 +310,7 @@ struct EditLogSheet: View {
                     completedBy: $completedBy,
                     assigneeAccent: $assigneeAccent,
                     viewModel: viewModel,
+                    showAssignedTo: false,
                     showCompletedBy: isCompleted
                 )
 

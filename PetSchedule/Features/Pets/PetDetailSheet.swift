@@ -155,6 +155,27 @@ struct PetDetailSheet: View {
                     .id(JumpSection.age.rawValue)
                 }
 
+                Section {
+                    Picker("Animal type", selection: $animalType) {
+                        ForEach(AnimalType.allCases) { type in
+                            Label(type.displayName, systemImage: type.systemImage)
+                                .tag(type)
+                        }
+                    }
+
+                    TextField("Name", text: $name)
+
+                    if animalType == .other {
+                        TextField("e.g. Guinea pig, Gecko…", text: $customAnimalType)
+                    }
+                } header: {
+                    sectionHeader(
+                        "Details",
+                        subtitle: "Your pet's name and type—the basics used everywhere in the app."
+                    )
+                }
+                .id(JumpSection.details.rawValue)
+
                 // Profile cover photo
                 Section {
                     PhotosPicker(selection: $photoItem, matching: .images) {
@@ -185,27 +206,6 @@ struct PetDetailSheet: View {
                     )
                 }
                 .id(JumpSection.photo.rawValue)
-
-                Section {
-                    TextField("Name", text: $name)
-
-                    Picker("Animal type", selection: $animalType) {
-                        ForEach(AnimalType.allCases) { type in
-                            Label(type.displayName, systemImage: type.systemImage)
-                                .tag(type)
-                        }
-                    }
-
-                    if animalType == .other {
-                        TextField("e.g. Guinea pig, Gecko…", text: $customAnimalType)
-                    }
-                } header: {
-                    sectionHeader(
-                        "Details",
-                        subtitle: "Your pet's name and type—the basics used everywhere in the app."
-                    )
-                }
-                .id(JumpSection.details.rawValue)
 
                 Section {
                     TextField("Allergies, vet info, behaviour tips…", text: $notes, axis: .vertical)

@@ -160,9 +160,6 @@ struct EditEventSheet: View {
                     if hasEndTime {
                         DatePicker("End", selection: $endTime, in: eventDate..., displayedComponents: .hourAndMinute)
                     }
-                }
-
-                Section("Repeat") {
                     Picker("Repeat", selection: $repeatRule) {
                         ForEach(RepeatRule.allCases) { rule in
                             Label(rule.rawValue, systemImage: rule.icon).tag(rule)
@@ -183,6 +180,13 @@ struct EditEventSheet: View {
             }
             .onChange(of: attachmentPhotoItem) { _, pickerItem in
                 Task { attachmentImageData = try? await pickerItem?.loadTransferable(type: Data.self) }
+            }
+            .onChange(of: customActivity) { _, isCustom in
+                if isCustom {
+                    activityName = ""
+                } else if activityName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    activityName = commonActivities[0]
+                }
             }
             .onChange(of: isCompleted) { _, newValue in
                 if newValue {
