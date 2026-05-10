@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PetSchedule Legal</title>
+    <meta
+      name="description"
+      content="PetSchedule legal pages including Privacy Policy and Terms and Conditions."
+    />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --text: #111827;
+        --muted: #4b5563;
+        --card: #f9fafb;
+        --border: #e5e7eb;
+        --link: #2563eb;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f172a;
+          --text: #e5e7eb;
+          --muted: #94a3b8;
+          --card: #111827;
+          --border: #1f2937;
+          --link: #60a5fa;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 2rem 1rem 4rem;
+      }
+
+      h1 {
+        margin-bottom: 0.5rem;
+      }
+
+      p {
+        color: var(--muted);
+      }
+
+      .links {
+        margin-top: 1.5rem;
+        border: 1px solid var(--border);
+        background: var(--card);
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+
+      li + li {
+        margin-top: 0.75rem;
+      }
+
+      a {
+        color: var(--link);
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>PetSchedule Legal Pages</h1>
+      <p>Use the links below to view our policies.</p>
+
+      <section class="links" aria-label="Legal policy links">
+        <ul>
+          <li><a href="./privacypolicy/">Privacy Policy</a></li>
+          <li><a href="./termsandconditions/">Terms and Conditions</a></li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
