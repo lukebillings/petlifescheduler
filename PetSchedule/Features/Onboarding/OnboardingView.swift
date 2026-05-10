@@ -1539,6 +1539,8 @@ private struct PaywallContentBody: View {
                     Text(bullet)
                         .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.75)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -1952,13 +1954,9 @@ private struct PaywallYearlyCard: View {
         return formatCeiling(perPetMonth)
     }
 
-    /// Subtitle under the per-year price. Per-pet/month framing for multi-pet households,
-    /// per-day framing otherwise — both prefixed with "Less than" since the formatter ceilings.
+    /// Subtitle under the per-year price — always shows the effective per-month cost.
     private var pricingSubtitleText: String {
-        if petCount > 1 {
-            return "Less than \(perPetPerMonthCeilingFormatted) per pet/month"
-        }
-        return "Less than \(perDayCeilingFormatted)/day"
+        return "~\(effectivePerMonthFormatted) per month"
     }
 
     /// Rounded percent off 12× monthly (`nil` if not cheaper / no monthly product).
@@ -2337,48 +2335,63 @@ struct PostOnboardingPaywallView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            PaywallContentBody(
-                headline: headline,
-                previewSlides: previewSlides,
-                personalizedBullets: bullets,
-                yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
-                petCount: petCountForPricing,
-                products: products,
-                selectedPlan: $selectedPlan,
-                purchaseState: purchaseState,
-                errorMessage: errorMessage,
-                onRestorePurchases: { Task { await beginRestorePurchases() } }
-            )
-
-            Spacer(minLength: 0)
-
-            VStack(spacing: 14) {
-                Button(action: { Task { await beginPurchase() } }) {
-                    Group {
-                        if purchaseState == .purchasing {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                                .tint(.white)
-                        } else {
-                            Text(ctaLabel)
-                        }
-                    }
-                    .font(AppTypography.primaryLabel)
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(ctaDisabled ? Color.gray.opacity(0.3) : Color.appPink)
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 0) {
+                ScrollView(showsIndicators: false) {
+                    PaywallContentBody(
+                        headline: headline,
+                        previewSlides: previewSlides,
+                        personalizedBullets: bullets,
+                        yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
+                        petCount: petCountForPricing,
+                        products: products,
+                        selectedPlan: $selectedPlan,
+                        purchaseState: purchaseState,
+                        errorMessage: errorMessage,
+                        onRestorePurchases: { Task { await beginRestorePurchases() } }
                     )
-                    .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: ctaDisabled))
+                    .padding(.top, 24)
                 }
-                .disabled(ctaDisabled)
+
+                VStack(spacing: 14) {
+                    Button(action: { Task { await beginPurchase() } }) {
+                        Group {
+                            if purchaseState == .purchasing {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
+                            } else {
+                                Text(ctaLabel)
+                            }
+                        }
+                        .font(AppTypography.primaryLabel)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 28)
+                                .fill(ctaDisabled ? Color.gray.opacity(0.3) : Color.appPink)
+                        )
+                        .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: ctaDisabled))
+                    }
+                    .disabled(ctaDisabled)
+                }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 52)
+                .padding(.top, 8)
             }
-            .padding(.horizontal, 28)
-            .padding(.bottom, 52)
-            .padding(.top, 8)
+
+#if DEBUG
+            Button {
+                entitlementStore.grantDebugAccess()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 28))
+                    .foregroundStyle(.secondary)
+                    .padding(20)
+            }
+            .accessibilityLabel("Close paywall (debug only)")
+#endif
         }
         .background(Color(.systemBackground))
         .task {

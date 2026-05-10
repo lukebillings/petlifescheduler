@@ -116,4 +116,12 @@ final class SubscriptionEntitlementStore {
         }
         await refreshFromCurrentEntitlements()
     }
+
+#if DEBUG
+    /// Instantly grants premium access without a StoreKit purchase. Simulator / testing only.
+    func grantDebugAccess() {
+        isSubscribed = true
+        initialCheckComplete = true
+    }
+#endif
 }
