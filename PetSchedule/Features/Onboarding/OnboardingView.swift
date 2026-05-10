@@ -217,7 +217,14 @@ struct OnboardingView: View {
     @State private var weightUnitDraft = WeightUnit.kg.rawValue
     @State private var heightUnitDraft = HeightUnit.cm.rawValue
 
-    private let totalSteps = 11
+    // Paywall (step 11) state
+    @State private var entitlementStore = SubscriptionEntitlementStore.shared
+    @State private var products = SubscriptionProductLoader()
+    @State private var paywallSelectedPlan: PaywallPlan = .monthly
+    @State private var paywallPurchaseState: PaywallPurchaseState = .idle
+    @State private var paywallErrorMessage: String?
+
+    private let totalSteps = 12
 
     var body: some View {
         VStack(spacing: 0) {
@@ -266,6 +273,19 @@ struct OnboardingView: View {
                 case 10:
                     StepHouseholdInvite(showInviteSheet: $showHouseholdInviteSheet)
                         .transition(slideTransition)
+                case 11:
+                    Step5Paywall(
+                        pet: previewPet,
+                        ownsMultiplePets: householdPetCount != .one,
+                        petCount: petCountForPaywall,
+                        featureInterest: selectedFeatureInterest,
+                        products: products,
+                        selectedPlan: $paywallSelectedPlan,
+                        purchaseState: paywallPurchaseState,
+                        errorMessage: paywallErrorMessage,
+                        onRestorePurchases: { Task { await beginRestorePurchases() } }
+                    )
+                    .transition(slideTransition)
                 default:
                     EmptyView()
                 }
@@ -281,11 +301,7 @@ struct OnboardingView: View {
                         if step == 3 {
                             addPetIfNeeded()
                         }
-                        if step == 10 {
-                            completeOnboarding()
-                        } else {
-                            withAnimation { step += 1 }
-                        }
+                        withAnimation { step += 1 }
                     } label: {
                         Text("Skip")
                             .font(AppTypography.secondaryLabel)
@@ -307,7 +323,13 @@ struct OnboardingView: View {
 
                 Button(action: advance) {
                         Group {
-                            Text(buttonLabel)
+                            if step == 11 && paywallPurchaseState == .purchasing {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
+                            } else {
+                                Text(buttonLabel)
+                            }
                         }
                             .font(AppTypography.primaryLabel)
                             .foregroundStyle(.white)
@@ -325,6 +347,19 @@ struct OnboardingView: View {
             .padding(.bottom, 52)
             .padding(.top, 8)
         }
+        .overlay(alignment: .topTrailing) {
+            if step == 11 {
+                Button {
+                    completeOnboarding()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundStyle(.secondary)
+                        .padding(20)
+                }
+                .accessibilityLabel("Skip paywall")
+            }
+        }
         .background(Color(.systemBackground))
         .onChange(of: step) { _, newStep in
             if newStep == 1 {
@@ -339,6 +374,20 @@ struct OnboardingView: View {
             if newStep == 8 {
                 heightUnitDraft = heightUnitRaw
             }
+            if newStep == 11 {
+                Task { await products.refresh() }
+                Task { await entitlementStore.refreshFromCurrentEntitlements() }
+            }
+        }
+        .onChange(of: showHouseholdInviteSheet) { _, isShowing in
+            if !isShowing && step == 10 {
+                withAnimation { step += 1 }
+            }
+        }
+        .onChange(of: entitlementStore.isSubscribed) { _, isSubscribed in
+            if isSubscribed && step == 11 {
+                completeOnboarding()
+            }
         }
     }
 
@@ -347,6 +396,12 @@ struct OnboardingView: View {
         case 3: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 5: return "Enable Notifications"
         case 10: return "Invite household members"
+        case 11:
+            if products.isLoading { return "Loading…" }
+            switch paywallSelectedPlan {
+            case .monthly: return "Continue with Monthly"
+            case .yearly:  return "Continue with Yearly"
+            }
         default: return "Continue"
         }
     }
@@ -372,8 +427,26 @@ struct OnboardingView: View {
             return petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 9:
             return selectedFeatureInterest == nil
+        case 11:
+            return paywallPurchaseState != .idle
+                || (products.monthlyProduct == nil && products.yearlyProduct == nil)
         default:
             return false
+        }
+    }
+
+    private var petCountForPaywall: Int {
+        switch householdPetCount {
+        case .one, .unspecified: return 1
+        case .two: return 2
+        case .threePlus: return 3
+        }
+    }
+
+    private var selectedProductForPaywall: Product? {
+        switch paywallSelectedPlan {
+        case .monthly: return products.monthlyProduct
+        case .yearly:  return products.yearlyProduct
         }
     }
 
@@ -381,6 +454,11 @@ struct OnboardingView: View {
         if step == 10 {
             HapticManager.impact(.light)
             showHouseholdInviteSheet = true
+            return
+        }
+
+        if step == 11 {
+            Task { await beginPurchase() }
             return
         }
 
@@ -446,6 +524,45 @@ struct OnboardingView: View {
         HouseholdLocalStore.save(viewModel: viewModel)
         viewModel.syncWidgetSchedule()
         onComplete()
+    }
+
+    private func beginPurchase() async {
+        guard let product = selectedProductForPaywall else {
+            paywallErrorMessage = "Couldn't load subscription. Please try again."
+            return
+        }
+        paywallErrorMessage = nil
+        paywallPurchaseState = .purchasing
+        defer { paywallPurchaseState = .idle }
+
+        do {
+            switch try await entitlementStore.purchase(product) {
+            case .success:
+                HapticManager.impact(.medium)
+            case .userCancelled:
+                break
+            case .pending:
+                paywallErrorMessage = "Your purchase is pending approval. You'll get access as soon as it's approved."
+            }
+        } catch {
+            paywallErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    private func beginRestorePurchases() async {
+        paywallErrorMessage = nil
+        paywallPurchaseState = .restoring
+        defer { paywallPurchaseState = .idle }
+
+        do {
+            if try await entitlementStore.restore() {
+                HapticManager.impact(.light)
+            } else {
+                paywallErrorMessage = "No active subscription found on this Apple Account."
+            }
+        } catch {
+            paywallErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
     }
 }
 
@@ -1238,7 +1355,6 @@ private struct Step5Paywall: View {
                 headline: paywallHeadline,
                 previewSlides: previewSlides,
                 personalizedBullets: paywallBullets,
-                yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
                 petCount: petCount,
                 products: products,
                 selectedPlan: $selectedPlan,
@@ -1308,8 +1424,7 @@ private struct PaywallContentBody: View {
             Text(headline)
                 .font(AppTypography.screenTitle)
                 .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.78)
-                .lineLimit(4)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
 
@@ -1481,7 +1596,7 @@ private struct PaywallPreviewCarousel: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 220)
+            .frame(height: 160)
 
             Group {
                 if slides.indices.contains(currentIndex) {
@@ -1855,7 +1970,7 @@ private struct PaywallYearlyCard: View {
 
     private var savingsBadgeCaption: String? {
         guard let p = yearlySavingsPercent else { return nil }
-        return "SAVE \(p)%"
+        return "SAVE \(p)% vs Monthly"
     }
 
     private var accessibilitySubtitle: String {
@@ -2223,7 +2338,6 @@ struct PostOnboardingPaywallView: View {
                         headline: headline,
                         previewSlides: previewSlides,
                         personalizedBullets: bullets,
-                        yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
                         petCount: petCountForPricing,
                         products: products,
                         selectedPlan: $selectedPlan,
