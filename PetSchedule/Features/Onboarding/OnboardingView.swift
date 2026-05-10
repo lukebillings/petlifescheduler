@@ -198,10 +198,6 @@ struct OnboardingView: View {
     @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
     @AppStorage(UserProfileStorage.displayNameKey) private var userDisplayName = ""
 
-    @State private var subscriptionProducts = SubscriptionProductLoader()
-    @State private var entitlementStore = SubscriptionEntitlementStore.shared
-    @State private var paywallPurchaseState: PaywallPurchaseState = .idle
-    @State private var paywallErrorMessage: String?
     @State private var step = 0
     @State private var petName = ""
     @State private var animalType: AnimalType = .dog
@@ -210,7 +206,6 @@ struct OnboardingView: View {
     @State private var triggerPhotoPicker = false
     @State private var activityName = "Walk"
     @State private var activityTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: .now) ?? .now
-    @State private var paywallPlan: PaywallPlan = .monthly
     @State private var householdPetCount: HouseholdPetCount = .one
     @State private var selectedFeatureInterest: OnboardingFeatureInterest?
     @State private var showHouseholdInviteSheet = false
@@ -222,7 +217,7 @@ struct OnboardingView: View {
     @State private var weightUnitDraft = WeightUnit.kg.rawValue
     @State private var heightUnitDraft = HeightUnit.cm.rawValue
 
-    private let totalSteps = 12
+    private let totalSteps = 11
 
     var body: some View {
         VStack(spacing: 0) {
@@ -271,19 +266,6 @@ struct OnboardingView: View {
                 case 10:
                     StepHouseholdInvite(showInviteSheet: $showHouseholdInviteSheet)
                         .transition(slideTransition)
-                case 11:
-                    Step5Paywall(
-                        pet: previewPet,
-                        ownsMultiplePets: householdPetCount == .two || householdPetCount == .threePlus,
-                        petCount: petCountForPricing,
-                        featureInterest: selectedFeatureInterest,
-                        products: subscriptionProducts,
-                        selectedPlan: $paywallPlan,
-                        purchaseState: paywallPurchaseState,
-                        errorMessage: paywallErrorMessage,
-                        onRestorePurchases: { Task { await beginRestorePurchases() } }
-                    )
-                        .transition(slideTransition)
                 default:
                     EmptyView()
                 }
@@ -294,14 +276,16 @@ struct OnboardingView: View {
             // Fixed bottom bar — identical position on every screen
             VStack(spacing: 14) {
                 // Skip — optional photo, schedule, notifications, or household invite.
-                // The paywall (step 11) intentionally has no skip: a hard gate after onboarding
-                // means tapping "Maybe later" would just send the user to another paywall.
                 if step == 3 || step == 4 || step == 5 || step == 10 {
                     Button {
                         if step == 3 {
                             addPetIfNeeded()
                         }
-                        withAnimation { step += 1 }
+                        if step == 10 {
+                            completeOnboarding()
+                        } else {
+                            withAnimation { step += 1 }
+                        }
                     } label: {
                         Text("Skip")
                             .font(AppTypography.secondaryLabel)
@@ -323,15 +307,7 @@ struct OnboardingView: View {
 
                 Button(action: advance) {
                         Group {
-                            if step == 10 {
-                                Label("Invite household members", systemImage: "person.badge.plus")
-                            } else if step == 11, paywallPurchaseState == .purchasing {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                                    .tint(.white)
-                            } else {
-                                Text(buttonLabel)
-                            }
+                            Text(buttonLabel)
                         }
                             .font(AppTypography.primaryLabel)
                             .foregroundStyle(.white)
@@ -363,19 +339,6 @@ struct OnboardingView: View {
             if newStep == 8 {
                 heightUnitDraft = heightUnitRaw
             }
-            if newStep == 11 {
-                paywallErrorMessage = nil
-                Task { await subscriptionProducts.refresh() }
-                // Returning users who already have an active subscription (e.g. fresh install,
-                // signed into the same Apple Account) should never see the paywall. Refresh the
-                // entitlement first so we use a fresh value, not whatever was cached at launch.
-                Task {
-                    await entitlementStore.refreshFromCurrentEntitlements()
-                    if entitlementStore.isSubscribed {
-                        completeOnboarding()
-                    }
-                }
-            }
         }
     }
 
@@ -383,11 +346,7 @@ struct OnboardingView: View {
         switch step {
         case 3: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 5: return "Enable Notifications"
-        case 11:
-            switch paywallPlan {
-            case .monthly: return "Continue with Monthly"
-            case .yearly:  return "Continue with Yearly"
-            }
+        case 10: return "Invite household members"
         default: return "Continue"
         }
     }
@@ -413,32 +372,8 @@ struct OnboardingView: View {
             return petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 9:
             return selectedFeatureInterest == nil
-        case 11:
-            // Block the CTA while StoreKit is mid-flight, or until the selected plan's product
-            // has loaded. The user can always tap "Maybe later" if products fail to load.
-            if paywallPurchaseState != .idle { return true }
-            return selectedPaywallProduct == nil
         default:
             return false
-        }
-    }
-
-    /// The StoreKit product matching the user's currently-selected plan (or `nil` while loading).
-    private var selectedPaywallProduct: Product? {
-        switch paywallPlan {
-        case .monthly: return subscriptionProducts.monthlyProduct
-        case .yearly:  return subscriptionProducts.yearlyProduct
-        }
-    }
-
-    /// Numeric pet count used by the yearly card to compute per-pet/month pricing. "3+" maps to
-    /// `3` so the displayed per-pet price stays honest for larger households (smaller divisor =
-    /// higher displayed price = closer to truth than e.g. dividing by 5).
-    private var petCountForPricing: Int {
-        switch householdPetCount {
-        case .unspecified, .one: return 1
-        case .two:               return 2
-        case .threePlus:         return 3
         }
     }
 
@@ -484,66 +419,18 @@ struct OnboardingView: View {
         case 8:
             heightUnitRaw = heightUnitDraft
         case 9:
-            // Persist the user's "main reason" so the post-onboarding paywall (and any future
-            // paywall) can keep the same personalization after onboarding is done.
+            // Persist the user's "main reason" so the post-onboarding paywall can keep the
+            // same personalization after onboarding is done.
             UserDefaults.standard.set(
                 selectedFeatureInterest?.rawValue ?? "",
                 forKey: OnboardingFeatureInterest.persistenceKey
             )
-        case 11:
-            Task { await beginPurchaseOfSelectedPlan() }
-            return
         default:
             break
         }
         withAnimation { step += 1 }
     }
 
-    /// Drives the paywall CTA: kicks off StoreKit purchase, finishes onboarding on success,
-    /// and surfaces a user-readable error otherwise. Stays on step 11 if the user cancels
-    /// so they can pick a different plan or use "Maybe later".
-    private func beginPurchaseOfSelectedPlan() async {
-        guard let product = selectedPaywallProduct else {
-            paywallErrorMessage = "Couldn't load subscription. Please try again."
-            return
-        }
-        paywallErrorMessage = nil
-        paywallPurchaseState = .purchasing
-        defer { paywallPurchaseState = .idle }
-
-        do {
-            switch try await entitlementStore.purchase(product) {
-            case .success:
-                HapticManager.impact(.medium)
-                completeOnboarding()
-            case .userCancelled:
-                break
-            case .pending:
-                paywallErrorMessage = "Your purchase is pending approval. You'll get access as soon as it's approved."
-            }
-        } catch {
-            paywallErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-        }
-    }
-
-    /// Restore Purchases handler for the paywall footer. Finishes onboarding if Apple confirms
-    /// an active entitlement; otherwise shows a clear "no subscription found" message.
-    private func beginRestorePurchases() async {
-        paywallErrorMessage = nil
-        paywallPurchaseState = .restoring
-        defer { paywallPurchaseState = .idle }
-
-        do {
-            if try await entitlementStore.restore() {
-                HapticManager.impact(.light)
-                completeOnboarding()
-            } else {
-                paywallErrorMessage = "No active subscription found on this Apple Account."
-            }
-        } catch {
-            paywallErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-        }
-    }
 
     private func addPetIfNeeded() {
         guard viewModel.pets.isEmpty else { return }
@@ -1427,12 +1314,6 @@ private struct PaywallContentBody: View {
                 .padding(.bottom, 16)
 
             PaywallPreviewCarousel(slides: previewSlides, interval: 3.5)
-
-            if !personalizedBullets.isEmpty {
-                personalizedBulletList
-                    .padding(.horizontal, 28)
-                    .padding(.top, 6)
-            }
 
             Group {
                 if products.isLoading {
