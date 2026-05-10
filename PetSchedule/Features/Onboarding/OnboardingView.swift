@@ -131,7 +131,7 @@ struct OnboardingView: View {
     @State private var triggerPhotoPicker = false
     @State private var activityName = "Walk"
     @State private var activityTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: .now) ?? .now
-    @State private var paywallPlan: Step5Paywall.Plan = .yearly
+    @State private var paywallPlan: Step5Paywall.Plan = .monthly
     @State private var householdPetCount: HouseholdPetCount = .one
     @State private var selectedFeatureInterest: OnboardingFeatureInterest?
     @State private var showHouseholdInviteSheet = false
@@ -1224,18 +1224,18 @@ private struct Step5Paywall: View {
     @ViewBuilder
     private var planCards: some View {
         VStack(spacing: 8) {
+            if let m = products.monthlyProduct {
+                PaywallMonthlyCard(
+                    displayPrice: m.displayPrice,
+                    isSelected: selectedPlan == .monthly
+                ) { selectedPlan = .monthly }
+            }
             if let y = products.yearlyProduct {
                 PaywallYearlyCard(
                     yearly: y,
                     monthly: products.monthlyProduct,
                     isSelected: selectedPlan == .yearly
                 ) { selectedPlan = .yearly }
-            }
-            if let m = products.monthlyProduct {
-                PaywallMonthlyCard(
-                    displayPrice: m.displayPrice,
-                    isSelected: selectedPlan == .monthly
-                ) { selectedPlan = .monthly }
             }
         }
         // Extra space so the selected plan’s stroke isn’t clipped against the footer region.
