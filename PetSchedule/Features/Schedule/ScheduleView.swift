@@ -122,13 +122,17 @@ struct ScheduleView: View {
     /// Shared Today / date bar that appears above both list and calendar content.
     @ViewBuilder
     private var scheduleDateHeaderBar: some View {
+        let isCalendar = viewModel.selectedView == .calendar
+        let displayDate: Date = isCalendar ? viewModel.selectedCalendarDate : .now
+        let isToday = Calendar.current.isDateInToday(displayDate)
+
         HStack(alignment: .center, spacing: 6) {
             HStack(spacing: 6) {
-                Text("Today")
+                Text(isToday ? "Today" : displayDate.formatted(.dateTime.weekday(.abbreviated)))
                     .font(AppTypography.sectionHeading)
                     .lineLimit(1)
                     .minimumScaleFactor(1)
-                Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
+                Text(displayDate.formatted(.dateTime.day().month(.abbreviated)))
                     .font(AppTypography.compactControl)
                     .foregroundStyle(.white)
                     .lineLimit(1)
@@ -136,7 +140,7 @@ struct ScheduleView: View {
                     .fixedSize(horizontal: true, vertical: false)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(.blue, in: Capsule())
+                    .background(isToday ? .blue : Color.appPink, in: Capsule())
             }
             .layoutPriority(2)
             .fixedSize(horizontal: true, vertical: false)

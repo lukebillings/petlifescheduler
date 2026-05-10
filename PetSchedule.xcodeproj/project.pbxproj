@@ -47,6 +47,7 @@
 		F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */; };
 		F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */; };
 		A93AAA41111111111111102 /* UserProfileStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA41111111111111101 /* UserProfileStorage.swift */; };
+		5E1B5C7E000000000000A001 /* SubscriptionEntitlementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1B5C7E000000000000A002 /* SubscriptionEntitlementStore.swift */; };
 		A93AAA42222222222222202 /* HouseholdLocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA42222222222222201 /* HouseholdLocalStore.swift */; };
 		A93AAA43333333333333302 /* HouseholdCloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA43333333333333301 /* HouseholdCloudKitService.swift */; };
 		A93AAA44444444444444402 /* HouseholdSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */; };
@@ -103,6 +104,7 @@
 		F86A00D102A14D00A1000006 /* PetScheduleWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetScheduleWidget.entitlements; sourceTree = "<group>"; };
 		F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PetScheduleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93AAA41111111111111101 /* UserProfileStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileStorage.swift; sourceTree = "<group>"; };
+		5E1B5C7E000000000000A002 /* SubscriptionEntitlementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionEntitlementStore.swift; sourceTree = "<group>"; };
 		A93AAA42222222222222201 /* HouseholdLocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdLocalStore.swift; sourceTree = "<group>"; };
 		A93AAA43333333333333301 /* HouseholdCloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdCloudKitService.swift; sourceTree = "<group>"; };
 		A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncCoordinator.swift; sourceTree = "<group>"; };
@@ -190,6 +192,7 @@
 				C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */,
 				F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */,
 				A93AAA41111111111111101 /* UserProfileStorage.swift */,
+				5E1B5C7E000000000000A002 /* SubscriptionEntitlementStore.swift */,
 				A93AAA42222222222222201 /* HouseholdLocalStore.swift */,
 				A93AAA43333333333333301 /* HouseholdCloudKitService.swift */,
 				A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */,
@@ -450,6 +453,7 @@
 				A93AAA44444444444444402 /* HouseholdSyncCoordinator.swift in Sources */,
 				A93AAA45555555555555502 /* LoggedByPersonSection.swift in Sources */,
 				A93AAA41111111111111102 /* UserProfileStorage.swift in Sources */,
+				5E1B5C7E000000000000A001 /* SubscriptionEntitlementStore.swift in Sources */,
 				F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */,
 				F86A00D102A14D00A2000001 /* ScheduleWidgetShared.swift in Sources */,
 			);

@@ -222,16 +222,6 @@ struct SettingsView: View {
                         Label("Rate PetSchedule", systemImage: "star.fill")
                             .foregroundStyle(.primary)
                     }
-                    // TODO: Replace YOUR_APP_ID with the actual App Store numeric ID once the app is listed.
-                    Link(destination: URL(string: "https://apps.apple.com/app/idYOUR_APP_ID?action=write-review")!) {
-                        HStack {
-                            Label("Write a Review", systemImage: "square.and.pencil")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(AppTypography.supportingText)
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
                 }
 
                 Section("Legal") {

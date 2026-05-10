@@ -77,7 +77,7 @@ struct AddLogSheet: View {
                         }
                     }
                 } header: {
-                    Text("Planned for")
+                    Text("Pet")
                 }
 
                 HouseholdEventPeopleSingleSection(
@@ -301,7 +301,7 @@ struct EditLogSheet: View {
                         }
                     }
                 } header: {
-                    Text("Planned for")
+                    Text("Pet")
                 }
 
                 HouseholdEventPeopleSingleSection(
