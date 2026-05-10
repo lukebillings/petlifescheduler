@@ -12,7 +12,7 @@ struct ScheduleView: View {
                 // ── Sticky header (never scrolls) ─────────────────────────────────
                 VStack(alignment: .leading, spacing: 0) {
                     // Title only — pets sit below the wave on the sheet background.
-                    PinkWaveScreenHeader("My Pets")
+                    PinkWaveScreenHeader("Schedule")
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 14) {
@@ -77,131 +77,8 @@ struct ScheduleView: View {
                         HapticManager.impact(.light)
                     }
 
-                    // Today header (list mode only)
-                    if viewModel.selectedView == .list {
-                        HStack(alignment: .center, spacing: 6) {
-                            HStack(spacing: 6) {
-                                Text("Today")
-                                    .font(AppTypography.sectionHeading)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(1)
-                                Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
-                                    .font(AppTypography.compactControl)
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(1)
-                                    .fixedSize(horizontal: true, vertical: false)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(.blue, in: Capsule())
-                            }
-                            .layoutPriority(2)
-                            .fixedSize(horizontal: true, vertical: false)
-
-                            Spacer(minLength: 4)
-
-                            HStack(spacing: 4) {
-                                scheduleHeaderCapsuleButton(title: "Event", systemImage: "calendar.badge.plus", tint: Color.appPink) {
-                                    showingAddEvent = true
-                                }
-                                scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink) {
-                                    showingAddLog = true
-                                }
-                            }
-                            .layoutPriority(1)
-
-                            Button {
-                                withAnimation(.spring(duration: 0.25)) {
-                                    hideCompleted.toggle()
-                                }
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: hideCompleted ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                                        .font(AppTypography.navControl)
-                                    Text(hideCompleted ? "To Do" : "All")
-                                        .font(AppTypography.compactControl)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(1)
-                                }
-                                .foregroundStyle(hideCompleted ? Color.appPink : .secondary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(hideCompleted ? Color.appPink.opacity(0.12) : Color(.secondarySystemBackground))
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .layoutPriority(1)
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, 20)
-                        .padding(.bottom, 8)
-                    }
-
-                    // Calendar header — mirrors list header layout (calendar mode only)
-                    if viewModel.selectedView == .calendar {
-                        HStack(alignment: .center, spacing: 6) {
-                            HStack(spacing: 6) {
-                                Text("Today")
-                                    .font(AppTypography.sectionHeading)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(1)
-                                Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
-                                    .font(AppTypography.compactControl)
-                                    .foregroundStyle(.white)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(1)
-                                    .fixedSize(horizontal: true, vertical: false)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(.blue, in: Capsule())
-                            }
-                            .layoutPriority(2)
-                            .fixedSize(horizontal: true, vertical: false)
-
-                            Spacer(minLength: 4)
-
-                            HStack(spacing: 4) {
-                                scheduleHeaderCapsuleButton(title: "Event", systemImage: "calendar.badge.plus", tint: Color.appPink) {
-                                    showingAddEvent = true
-                                }
-                                scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink) {
-                                    showingAddLog = true
-                                }
-                            }
-                            .layoutPriority(1)
-
-                            Button {
-                                withAnimation(.spring(duration: 0.25)) {
-                                    hideCompleted.toggle()
-                                }
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: hideCompleted ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
-                                        .font(AppTypography.navControl)
-                                    Text(hideCompleted ? "To Do" : "All")
-                                        .font(AppTypography.compactControl)
-                                        .lineLimit(1)
-                                        .minimumScaleFactor(1)
-                                }
-                                .foregroundStyle(hideCompleted ? Color.appPink : .secondary)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 6)
-                                .background(
-                                    Capsule()
-                                        .fill(hideCompleted ? Color.appPink.opacity(0.12) : Color(.secondarySystemBackground))
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .layoutPriority(1)
-                        }
-                        .padding(.horizontal)
-                        .padding(.top, 20)
-                        .padding(.bottom, 8)
-                    }
+                    // Shared Today header — shown in both list and calendar modes.
+                    scheduleDateHeaderBar
                 }
                 .background(Color(.systemGroupedBackground))
                 .modifier(InterfaceContentEntranceModifier(delay: 0))
@@ -240,6 +117,70 @@ struct ScheduleView: View {
                 )
             }
         }
+    }
+
+    /// Shared Today / date bar that appears above both list and calendar content.
+    @ViewBuilder
+    private var scheduleDateHeaderBar: some View {
+        HStack(alignment: .center, spacing: 6) {
+            HStack(spacing: 6) {
+                Text("Today")
+                    .font(AppTypography.sectionHeading)
+                    .lineLimit(1)
+                    .minimumScaleFactor(1)
+                Text(Date.now.formatted(.dateTime.day().month(.abbreviated)))
+                    .font(AppTypography.compactControl)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.blue, in: Capsule())
+            }
+            .layoutPriority(2)
+            .fixedSize(horizontal: true, vertical: false)
+
+            Spacer(minLength: 4)
+
+            HStack(spacing: 4) {
+                scheduleHeaderCapsuleButton(title: "Event", systemImage: "calendar.badge.plus", tint: Color.appPink) {
+                    showingAddEvent = true
+                }
+                scheduleHeaderCapsuleButton(title: "Log", systemImage: "doc.text", tint: Color.appPink) {
+                    showingAddLog = true
+                }
+            }
+            .layoutPriority(1)
+
+            Button {
+                withAnimation(.spring(duration: 0.25)) {
+                    hideCompleted.toggle()
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: hideCompleted ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        .font(AppTypography.navControl)
+                    Text(hideCompleted ? "To Do" : "All")
+                        .font(AppTypography.compactControl)
+                        .lineLimit(1)
+                        .minimumScaleFactor(1)
+                }
+                .foregroundStyle(hideCompleted ? Color.appPink : .secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(hideCompleted ? Color.appPink.opacity(0.12) : Color(.secondarySystemBackground))
+                )
+            }
+            .buttonStyle(.plain)
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(1)
+        }
+        .padding(.horizontal)
+        .padding(.top, 20)
+        .padding(.bottom, 8)
     }
 
     /// Header action chip: keep **+** and title on one line when horizontal space is tight.

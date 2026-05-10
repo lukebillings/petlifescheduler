@@ -4,6 +4,19 @@ import StoreKit
 import SwiftUI
 import UserNotifications
 
+/// Subscription plan currently selected on a paywall (onboarding step 11 or post-onboarding hard paywall).
+enum PaywallPlan: Equatable {
+    case monthly
+    case yearly
+}
+
+/// In-flight state for any paywall — drives spinners, button label, and disabled state.
+enum PaywallPurchaseState: Equatable {
+    case idle
+    case purchasing
+    case restoring
+}
+
 private enum HouseholdPetCount: Equatable {
     case unspecified
     case one
@@ -17,6 +30,18 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
     case weightLogging
     case walksAndActivities
     case feedingAndDailyCare
+
+    /// `UserDefaults` key for persisting the user's selection so post-onboarding paywalls
+    /// (after the user has finished onboarding) can keep showing the same personalization.
+    static let persistenceKey = "selectedFeatureInterest"
+
+    /// Convenience accessor that reads the persisted choice from `UserDefaults` (`nil` if unset).
+    static var persisted: OnboardingFeatureInterest? {
+        guard let raw = UserDefaults.standard.string(forKey: persistenceKey), !raw.isEmpty else {
+            return nil
+        }
+        return OnboardingFeatureInterest(rawValue: raw)
+    }
 
     var id: String { rawValue }
 
@@ -45,36 +70,87 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Rotating headline + icon on the paywall — tied to onboarding “main reason”.
-    var paywallRotatingFields: (text: String, systemImage: String) {
+    /// Big headline at the top of the paywall — interest-specific, with the user's pet woven in
+    /// when there's exactly one. Multi-pet households get plural copy that doesn't single out one
+    /// name (avoids awkward "Luna and all your pets's meds" possessive constructions).
+    func paywallHeadline(petName: String, ownsMultiplePets: Bool) -> String {
+        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasName = !trimmed.isEmpty && !ownsMultiplePets
+
         switch self {
         case .medicationCompliance:
-            return (
-                "Medication reminders and routines tailored to your pets—fewer misses, calmer routines.",
-                "pills.circle.fill"
-            )
+            if ownsMultiplePets { return "Never miss a dose for any of your pets" }
+            return hasName ? "Never miss \(trimmed)'s meds again" : "Never miss a dose again"
         case .petDetailsAndProfiles:
-            return (
-                "Profiles for each pet—vet info, identifiers, allergies, notes, whenever you need them.",
-                "text.book.closed.fill"
-            )
+            if ownsMultiplePets { return "Every pet's details in one place" }
+            return hasName ? "Everything about \(trimmed) in one place" : "Everything about your pet in one place"
         case .weightLogging:
-            return (
-                "Weights on a timeline so you spot changes early—with context per pet.",
-                "scalemass.fill"
-            )
+            if ownsMultiplePets { return "Track every pet's weight, spot changes early" }
+            return hasName ? "Track \(trimmed)'s weight, spot changes early" : "Track your pet's weight, spot changes early"
         case .walksAndActivities:
-            return (
-                "Walks and play in one timeline—nothing slips between handoffs or busy days.",
-                "figure.walk.circle.fill"
-            )
+            if ownsMultiplePets { return "Keep every pet's walks and play on track" }
+            return hasName ? "Keep \(trimmed)'s walks and play on track" : "Keep your pet's walks and play on track"
         case .feedingAndDailyCare:
-            return (
-                "Meals, water, and daily care on a single schedule—simple to follow and share.",
-                "fork.knife.circle.fill"
-            )
+            if ownsMultiplePets { return "Keep every pet fed and cared for, every day" }
+            return hasName ? "Keep \(trimmed) fed and cared for, every day" : "Keep your pet fed and cared for, every day"
         }
     }
+
+    /// Short caption shown under the "Yearly" label on the yearly plan card — anchors the value
+    /// of the higher-AOV plan to the user's stated reason for downloading.
+    var paywallYearlyCardCaption: String {
+        switch self {
+        case .medicationCompliance:  return "Best for medication routines"
+        case .petDetailsAndProfiles: return "Best for vet visits & emergencies"
+        case .weightLogging:         return "Best for long-term health tracking"
+        case .walksAndActivities:    return "Best for active households"
+        case .feedingAndDailyCare:   return "Best for daily routines"
+        }
+    }
+
+    /// Three concise check-mark bullets reinforcing the user's chosen interest — sit between the
+    /// rotating benefits and the plan cards so the value prop is visible without scrolling.
+    func paywallBullets(petName: String, ownsMultiplePets: Bool) -> [String] {
+        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let useName = !trimmed.isEmpty && !ownsMultiplePets
+        let possessive = useName ? "\(trimmed)'s" : "your pets'"
+        let nominative = useName ? trimmed : "your pets"
+
+        switch self {
+        case .medicationCompliance:
+            return [
+                "Reminders fire when \(possessive) meds are due",
+                "One tap to log a dose — synced across your household",
+                "Spot missed doses early with compliance trends",
+            ]
+        case .petDetailsAndProfiles:
+            return [
+                "Vet contacts, microchip, allergies, and notes for \(nominative)",
+                "Export a polished pet profile to PDF in seconds",
+                "Share full pet info with sitters or family instantly",
+            ]
+        case .weightLogging:
+            return [
+                useName ? "Log \(trimmed)'s weight in seconds — kg or lbs"
+                        : "Log your pets' weights in seconds — kg or lbs",
+                "Charts reveal trends over weeks and months",
+                "Set target weights and see progress at a glance",
+            ]
+        case .walksAndActivities:
+            return [
+                "Schedule walks and play for \(nominative)",
+                "Reminders so nothing slips between handoffs",
+                "Share the plan with everyone in your household",
+            ]
+        case .feedingAndDailyCare:
+            return [
+                "Meals, water, and treats for \(nominative) on one timeline",
+                "Reminders that won't double-feed when shared",
+                "Daily logs everyone in your household can check",
+            ]
+        }
+    }
+
 }
 
 /// Diagonal shimmer across the onboarding bottom CTA; `TimelineView` keeps animation reliable on every step (including paywall).
@@ -123,6 +199,9 @@ struct OnboardingView: View {
     @AppStorage(UserProfileStorage.displayNameKey) private var userDisplayName = ""
 
     @State private var subscriptionProducts = SubscriptionProductLoader()
+    @State private var entitlementStore = SubscriptionEntitlementStore.shared
+    @State private var paywallPurchaseState: PaywallPurchaseState = .idle
+    @State private var paywallErrorMessage: String?
     @State private var step = 0
     @State private var petName = ""
     @State private var animalType: AnimalType = .dog
@@ -131,7 +210,7 @@ struct OnboardingView: View {
     @State private var triggerPhotoPicker = false
     @State private var activityName = "Walk"
     @State private var activityTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: .now) ?? .now
-    @State private var paywallPlan: Step5Paywall.Plan = .monthly
+    @State private var paywallPlan: PaywallPlan = .monthly
     @State private var householdPetCount: HouseholdPetCount = .one
     @State private var selectedFeatureInterest: OnboardingFeatureInterest?
     @State private var showHouseholdInviteSheet = false
@@ -196,9 +275,13 @@ struct OnboardingView: View {
                     Step5Paywall(
                         pet: previewPet,
                         ownsMultiplePets: householdPetCount == .two || householdPetCount == .threePlus,
+                        petCount: petCountForPricing,
                         featureInterest: selectedFeatureInterest,
                         products: subscriptionProducts,
-                        selectedPlan: $paywallPlan
+                        selectedPlan: $paywallPlan,
+                        purchaseState: paywallPurchaseState,
+                        errorMessage: paywallErrorMessage,
+                        onRestorePurchases: { Task { await beginRestorePurchases() } }
                     )
                         .transition(slideTransition)
                 default:
@@ -210,7 +293,9 @@ struct OnboardingView: View {
 
             // Fixed bottom bar — identical position on every screen
             VStack(spacing: 14) {
-                // Skip — optional photo, schedule, notifications, or household invite
+                // Skip — optional photo, schedule, notifications, or household invite.
+                // The paywall (step 11) intentionally has no skip: a hard gate after onboarding
+                // means tapping "Maybe later" would just send the user to another paywall.
                 if step == 3 || step == 4 || step == 5 || step == 10 {
                     Button {
                         if step == 3 {
@@ -240,6 +325,10 @@ struct OnboardingView: View {
                         Group {
                             if step == 10 {
                                 Label("Invite household members", systemImage: "person.badge.plus")
+                            } else if step == 11, paywallPurchaseState == .purchasing {
+                                ProgressView()
+                                    .progressViewStyle(.circular)
+                                    .tint(.white)
                             } else {
                                 Text(buttonLabel)
                             }
@@ -275,7 +364,17 @@ struct OnboardingView: View {
                 heightUnitDraft = heightUnitRaw
             }
             if newStep == 11 {
+                paywallErrorMessage = nil
                 Task { await subscriptionProducts.refresh() }
+                // Returning users who already have an active subscription (e.g. fresh install,
+                // signed into the same Apple Account) should never see the paywall. Refresh the
+                // entitlement first so we use a fresh value, not whatever was cached at launch.
+                Task {
+                    await entitlementStore.refreshFromCurrentEntitlements()
+                    if entitlementStore.isSubscribed {
+                        completeOnboarding()
+                    }
+                }
             }
         }
     }
@@ -285,7 +384,10 @@ struct OnboardingView: View {
         case 3: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 5: return "Enable Notifications"
         case 11:
-            return "Continue"
+            switch paywallPlan {
+            case .monthly: return "Continue with Monthly"
+            case .yearly:  return "Continue with Yearly"
+            }
         default: return "Continue"
         }
     }
@@ -311,8 +413,32 @@ struct OnboardingView: View {
             return petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 9:
             return selectedFeatureInterest == nil
+        case 11:
+            // Block the CTA while StoreKit is mid-flight, or until the selected plan's product
+            // has loaded. The user can always tap "Maybe later" if products fail to load.
+            if paywallPurchaseState != .idle { return true }
+            return selectedPaywallProduct == nil
         default:
             return false
+        }
+    }
+
+    /// The StoreKit product matching the user's currently-selected plan (or `nil` while loading).
+    private var selectedPaywallProduct: Product? {
+        switch paywallPlan {
+        case .monthly: return subscriptionProducts.monthlyProduct
+        case .yearly:  return subscriptionProducts.yearlyProduct
+        }
+    }
+
+    /// Numeric pet count used by the yearly card to compute per-pet/month pricing. "3+" maps to
+    /// `3` so the displayed per-pet price stays honest for larger households (smaller divisor =
+    /// higher displayed price = closer to truth than e.g. dividing by 5).
+    private var petCountForPricing: Int {
+        switch householdPetCount {
+        case .unspecified, .one: return 1
+        case .two:               return 2
+        case .threePlus:         return 3
         }
     }
 
@@ -357,13 +483,66 @@ struct OnboardingView: View {
             weightUnitRaw = weightUnitDraft
         case 8:
             heightUnitRaw = heightUnitDraft
+        case 9:
+            // Persist the user's "main reason" so the post-onboarding paywall (and any future
+            // paywall) can keep the same personalization after onboarding is done.
+            UserDefaults.standard.set(
+                selectedFeatureInterest?.rawValue ?? "",
+                forKey: OnboardingFeatureInterest.persistenceKey
+            )
         case 11:
-            completeOnboarding()
+            Task { await beginPurchaseOfSelectedPlan() }
             return
         default:
             break
         }
         withAnimation { step += 1 }
+    }
+
+    /// Drives the paywall CTA: kicks off StoreKit purchase, finishes onboarding on success,
+    /// and surfaces a user-readable error otherwise. Stays on step 11 if the user cancels
+    /// so they can pick a different plan or use "Maybe later".
+    private func beginPurchaseOfSelectedPlan() async {
+        guard let product = selectedPaywallProduct else {
+            paywallErrorMessage = "Couldn't load subscription. Please try again."
+            return
+        }
+        paywallErrorMessage = nil
+        paywallPurchaseState = .purchasing
+        defer { paywallPurchaseState = .idle }
+
+        do {
+            switch try await entitlementStore.purchase(product) {
+            case .success:
+                HapticManager.impact(.medium)
+                completeOnboarding()
+            case .userCancelled:
+                break
+            case .pending:
+                paywallErrorMessage = "Your purchase is pending approval. You'll get access as soon as it's approved."
+            }
+        } catch {
+            paywallErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    /// Restore Purchases handler for the paywall footer. Finishes onboarding if Apple confirms
+    /// an active entitlement; otherwise shows a clear "no subscription found" message.
+    private func beginRestorePurchases() async {
+        paywallErrorMessage = nil
+        paywallPurchaseState = .restoring
+        defer { paywallPurchaseState = .idle }
+
+        do {
+            if try await entitlementStore.restore() {
+                HapticManager.impact(.light)
+                completeOnboarding()
+            } else {
+                paywallErrorMessage = "No active subscription found on this Apple Account."
+            }
+        } catch {
+            paywallErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
     }
 
     private func addPetIfNeeded() {
@@ -1121,40 +1300,27 @@ private struct StepHouseholdInvite: View {
 private struct Step5Paywall: View {
     let pet: Pet
     var ownsMultiplePets: Bool
+    /// Number of pets in the household (1, 2, or 3 — `3` is used for "3+" so per-pet/month
+    /// framing stays honest for households with more than three pets).
+    var petCount: Int
     var featureInterest: OnboardingFeatureInterest?
     var products: SubscriptionProductLoader
-    @Binding var selectedPlan: Plan
+    @Binding var selectedPlan: PaywallPlan
+    var purchaseState: PaywallPurchaseState
+    var errorMessage: String?
+    var onRestorePurchases: () -> Void
 
-    enum Plan { case monthly, yearly }
-
-    private static let defaultRotatingBenefits: [PaywallRotatingBenefitItem] = [
-        PaywallRotatingBenefitItem(
-            text: "Every walk, meal, and med—in one timeline per pet.",
-            systemImage: "calendar.badge.clock"
-        ),
-        PaywallRotatingBenefitItem(
-            text: "Reminders before what matters, so nothing slips.",
-            systemImage: "bell.badge.fill"
-        ),
-        PaywallRotatingBenefitItem(
-            text: "Premium experience—no ads, just easier pet care.",
-            systemImage: "hand.thumbsup.fill"
-        ),
-    ]
-
-    private var rotatingBenefits: [PaywallRotatingBenefitItem] {
-        var items: [PaywallRotatingBenefitItem] = []
-        if let featureInterest {
-            let f = featureInterest.paywallRotatingFields
-            items.append(PaywallRotatingBenefitItem(text: f.text, systemImage: f.systemImage))
-        }
-        for item in Self.defaultRotatingBenefits where !items.contains(item) {
-            items.append(item)
-        }
-        return items
+    /// Preview slides for the paged carousel — ordered so the user's "main reason" choice from
+    /// step 9 surfaces first. Falls back to schedule → reminder → weight chart for users who
+    /// haven't picked an interest.
+    private var previewSlides: [PaywallPreviewSlide] {
+        paywallPreviewSlides(petName: pet.name, animalType: pet.animalType, prioritized: featureInterest)
     }
 
     private var paywallHeadline: String {
+        if let featureInterest {
+            return featureInterest.paywallHeadline(petName: pet.name, ownsMultiplePets: ownsMultiplePets)
+        }
         let name = pet.name.trimmingCharacters(in: .whitespacesAndNewlines)
         if name.isEmpty {
             return "Get started today!"
@@ -1165,60 +1331,177 @@ private struct Step5Paywall: View {
         return "Keep \(name) on schedule"
     }
 
+    /// Three short check-mark bullets — interest-specific when the user picked one in step 9.
+    private var paywallBullets: [String] {
+        featureInterest?.paywallBullets(petName: pet.name, ownsMultiplePets: ownsMultiplePets)
+            ?? Self.defaultPaywallBullets
+    }
+
+    /// Generic 3-bullet fallback for users who somehow reach the paywall without selecting an
+    /// interest (e.g. a future flow that skips step 9).
+    private static let defaultPaywallBullets: [String] = [
+        "Every walk, meal, and med — in one timeline per pet",
+        "Reminders before what matters, so nothing slips",
+        "Premium experience — no ads, just easier pet care",
+    ]
+
     var body: some View {
         VStack(spacing: 0) {
-            VStack(alignment: .center, spacing: 0) {
-                Text(paywallHeadline)
-                    .font(AppTypography.screenTitle)
-                    .multilineTextAlignment(.center)
-                    .minimumScaleFactor(0.78)
-                    .lineLimit(4)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 16)
-
-                PaywallRotatingBenefits(items: rotatingBenefits, interval: 3.5)
-
-                Group {
-                    if products.isLoading {
-                        HStack {
-                            Spacer()
-                            ProgressView("Loading plans…")
-                            Spacer()
-                        }
-                        .padding(.vertical, 16)
-                    } else if products.loadError != nil {
-                        VStack(spacing: 8) {
-                            Text("Couldn’t load prices")
-                                .font(AppTypography.secondaryLabel)
-                                .foregroundStyle(.secondary)
-                            Button("Try again") {
-                                Task { await products.refresh() }
-                            }
-                            .font(AppTypography.secondaryEmphasis)
-                        }
-                        .padding(.vertical, 12)
-                    } else {
-                        planCards
-                    }
-                }
-                .padding(.horizontal, 28)
-                .padding(.top, 18)
-
-                PaywallSubscriptionFooter(
-                    includeFreeTrialMention: products.isLoading
-                        ? nil
-                        : (products.yearlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial)
-                )
-                .padding(.horizontal, 28)
-                .padding(.top, 14)
-                .padding(.bottom, 0)
-                .background(Color(.systemBackground))
-            }
-            .padding(.top, 20)
-            .frame(maxWidth: .infinity, alignment: .top)
-
+            PaywallContentBody(
+                headline: paywallHeadline,
+                previewSlides: previewSlides,
+                personalizedBullets: paywallBullets,
+                yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
+                petCount: petCount,
+                products: products,
+                selectedPlan: $selectedPlan,
+                purchaseState: purchaseState,
+                errorMessage: errorMessage,
+                onRestorePurchases: onRestorePurchases
+            )
             Spacer(minLength: 0)
         }
+    }
+}
+
+/// Builds the canonical preview-carousel slide list, optionally promoting one slide to the first
+/// position based on the user's onboarding "main reason" choice. Both paywalls (onboarding and
+/// post-onboarding) call this so the ordering logic stays in one place.
+private func paywallPreviewSlides(
+    petName: String,
+    animalType: AnimalType,
+    prioritized featureInterest: OnboardingFeatureInterest?
+) -> [PaywallPreviewSlide] {
+    var slides: [PaywallPreviewSlide] = [
+        .scheduleTimeline(petName: petName, animalType: animalType),
+        .reminderPush(petName: petName, animalType: animalType),
+        .weightChart,
+    ]
+
+    guard let featureInterest else { return slides }
+
+    let priorityID: String
+    switch featureInterest {
+    case .weightLogging:
+        priorityID = "weight"
+    case .medicationCompliance, .feedingAndDailyCare, .walksAndActivities:
+        priorityID = "reminder"
+    case .petDetailsAndProfiles:
+        priorityID = "schedule"
+    }
+
+    if let priorityIdx = slides.firstIndex(where: { $0.id == priorityID }), priorityIdx != 0 {
+        let priority = slides.remove(at: priorityIdx)
+        slides.insert(priority, at: 0)
+    }
+    return slides
+}
+
+/// Headline + paged preview carousel + plan cards + error + footer. Shared between the
+/// in-onboarding paywall and the post-onboarding hard paywall so both look and behave identically.
+private struct PaywallContentBody: View {
+    let headline: String
+    /// SwiftUI mocks shown in the auto-advancing paged carousel above the plan cards. The first
+    /// slide is what most users see, so callers should put the most relevant preview first.
+    let previewSlides: [PaywallPreviewSlide]
+    /// 0–3 short personalized bullets shown above the plan cards. Empty array hides the section.
+    var personalizedBullets: [String] = []
+    /// Small caption shown under the "Yearly" label on the yearly plan card. `nil` to hide.
+    var yearlyCardCaption: String? = nil
+    /// Number of pets in the household — drives per-day vs. per-pet/month framing on the yearly card.
+    var petCount: Int = 1
+    let products: SubscriptionProductLoader
+    @Binding var selectedPlan: PaywallPlan
+    let purchaseState: PaywallPurchaseState
+    let errorMessage: String?
+    let onRestorePurchases: () -> Void
+
+    var body: some View {
+        VStack(alignment: .center, spacing: 0) {
+            Text(headline)
+                .font(AppTypography.screenTitle)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.78)
+                .lineLimit(4)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 16)
+
+            PaywallPreviewCarousel(slides: previewSlides, interval: 3.5)
+
+            if !personalizedBullets.isEmpty {
+                personalizedBulletList
+                    .padding(.horizontal, 28)
+                    .padding(.top, 6)
+            }
+
+            Group {
+                if products.isLoading {
+                    HStack {
+                        Spacer()
+                        ProgressView("Loading plans…")
+                        Spacer()
+                    }
+                    .padding(.vertical, 16)
+                } else if products.loadError != nil {
+                    VStack(spacing: 8) {
+                        Text("Couldn’t load prices")
+                            .font(AppTypography.secondaryLabel)
+                            .foregroundStyle(.secondary)
+                        Button("Try again") {
+                            Task { await products.refresh() }
+                        }
+                        .font(AppTypography.secondaryEmphasis)
+                    }
+                    .padding(.vertical, 12)
+                } else {
+                    planCards
+                }
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 18)
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 28)
+                    .padding(.top, 10)
+                    .accessibilityLabel("Subscription error: \(errorMessage)")
+            }
+
+            // Risk-reversal microcopy — sits directly above the cold legal disclosures so the
+            // last thing the user reads before tapping the CTA is a friendly reassurance, not
+            // fine print. Single-line, small icon, primary text color so it doesn't blend with
+            // the secondary legal copy below.
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.shield.fill")
+                    .font(.footnote)
+                    .foregroundStyle(Color.appPink)
+                    .accessibilityHidden(true)
+                Text("Cancel anytime in Settings")
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(.primary)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 14)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("You can cancel anytime in Settings.")
+
+            PaywallSubscriptionFooter(
+                includeFreeTrialMention: products.isLoading
+                    ? nil
+                    : (products.yearlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial),
+                isRestoring: purchaseState == .restoring,
+                onRestorePurchases: onRestorePurchases
+            )
+            .padding(.horizontal, 28)
+            .padding(.top, 10)
+            .padding(.bottom, 0)
+            .background(Color(.systemBackground))
+        }
+        .padding(.top, 20)
+        .frame(maxWidth: .infinity, alignment: .top)
     }
 
     @ViewBuilder
@@ -1234,60 +1517,394 @@ private struct Step5Paywall: View {
                 PaywallYearlyCard(
                     yearly: y,
                     monthly: products.monthlyProduct,
+                    topCaption: yearlyCardCaption,
+                    petCount: petCount,
                     isSelected: selectedPlan == .yearly
                 ) { selectedPlan = .yearly }
             }
         }
-        // Extra space so the selected plan’s stroke isn’t clipped against the footer region.
+        // Extra space so the selected plan’s stroke isn't clipped against the footer region.
         .padding(.bottom, 4)
     }
-}
 
-/// One paywall carousel slide: headline + SF Symbol shown below it.
-private struct PaywallRotatingBenefitItem: Equatable {
-    var text: String
-    var systemImage: String
-}
-
-/// Single large benefit at a time with an icon beneath; advances automatically.
-private struct PaywallRotatingBenefits: View {
-    let items: [PaywallRotatingBenefitItem]
-    var interval: TimeInterval = 3.5
-
-    var body: some View {
-        Group {
-            if items.isEmpty {
-                Color.clear.frame(height: 180)
-            } else {
-                TimelineView(.periodic(from: .now, by: interval)) { timeline in
-                    let count = items.count
-                    let idx = Int(timeline.date.timeIntervalSince1970 / interval) % count
-                    let item = items[idx]
-
-                    VStack(spacing: 18) {
-                        Text(item.text)
-                            .font(AppTypography.panelTitle)
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(.primary)
-                            .minimumScaleFactor(0.88)
-                            .lineLimit(4)
-                            .frame(maxWidth: .infinity)
-
-                        Image(systemName: item.systemImage)
-                            .font(.system(size: 40, weight: .medium))
-                            .foregroundStyle(Color.appPink.gradient)
-                            .accessibilityHidden(true)
-                    }
-                    .frame(minHeight: 175, alignment: .center)
-                    .frame(maxWidth: .infinity)
-                    .contentTransition(.opacity)
-                    .animation(.easeInOut(duration: 0.45), value: idx)
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel(item.text)
+    @ViewBuilder
+    private var personalizedBulletList: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ForEach(Array(personalizedBullets.enumerated()), id: \.offset) { _, bullet in
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.body)
+                        .foregroundStyle(Color.appPink)
+                        .accessibilityHidden(true)
+                    Text(bullet)
+                        .font(AppTypography.secondaryLabel)
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
-        .padding(.horizontal, 22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Paywall preview carousel
+
+/// A single slide in the paywall preview carousel. Each case renders a SwiftUI mock that uses the
+/// app's actual design language (typography, colors, layout) so we don't need to ship and maintain
+/// PNG screenshots — the mocks update automatically when the real UI evolves.
+private enum PaywallPreviewSlide: Equatable, Identifiable {
+    case scheduleTimeline(petName: String, animalType: AnimalType)
+    case reminderPush(petName: String, animalType: AnimalType)
+    case weightChart
+
+    var id: String {
+        switch self {
+        case .scheduleTimeline: return "schedule"
+        case .reminderPush:     return "reminder"
+        case .weightChart:      return "weight"
+        }
+    }
+
+    var caption: String {
+        switch self {
+        case .scheduleTimeline: return "Every walk, meal, and med — at a glance"
+        case .reminderPush:     return "Reminders before what matters"
+        case .weightChart:      return "Track weight, spot changes early"
+        }
+    }
+}
+
+/// Swipeable, auto-advancing paged carousel of SwiftUI app previews. Replaces the older text-only
+/// `PaywallRotatingBenefits` because image-led paywalls reliably outperform text-only paywalls.
+/// User swipes interrupt the auto-advance and continue cycling from the new position on the
+/// next tick.
+private struct PaywallPreviewCarousel: View {
+    let slides: [PaywallPreviewSlide]
+    var interval: TimeInterval = 3.5
+
+    @State private var currentIndex: Int = 0
+    /// Stored as `@State` so the publisher is created once per view instance, not on every body
+    /// re-evaluation (which would cause duplicate ticks).
+    @State private var autoAdvance = Timer.publish(every: 3.5, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        VStack(spacing: 12) {
+            TabView(selection: $currentIndex) {
+                ForEach(Array(slides.enumerated()), id: \.offset) { idx, slide in
+                    slideView(slide)
+                        .padding(.horizontal, 28)
+                        .tag(idx)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .frame(height: 220)
+
+            Group {
+                if slides.indices.contains(currentIndex) {
+                    Text(slides[currentIndex].caption)
+                        .font(AppTypography.secondaryEmphasis)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.primary)
+                        .padding(.horizontal, 24)
+                }
+            }
+            .frame(minHeight: 36)
+            .id("caption-\(currentIndex)")
+            .transition(.opacity)
+            .animation(.easeInOut(duration: 0.3), value: currentIndex)
+
+            HStack(spacing: 6) {
+                ForEach(0..<slides.count, id: \.self) { idx in
+                    Capsule()
+                        .fill(idx == currentIndex ? Color.appPink : Color.gray.opacity(0.3))
+                        .frame(width: idx == currentIndex ? 16 : 6, height: 6)
+                        .animation(.spring(duration: 0.3), value: currentIndex)
+                }
+            }
+        }
+        .onReceive(autoAdvance) { _ in
+            guard !slides.isEmpty else { return }
+            withAnimation(.easeInOut(duration: 0.45)) {
+                currentIndex = (currentIndex + 1) % slides.count
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(slides.indices.contains(currentIndex) ? slides[currentIndex].caption : "App preview")
+    }
+
+    @ViewBuilder
+    private func slideView(_ slide: PaywallPreviewSlide) -> some View {
+        switch slide {
+        case .scheduleTimeline(let name, let type):
+            PaywallSchedulePreviewMock(petName: name, animalType: type)
+        case .reminderPush(let name, _):
+            PaywallReminderPushPreviewMock(petName: name)
+        case .weightChart:
+            PaywallWeightChartPreviewMock()
+        }
+    }
+}
+
+/// Mocked "Today's schedule" card with three rows — first one done, two upcoming. Uses the
+/// pet's first initial in the avatar tint so it feels personal even without a photo.
+private struct PaywallSchedulePreviewMock: View {
+    let petName: String
+    let animalType: AnimalType
+
+    private var displayName: String {
+        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "Your pet" : trimmed
+    }
+
+    private var avatarInitial: String {
+        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return "P" }
+        return String(trimmed.uppercased().prefix(1))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 6) {
+                Text("Today")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text(displayName)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                Image(systemName: animalType.systemImage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 12)
+            .padding(.bottom, 10)
+
+            Divider()
+
+            VStack(spacing: 0) {
+                scheduleRow(time: "8:00 AM", activity: "Walk", icon: "figure.walk", done: true)
+                Divider().padding(.leading, 56)
+                scheduleRow(time: "12:00 PM", activity: "Lunch", icon: "fork.knife", done: false)
+                Divider().padding(.leading, 56)
+                scheduleRow(time: "6:00 PM", activity: "Heart pill", icon: "pills.fill", done: false)
+            }
+        }
+        .frame(maxWidth: 320)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 14, y: 6)
+    }
+
+    private func scheduleRow(time: String, activity: String, icon: String, done: Bool) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.appPink.opacity(0.18))
+                    .frame(width: 32, height: 32)
+                Text(avatarInitial)
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Color.appPink)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(time)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Image(systemName: icon)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(activity)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                }
+            }
+
+            Spacer(minLength: 4)
+
+            Image(systemName: done ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(done ? Color.green : Color.gray.opacity(0.4))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+    }
+}
+
+/// Mocked iOS-style notification banner showing a personalized reminder push.
+private struct PaywallReminderPushPreviewMock: View {
+    let petName: String
+
+    private var displayName: String {
+        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "your pet" : trimmed
+    }
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Spacer(minLength: 28)
+
+            HStack(spacing: 12) {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.appPink)
+                    .frame(width: 38, height: 38)
+                    .overlay(
+                        Image(systemName: "pawprint.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(.white)
+                    )
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack {
+                        Text("PETSCHEDULE")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .tracking(0.4)
+                        Spacer(minLength: 4)
+                        Text("now")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("Time for \(displayName)'s evening meds")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .frame(maxWidth: 320)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(.ultraThinMaterial)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.gray.opacity(0.15), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.14), radius: 16, y: 8)
+
+            // Subtle hint that this is a Lock-Screen-style preview
+            HStack(spacing: 4) {
+                Image(systemName: "lock.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Text("Reminder delivered just before it's due")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 0)
+        }
+    }
+}
+
+/// Mocked weight tracking card with a small line chart trending downward (healthy weight loss).
+private struct PaywallWeightChartPreviewMock: View {
+    private let dataPoints: [Double] = [22.0, 21.6, 21.7, 21.1, 20.9, 20.5]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Weight")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Last 6 weeks")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.down.right")
+                    Text("-1.5 kg")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color.green)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color.green.opacity(0.15)))
+            }
+
+            chart
+        }
+        .padding(14)
+        .frame(maxWidth: 320, maxHeight: 200)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 14, y: 6)
+    }
+
+    @ViewBuilder
+    private var chart: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let height = geo.size.height
+            let xStep = width / Double(max(dataPoints.count - 1, 1))
+            let minY = dataPoints.min() ?? 0
+            let maxY = dataPoints.max() ?? 1
+            let yRange = max(maxY - minY, 0.001)
+            let inset: Double = 0.12
+
+            let points: [CGPoint] = dataPoints.enumerated().map { idx, val in
+                let x = xStep * Double(idx)
+                let normalized = (val - minY) / yRange
+                let y = (1 - normalized) * height * (1 - 2 * inset) + height * inset
+                return CGPoint(x: x, y: y)
+            }
+
+            ZStack {
+                // Filled area under the line — soft pink gradient.
+                Path { path in
+                    guard let first = points.first else { return }
+                    path.move(to: CGPoint(x: first.x, y: height))
+                    path.addLine(to: first)
+                    for p in points.dropFirst() { path.addLine(to: p) }
+                    if let last = points.last {
+                        path.addLine(to: CGPoint(x: last.x, y: height))
+                    }
+                    path.closeSubpath()
+                }
+                .fill(
+                    LinearGradient(
+                        colors: [Color.appPink.opacity(0.28), Color.appPink.opacity(0)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+                // Trend line.
+                Path { path in
+                    guard let first = points.first else { return }
+                    path.move(to: first)
+                    for p in points.dropFirst() { path.addLine(to: p) }
+                }
+                .stroke(Color.appPink, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+
+                // Data points.
+                ForEach(0..<points.count, id: \.self) { idx in
+                    Circle()
+                        .fill(Color(.systemBackground))
+                        .frame(width: 7, height: 7)
+                        .overlay(
+                            Circle().stroke(Color.appPink, lineWidth: 1.5)
+                        )
+                        .position(points[idx])
+                }
+            }
+        }
     }
 }
 
@@ -1296,12 +1913,52 @@ private struct PaywallYearlyCard: View {
     let yearly: Product
     /// Compared to \(monthly.price × 12) for savings copy; omit if unavailable.
     var monthly: Product?
+    /// Optional tagline shown under "Yearly" — used to anchor the yearly plan to the user's
+    /// stated reason for downloading (e.g. "Best for medication routines").
+    var topCaption: String? = nil
+    /// Number of pets in the household. `1` shows per-day framing; `>1` shows per-pet/month
+    /// framing. Per-day pricing converts higher because the number feels trivially small.
+    var petCount: Int = 1
     var isSelected: Bool
     var onSelect: () -> Void
 
     private var effectivePerMonthFormatted: String {
         let perMonth = yearly.price / Decimal(12)
         return perMonth.formatted(yearly.priceFormatStyle)
+    }
+
+    /// Currency formatter that rounds **up** to the storefront currency's natural precision so
+    /// "Less than $X/day" wording is always honest (we never claim a price lower than reality).
+    private var ceilingCurrencyFormatter: NumberFormatter {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.locale = yearly.priceFormatStyle.locale
+        f.roundingMode = .up
+        return f
+    }
+
+    private func formatCeiling(_ value: Decimal) -> String {
+        ceilingCurrencyFormatter.string(from: NSDecimalNumber(decimal: value)) ?? value.formatted(yearly.priceFormatStyle)
+    }
+
+    /// Per-day price, ceiled. e.g. $99/year → "$0.27".
+    private var perDayCeilingFormatted: String {
+        formatCeiling(yearly.price / Decimal(365))
+    }
+
+    /// Per-pet, per-month price, ceiled. e.g. $99/year ÷ 12 ÷ 3 pets → "$2.75".
+    private var perPetPerMonthCeilingFormatted: String {
+        let perPetMonth = yearly.price / Decimal(12) / Decimal(max(petCount, 1))
+        return formatCeiling(perPetMonth)
+    }
+
+    /// Subtitle under the per-year price. Per-pet/month framing for multi-pet households,
+    /// per-day framing otherwise — both prefixed with "Less than" since the formatter ceilings.
+    private var pricingSubtitleText: String {
+        if petCount > 1 {
+            return "Less than \(perPetPerMonthCeilingFormatted) per pet/month"
+        }
+        return "Less than \(perDayCeilingFormatted)/day"
     }
 
     /// Rounded percent off 12× monthly (`nil` if not cheaper / no monthly product).
@@ -1323,27 +1980,39 @@ private struct PaywallYearlyCard: View {
     }
 
     private var accessibilitySubtitle: String {
-        let base = "\(yearly.displayPrice) per year. Approximately \(effectivePerMonthFormatted) per month."
+        var parts: [String] = []
+        if let topCaption { parts.append(topCaption) }
+        parts.append("\(yearly.displayPrice) per year.")
+        parts.append("\(pricingSubtitleText).")
         if let yearlySavingsPercent {
-            return "\(base) Save \(yearlySavingsPercent) percent versus twelve months billed monthly."
+            parts.append("Save \(yearlySavingsPercent) percent versus twelve months billed monthly.")
         }
-        return base
+        return parts.joined(separator: " ")
     }
 
     var body: some View {
         Button(action: onSelect) {
             ZStack(alignment: .top) {
                 HStack(alignment: .center, spacing: 8) {
-                    Text("Yearly")
-                        .font(AppTypography.secondaryEmphasis)
-                        .multilineTextAlignment(.leading)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Yearly")
+                            .font(AppTypography.secondaryEmphasis)
+                            .multilineTextAlignment(.leading)
+                        if let topCaption {
+                            Text(topCaption)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.leading)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                     Spacer(minLength: 8)
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("\(yearly.displayPrice) per year")
                             .font(.footnote)
                             .fontWeight(.regular)
                             .foregroundStyle(.primary)
-                        Text("~\(effectivePerMonthFormatted) per month")
+                        Text(pricingSubtitleText)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
@@ -1418,9 +2087,20 @@ private struct PaywallMonthlyCard: View {
     }
 }
 
+/// Centralized legal URLs used by the paywall footer. Kept as placeholders that match the
+/// strings in `SettingsView`; update both when the real public URLs are ready.
+private enum PaywallLegalURLs {
+    static let privacy = URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy")!
+    static let terms = URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions")!
+    static let tos = URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions")!
+}
+
 private struct PaywallSubscriptionFooter: View {
     /// `nil` while loading — show non-trial wording until product metadata resolves (avoids flashing trial copy).
     var includeFreeTrialMention: Bool? = nil
+    /// True while a Restore is in progress; the Restore button shows a spinner and is disabled.
+    var isRestoring: Bool = false
+    var onRestorePurchases: () -> Void = {}
 
     private static let disclosureNoTrialLines: [String] = [
         "Charges your Apple Account when you subscribe.",
@@ -1456,7 +2136,7 @@ private struct PaywallSubscriptionFooter: View {
             VStack(spacing: 8) {
                 HStack {
                     Spacer(minLength: 0)
-                    footerLink(title: "Restore Purchases", font: .caption2, minScale: 1.0) {}
+                    restorePurchasesLink
                     Spacer(minLength: 0)
                 }
 
@@ -1477,6 +2157,27 @@ private struct PaywallSubscriptionFooter: View {
         .frame(maxWidth: .infinity)
     }
 
+    @ViewBuilder
+    private var restorePurchasesLink: some View {
+        Button(action: onRestorePurchases) {
+            HStack(spacing: 6) {
+                if isRestoring {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .controlSize(.mini)
+                }
+                Text(isRestoring ? "Restoring…" : "Restore Purchases")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .allowsTightening(true)
+            }
+        }
+        .buttonStyle(.plain)
+        .disabled(isRestoring)
+        .accessibilityLabel("Restore Purchases")
+    }
+
     /// Privacy / terms row only (Restore is on its own line above).
     private func paywallPolicyLinkStrip(
         spacingBetweenItems: CGFloat,
@@ -1484,11 +2185,11 @@ private struct PaywallSubscriptionFooter: View {
         minScale: CGFloat = 1.0
     ) -> some View {
         HStack(spacing: spacingBetweenItems) {
-            footerLink(title: "Privacy Policy", font: captionFont, minScale: minScale) {}
+            footerLinkURL(title: "Privacy Policy", url: PaywallLegalURLs.privacy, font: captionFont, minScale: minScale)
             middotDivider(font: captionFont)
-            footerLink(title: "Terms and Conditions", font: captionFont, minScale: minScale) {}
+            footerLinkURL(title: "Terms and Conditions", url: PaywallLegalURLs.terms, font: captionFont, minScale: minScale)
             middotDivider(font: captionFont)
-            footerLink(title: "Terms of Use (EULA)", font: captionFont, minScale: minScale) {}
+            footerLinkURL(title: "Terms of Use (EULA)", url: PaywallLegalURLs.tos, font: captionFont, minScale: minScale)
         }
     }
 
@@ -1499,13 +2200,13 @@ private struct PaywallSubscriptionFooter: View {
             .baselineOffset(-0.5)
     }
 
-    private func footerLink(
+    private func footerLinkURL(
         title: String,
+        url: URL,
         font: Font,
-        minScale: CGFloat,
-        action: @escaping () -> Void
+        minScale: CGFloat
     ) -> some View {
-        Button(action: action) {
+        Link(destination: url) {
             Text(title)
                 .font(font)
                 .foregroundStyle(.secondary)
@@ -1513,7 +2214,6 @@ private struct PaywallSubscriptionFooter: View {
                 .allowsTightening(true)
                 .minimumScaleFactor(minScale)
         }
-        .buttonStyle(.plain)
     }
 }
 
@@ -1552,7 +2252,188 @@ final class SubscriptionProductLoader {
     }
 }
 
+// MARK: - Post-onboarding hard paywall
+
+/// Full-screen subscription gate shown whenever the user has finished onboarding but does not
+/// have an active premium entitlement. Re-uses the exact paywall body from onboarding for visual
+/// consistency, but exposes only **Subscribe** and **Restore Purchases** — no skip path.
+///
+/// The view observes `SubscriptionEntitlementStore.shared`; once `isSubscribed` flips to `true`
+/// (purchase succeeded, restore succeeded, or a renewal arrived via `Transaction.updates`), the
+/// owner (`PetScheduleApp`) re-renders and replaces this view with `HomeView`.
+struct PostOnboardingPaywallView: View {
+    @Bindable var viewModel: HomeViewModel
+
+    @State private var products = SubscriptionProductLoader()
+    @State private var entitlementStore = SubscriptionEntitlementStore.shared
+    @State private var selectedPlan: PaywallPlan = .monthly
+    @State private var purchaseState: PaywallPurchaseState = .idle
+    @State private var errorMessage: String?
+    /// The user's "main reason" choice from onboarding step 9 (persisted to `UserDefaults`).
+    /// Drives the personalized headline, plan-card caption, and bullets after onboarding.
+    @AppStorage(OnboardingFeatureInterest.persistenceKey) private var persistedFeatureInterestRaw: String = ""
+
+    private var featureInterest: OnboardingFeatureInterest? {
+        OnboardingFeatureInterest(rawValue: persistedFeatureInterestRaw)
+    }
+
+    private var firstPet: Pet? { viewModel.pets.first }
+    private var ownsMultiplePets: Bool { viewModel.pets.count > 1 }
+    private var petName: String { firstPet?.name ?? "" }
+    /// Real household size (clamped to >= 1 so the per-pet/month divisor never hits zero on a
+    /// fresh install with no pets yet).
+    private var petCountForPricing: Int { max(viewModel.pets.count, 1) }
+
+    private var headline: String {
+        if let featureInterest {
+            return featureInterest.paywallHeadline(petName: petName, ownsMultiplePets: ownsMultiplePets)
+        }
+        let name = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty {
+            return "Unlock PetSchedule Premium"
+        }
+        if ownsMultiplePets {
+            return "Keep \(name) and all your pets on schedule"
+        }
+        return "Keep \(name) on schedule"
+    }
+
+    private var previewSlides: [PaywallPreviewSlide] {
+        paywallPreviewSlides(
+            petName: petName,
+            animalType: firstPet?.animalType ?? .dog,
+            prioritized: featureInterest
+        )
+    }
+
+    private var bullets: [String] {
+        featureInterest?.paywallBullets(petName: petName, ownsMultiplePets: ownsMultiplePets)
+            ?? Self.defaultPaywallBullets
+    }
+
+    private static let defaultPaywallBullets: [String] = [
+        "Every walk, meal, and med — in one timeline per pet",
+        "Reminders before what matters, so nothing slips",
+        "Premium experience — no ads, just easier pet care",
+    ]
+
+    private var selectedProduct: Product? {
+        switch selectedPlan {
+        case .monthly: return products.monthlyProduct
+        case .yearly:  return products.yearlyProduct
+        }
+    }
+
+    private var ctaLabel: String {
+        switch selectedPlan {
+        case .monthly: return "Continue with Monthly"
+        case .yearly:  return "Continue with Yearly"
+        }
+    }
+
+    private var ctaDisabled: Bool {
+        if purchaseState != .idle { return true }
+        return selectedProduct == nil
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            PaywallContentBody(
+                headline: headline,
+                previewSlides: previewSlides,
+                personalizedBullets: bullets,
+                yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
+                petCount: petCountForPricing,
+                products: products,
+                selectedPlan: $selectedPlan,
+                purchaseState: purchaseState,
+                errorMessage: errorMessage,
+                onRestorePurchases: { Task { await beginRestorePurchases() } }
+            )
+
+            Spacer(minLength: 0)
+
+            VStack(spacing: 14) {
+                Button(action: { Task { await beginPurchase() } }) {
+                    Group {
+                        if purchaseState == .purchasing {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(.white)
+                        } else {
+                            Text(ctaLabel)
+                        }
+                    }
+                    .font(AppTypography.primaryLabel)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(ctaDisabled ? Color.gray.opacity(0.3) : Color.appPink)
+                    )
+                    .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: ctaDisabled))
+                }
+                .disabled(ctaDisabled)
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 52)
+            .padding(.top, 8)
+        }
+        .background(Color(.systemBackground))
+        .task {
+            await products.refresh()
+            // If the user already has an active subscription on this Apple Account but the local
+            // entitlement hasn't refreshed yet, sync now so they're not stuck behind the paywall.
+            await entitlementStore.refreshFromCurrentEntitlements()
+        }
+    }
+
+    private func beginPurchase() async {
+        guard let product = selectedProduct else {
+            errorMessage = "Couldn't load subscription. Please try again."
+            return
+        }
+        errorMessage = nil
+        purchaseState = .purchasing
+        defer { purchaseState = .idle }
+
+        do {
+            switch try await entitlementStore.purchase(product) {
+            case .success:
+                HapticManager.impact(.medium)
+            case .userCancelled:
+                break
+            case .pending:
+                errorMessage = "Your purchase is pending approval. You'll get access as soon as it's approved."
+            }
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+
+    private func beginRestorePurchases() async {
+        errorMessage = nil
+        purchaseState = .restoring
+        defer { purchaseState = .idle }
+
+        do {
+            if try await entitlementStore.restore() {
+                HapticManager.impact(.light)
+            } else {
+                errorMessage = "No active subscription found on this Apple Account."
+            }
+        } catch {
+            errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+}
+
 // The Xcode Canvas preview often does not connect the software keyboard; run the app in Simulator (▶) to type in text fields, or use an Interactive Live preview.
 #Preview {
     OnboardingView(viewModel: HomeViewModel()) {}
+}
+
+#Preview("Post-Onboarding Paywall") {
+    PostOnboardingPaywallView(viewModel: HomeViewModel())
 }

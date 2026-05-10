@@ -95,10 +95,21 @@ private struct PetCard: View {
             .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
-            Text(pet.name)
-                .font(AppTypography.primaryLabel)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(pet.name)
+                    .font(AppTypography.primaryLabel)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Image(systemName: pet.animalType.systemImage)
+                        .font(AppTypography.compactControl)
+                        .foregroundStyle(pet.animalType.color)
+                    Text(pet.animalType.displayName)
+                        .font(AppTypography.compactControl)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
             Spacer()
 

@@ -297,14 +297,14 @@ struct AnalyticsView: View {
                         HStack(spacing: 8) {
                             Image(systemName: section.pillSymbol)
                                 .font(AppTypography.secondaryEmphasis)
-                                .foregroundStyle(sel ? Color.white : Color.black)
+                                .foregroundStyle(sel ? Color.white : Color.primary)
                             Text(section.pillTitle)
                                 .font(AppTypography.secondaryEmphasis)
-                                .foregroundStyle(sel ? Color.white : Color.black)
+                                .foregroundStyle(sel ? Color.white : Color.primary)
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(sel ? Color.appPink : Color.white, in: Capsule())
+                        .background(sel ? Color.appPink : Color(.secondarySystemBackground), in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }

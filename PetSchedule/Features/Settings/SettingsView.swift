@@ -222,42 +222,43 @@ struct SettingsView: View {
                         Label("Rate PetSchedule", systemImage: "star.fill")
                             .foregroundStyle(.primary)
                     }
+                    // TODO: Replace YOUR_APP_ID with the actual App Store numeric ID once the app is listed.
                     Link(destination: URL(string: "https://apps.apple.com/app/idYOUR_APP_ID?action=write-review")!) {
                         HStack {
                             Label("Write a Review", systemImage: "square.and.pencil")
                             Spacer()
                             Image(systemName: "arrow.up.right")
-.font(AppTypography.supportingText)
+                                .font(AppTypography.supportingText)
                                 .foregroundStyle(.tertiary)
                         }
                     }
                 }
 
                 Section("Legal") {
-                    Link(destination: URL(string: "https://example.com/privacy")!) {
+                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy")!) {
                         HStack {
                             Label("Privacy Policy", systemImage: "hand.raised.fill")
                             Spacer()
                             Image(systemName: "arrow.up.right")
-.font(AppTypography.supportingText)
+                                .font(AppTypography.supportingText)
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    Link(destination: URL(string: "https://example.com/terms")!) {
+                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions")!) {
                         HStack {
                             Label("Terms & Conditions", systemImage: "doc.text.fill")
                             Spacer()
                             Image(systemName: "arrow.up.right")
-.font(AppTypography.supportingText)
+                                .font(AppTypography.supportingText)
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    Link(destination: URL(string: "https://example.com/tos")!) {
+                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions")!) {
                         HStack {
                             Label("Terms of Service", systemImage: "checkmark.seal.fill")
                             Spacer()
                             Image(systemName: "arrow.up.right")
-.font(AppTypography.supportingText)
+                                .font(AppTypography.supportingText)
                                 .foregroundStyle(.tertiary)
                         }
                     }
