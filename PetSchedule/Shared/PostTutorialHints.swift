@@ -22,9 +22,9 @@ private extension PostTutorialHintID {
     var message: String {
         switch self {
         case .scheduleTryEvent:
-            return "Tap Event (calendar icon) for walks, visits, meds, and repeating plans."
+            return "Tap Event for walks, visits, meds, and repeating plans."
         case .scheduleTryLog:
-            return "Tap Log (document icon) for meals, walks, bathroom, mood, and quick notes."
+            return "Tap Log for meals, walks, bathroom, mood, and quick notes."
         case .petsOpenProfileExtras:
             return "Tap a pet for vet details, documents, and weight or height logs."
         case .petsAddAnother:
