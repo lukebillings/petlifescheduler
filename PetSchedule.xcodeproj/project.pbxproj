@@ -46,6 +46,8 @@
 		F86A00D102A14D00A2000002 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
 		F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */; };
 		F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */; };
+		W1D9E8F706050403020100AA /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
+		W1D9E8F706050403020100BB /* AppTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E600000000AB0 /* AppTypography.swift */; };
 		A93AAA41111111111111102 /* UserProfileStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA41111111111111101 /* UserProfileStorage.swift */; };
 		5E1B5C7E000000000000A001 /* SubscriptionEntitlementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1B5C7E000000000000A002 /* SubscriptionEntitlementStore.swift */; };
 		A93AAA42222222222222202 /* HouseholdLocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA42222222222222201 /* HouseholdLocalStore.swift */; };
@@ -401,6 +403,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				W1D9E8F706050403020100AA /* AppColors.swift in Sources */,
+				W1D9E8F706050403020100BB /* AppTypography.swift in Sources */,
 				F86A00D102A14D00A2000002 /* ScheduleWidgetShared.swift in Sources */,
 				F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */,
 				F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */,

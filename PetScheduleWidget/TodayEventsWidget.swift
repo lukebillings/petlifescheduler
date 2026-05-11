@@ -2,17 +2,11 @@ import SwiftUI
 import UIKit
 import WidgetKit
 
-private let widgetPink = Color(red: 248 / 255, green: 78 / 255, blue: 166 / 255)
-
-/// Dark text always readable on forced white cards (widgets can be in dark appearance; `.label` would be near-white).
-private let widgetCardText = Color(red: 0.12, green: 0.12, blue: 0.14)
-private let widgetCardTextSecondary = Color(red: 0.38, green: 0.38, blue: 0.42)
-
 struct TodayEventsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: TodayEventsWidget.kind, provider: TodayEventsProvider()) { entry in
             TodayEventsWidgetView(entry: entry)
-                .containerBackground(widgetPink, for: .widget)
+                .containerBackground(Color(.systemGroupedBackground), for: .widget)
         }
         .configurationDisplayName("Today's schedule")
         .description("Next upcoming events for your pets today.")
@@ -96,7 +90,7 @@ struct TodayEventsWidgetView: View {
         return Array(entry.events.prefix(cap))
     }
 
-    /// Tighter rows when space is tight (many cards or small widget).
+    /// Tighter layout when the widget is small or showing several rows.
     private var cardLayoutCompact: Bool {
         if compactCards { return true }
         if isLargeFamily { return displayedEvents.count >= 3 }
@@ -115,26 +109,25 @@ struct TodayEventsWidgetView: View {
         VStack(alignment: .leading, spacing: compactCards ? 6 : (isLargeFamily ? 10 : 8)) {
             if noEventsToday {
                 Text("No events today")
-                    .font(compactCards ? .subheadline.bold() : .body.bold())
-                    .foregroundStyle(.white)
+                    .font(compactCards ? AppTypography.cardTitle : AppTypography.sectionHeading)
+                    .foregroundStyle(.primary)
                 Text("Add some in PetSchedule")
-                    .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.85))
+                    .font(AppTypography.supportingText)
+                    .foregroundStyle(.secondary)
             } else if allDoneToday {
                 Text("All done!")
-                    .font(compactCards ? .headline.bold() : .title3.bold())
-                    .foregroundStyle(.white)
+                    .font(compactCards ? AppTypography.sectionHeading : AppTypography.groupTitle)
+                    .foregroundStyle(.primary)
                 Text("\(entry.totalTodayEventCount) completed")
-                    .font(.caption)
-                    .foregroundStyle(.white.opacity(0.85))
+                    .font(AppTypography.supportingText)
+                    .foregroundStyle(.secondary)
             } else {
                 VStack(alignment: .leading, spacing: compactCards ? 6 : (isLargeFamily ? 8 : 6)) {
                     ForEach(displayedEvents) { ev in
-                        WidgetScheduleEventCard(
+                        WidgetScheduleEventRow(
                             event: ev,
                             timeFormat24h: entry.timeFormat24h,
-                            compact: cardLayoutCompact,
-                            widgetFamily: family
+                            compact: cardLayoutCompact
                         )
                     }
                 }
@@ -143,7 +136,6 @@ struct TodayEventsWidgetView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        // Explicit insets — `widgetContentMargins` + `glassEffect` led to empty / clipped layouts on device.
         .padding(.horizontal, 4)
         .padding(.vertical, 8)
     }
@@ -185,12 +177,15 @@ struct TodayEventsWidgetView: View {
     )
 }
 
-// MARK: - White cards on app-pink background (quick log: pink stroke)
+// MARK: - Schedule row parity (`ScheduleRowView`)
 
 private struct WidgetPetAvatar: View {
     let jpegData: Data?
     let systemImageName: String?
     let size: CGFloat
+
+    /// Matches `PetAvatarView` — zooms slightly before crop so JPEG edges don’t read as a white ring.
+    private static let cropOverscale: CGFloat = 1.14
 
     var body: some View {
         ZStack {
@@ -202,68 +197,96 @@ private struct WidgetPetAvatar: View {
             } else {
                 Image(systemName: systemImageName ?? "pawprint.fill")
                     .font(.system(size: size * 0.38, weight: .medium))
-                    .foregroundStyle(widgetCardTextSecondary)
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(width: size, height: size)
-        .clipped()
+        .scaleEffect(Self.cropOverscale)
         .clipShape(Circle())
     }
 }
 
-private struct WidgetScheduleEventCard: View {
+/// Mirrors `ScheduleRowView`: avatar, pink activity icon, time + title, completion glyph; quick log uses pink tint + stroke, otherwise liquid glass.
+private struct WidgetScheduleEventRow: View {
     let event: WidgetScheduleEventDTO
     let timeFormat24h: Bool
     var compact: Bool
-    var widgetFamily: WidgetFamily
 
     private var isQuickLog: Bool { event.isQuickLog == true }
 
-    private var avatarSize: CGFloat {
-        if widgetFamily == .systemLarge { return compact ? 52 : 64 }
-        return compact ? 40 : 48
+    private var avatarSize: CGFloat { compact ? 44 : 48 }
+
+    private var activityIconName: String {
+        if let name = event.activitySystemImage, !name.isEmpty { return name }
+        return "calendar"
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: compact ? 10 : 14) {
+        HStack(alignment: .center, spacing: 12) {
             WidgetPetAvatar(
                 jpegData: event.petPhotoJPEGData,
                 systemImageName: event.petSystemImage,
                 size: avatarSize
             )
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(event.timeLabel(timeFormat24h: timeFormat24h))
-                    .font(compact ? .subheadline.bold() : .headline.bold())
-                    .foregroundStyle(widgetCardText)
-                    .minimumScaleFactor(0.85)
-                    .lineLimit(1)
-                Text(event.activityName)
-                    .font(compact ? .caption : .subheadline)
-                    .foregroundStyle(widgetCardTextSecondary)
-                    .lineLimit(2)
-                if widgetFamily == .systemLarge, !event.petName.isEmpty {
-                    Text(event.petName)
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(widgetCardTextSecondary.opacity(0.95))
+            Image(systemName: activityIconName)
+                .font(AppTypography.rowIcon)
+                .foregroundStyle(Color.appPink)
+                .frame(width: 22)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(event.timeLabel(timeFormat24h: timeFormat24h))
+                        .font(AppTypography.primaryLabel)
                         .lineLimit(1)
+                        .monospacedDigit()
+                        .fixedSize(horizontal: true, vertical: false)
+
+                    Text(event.activityName)
+                        .font(AppTypography.secondaryLabel)
+                        .opacity(0.9)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
                 }
+                .minimumScaleFactor(compact ? 0.8 : 1)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .layoutPriority(1)
 
             Spacer(minLength: 0)
+
+            Image(systemName: event.isCompleted ? "checkmark.circle.fill" : "circle")
+                .font(compact ? .title3 : AppTypography.completionControl)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(event.isCompleted ? Color.complianceAccept : Color.primary)
         }
-        .padding(.horizontal, compact ? 14 : 18)
-        .padding(.vertical, compact ? 11 : 16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white)
+            if isQuickLog {
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.appPink.opacity(0.2))
+            }
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(
-                    isQuickLog ? widgetPink.opacity(0.45) : Color.black.opacity(0.06),
-                    lineWidth: 1
-                )
+            if isQuickLog {
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(Color.appPink.opacity(0.35), lineWidth: 1)
+            }
+        }
+        .modifier(WidgetScheduleRowGlassModifier(isQuickLog: isQuickLog))
+    }
+}
+
+private struct WidgetScheduleRowGlassModifier: ViewModifier {
+    let isQuickLog: Bool
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isQuickLog {
+            content
+        } else {
+            content.glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 24))
         }
     }
 }
