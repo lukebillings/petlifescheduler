@@ -3,6 +3,7 @@ import PhotosUI
 import Charts
 import UniformTypeIdentifiers
 import UIKit
+import MessageUI
 
 struct PetDetailSheet: View {
     /// Scroll destination when opening from elsewhere (e.g. Analytics “add first reading”).
@@ -98,9 +99,13 @@ struct PetDetailSheet: View {
         case idle
         case download
         case share
+        case emailVet
     }
 
     @State private var pdfExportActivity: PDFExportActivity = .idle
+    @State private var mailComposerPayload: MailComposerPayload?
+    @State private var showEmailVetNoAddressAlert = false
+    @State private var showMailUnavailableAlert = false
     @State private var showClearPetDataConfirm = false
     @State private var showRemovePetConfirm = false
     @State private var showVetDetailsCopiedToast = false
@@ -377,7 +382,7 @@ struct PetDetailSheet: View {
                     .disabled(pdfExportActivity != .idle)
 
                     Button {
-                        sharePetDataWithVet()
+                        sharePetData()
                     } label: {
                         HStack {
                             if pdfExportActivity == .share {
@@ -386,7 +391,24 @@ struct PetDetailSheet: View {
                                 Image(systemName: "square.and.arrow.up")
                                     .foregroundStyle(Color.appPink)
                             }
-                            Text("Share pet data with vet")
+                            Text("Share pet data")
+                                .foregroundStyle(Color.appPink)
+                                .font(AppTypography.secondaryEmphasis)
+                        }
+                    }
+                    .disabled(pdfExportActivity != .idle)
+
+                    Button {
+                        emailPetDataToVet()
+                    } label: {
+                        HStack {
+                            if pdfExportActivity == .emailVet {
+                                ProgressView().tint(Color.appPink)
+                            } else {
+                                Image(systemName: "envelope")
+                                    .foregroundStyle(Color.appPink)
+                            }
+                            Text("Email pet data to vet")
                                 .foregroundStyle(Color.appPink)
                                 .font(AppTypography.secondaryEmphasis)
                         }
@@ -396,7 +418,7 @@ struct PetDetailSheet: View {
                     sectionHeaderWithLabel(
                         title: "Export Pet Data",
                         systemImage: "square.and.arrow.up.on.square",
-                        subtitle: "Save a health summary PDF to Files, or share it with your vet from the share sheet."
+                        subtitle: "Save a health summary PDF to Files, share it anywhere, or open Mail to send it to the address in Vet details."
                     )
                 }
                 .id(JumpSection.export.rawValue)
@@ -702,6 +724,15 @@ struct PetDetailSheet: View {
                     ShareSheetView(activityItems: shareItems)
                 }
             }
+            .sheet(item: $mailComposerPayload) { payload in
+                MailComposeView(
+                    recipients: payload.recipients,
+                    subject: payload.subject,
+                    pdfData: payload.pdfData,
+                    pdfFilename: payload.pdfFilename,
+                    onDismiss: { mailComposerPayload = nil }
+                )
+            }
             .sheet(
                 isPresented: Binding(
                     get: { expandedMeasurementImageData != nil },
@@ -756,6 +787,16 @@ struct PetDetailSheet: View {
                 }
             } message: {
                 Text("This deletes the pet from your list and removes all scheduled events for them. This cannot be undone.")
+            }
+            .alert("Add a vet email", isPresented: $showEmailVetNoAddressAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Enter your vet’s email in the Vet section so we can address the message.")
+            }
+            .alert("Mail isn’t available", isPresented: $showMailUnavailableAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("This device needs an email account set up in the Mail app to send attachments. You can still use Share pet data to send the PDF another way.")
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -1038,7 +1079,7 @@ struct PetDetailSheet: View {
         }
     }
 
-    private func sharePetDataWithVet() {
+    private func sharePetData() {
         pdfExportActivity = .share
         Task { @MainActor in
             let pet = petSnapshotForPDF()
@@ -1049,6 +1090,39 @@ struct PetDetailSheet: View {
             shareItems = [url]
             pdfExportActivity = .idle
             showingShareSheet = true
+        }
+    }
+
+    private func vetEmailRecipients() -> [String] {
+        let raw = vetDetails.email.trimmingCharacters(in: .whitespacesAndNewlines)
+        return raw.split { $0 == "," || $0 == ";" }
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
+
+    private func emailPetDataToVet() {
+        let recipients = vetEmailRecipients()
+        guard !recipients.isEmpty else {
+            showEmailVetNoAddressAlert = true
+            return
+        }
+        guard MFMailComposeViewController.canSendMail() else {
+            showMailUnavailableAlert = true
+            return
+        }
+        pdfExportActivity = .emailVet
+        Task { @MainActor in
+            let pet = petSnapshotForPDF()
+            let pdfData = PetPDFGenerator.generate(for: pet)
+            let filename = healthRecordPDFFilename(for: pet)
+            let subject = "\(pet.name) — health record"
+            mailComposerPayload = MailComposerPayload(
+                recipients: recipients,
+                subject: subject,
+                pdfData: pdfData,
+                pdfFilename: filename
+            )
+            pdfExportActivity = .idle
         }
     }
 
@@ -1301,6 +1375,48 @@ private struct DocumentPickerView: UIViewControllerRepresentable {
                 return PetDocument(name: nameBase, data: data, fileExtension: ext)
             }
             onPick(docs)
+        }
+    }
+}
+
+// MARK: - Mail (vet email + PDF attachment)
+
+private struct MailComposerPayload: Identifiable {
+    let id = UUID()
+    let recipients: [String]
+    let subject: String
+    let pdfData: Data
+    let pdfFilename: String
+}
+
+private struct MailComposeView: UIViewControllerRepresentable {
+    let recipients: [String]
+    let subject: String
+    let pdfData: Data
+    let pdfFilename: String
+    let onDismiss: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onDismiss: onDismiss)
+    }
+
+    func makeUIViewController(context: Context) -> MFMailComposeViewController {
+        let mail = MFMailComposeViewController()
+        mail.mailComposeDelegate = context.coordinator
+        mail.setToRecipients(recipients)
+        mail.setSubject(subject)
+        mail.addAttachmentData(pdfData, mimeType: "application/pdf", fileName: pdfFilename)
+        return mail
+    }
+
+    func updateUIViewController(_ uiViewController: MFMailComposeViewController, context: Context) {}
+
+    final class Coordinator: NSObject, MFMailComposeViewControllerDelegate {
+        let onDismiss: () -> Void
+        init(onDismiss: @escaping () -> Void) { self.onDismiss = onDismiss }
+
+        func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+            onDismiss()
         }
     }
 }
