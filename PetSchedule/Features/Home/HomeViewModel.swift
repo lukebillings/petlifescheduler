@@ -46,6 +46,29 @@ final class HomeViewModel {
         return vm
     }
 
+    /// Today’s list rows for the subscription paywall carousel — same `ScheduleListView` as the Schedule tab.
+    static func paywallCarouselSchedule(petName: String, animalType: AnimalType) -> HomeViewModel {
+        let vm = HomeViewModel()
+        let calendar = Calendar.current
+        let now = Date()
+        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = trimmed.isEmpty ? "Pet" : trimmed
+        let pet = Pet(name: displayName, animalType: animalType)
+        vm.pets = [pet]
+        vm.selectedPet = nil
+
+        func time(hour: Int, minute: Int = 0) -> Date {
+            calendar.date(bySettingHour: hour, minute: minute, second: 0, of: now) ?? now
+        }
+
+        vm.scheduleItems = [
+            ScheduleItem(time: time(hour: 8), activityName: "Walk", pet: pet, isCompleted: true),
+            ScheduleItem(time: time(hour: 12), activityName: "Lunch", pet: pet, isCompleted: false),
+            ScheduleItem(time: time(hour: 18), activityName: "Evening meds", pet: pet, isCompleted: false),
+        ]
+        return vm
+    }
+
     /// Rich preview with 14 days of historical data — used by the Analytics tab preview.
     static var analyticsPreview: HomeViewModel {
         let vm  = HomeViewModel()

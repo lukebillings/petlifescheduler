@@ -1,3 +1,4 @@
+import Charts
 import Observation
 import PhotosUI
 import StoreKit
@@ -1442,8 +1443,8 @@ private func paywallPreviewSlides(
 /// in-onboarding paywall and the post-onboarding hard paywall so both look and behave identically.
 private struct PaywallContentBody: View {
     let headline: String
-    /// SwiftUI mocks shown in the auto-advancing paged carousel above the plan cards. The first
-    /// slide is what most users see, so callers should put the most relevant preview first.
+    /// Real in-app UI (scaled) in the auto-advancing carousel above the plan cards. The first slide
+    /// is what most users see, so callers should put the most relevant preview first.
     let previewSlides: [PaywallPreviewSlide]
     /// 0–3 short personalized bullets shown above the plan cards. Empty array hides the section.
     var personalizedBullets: [String] = []
@@ -1586,9 +1587,8 @@ private struct PaywallContentBody: View {
 
 // MARK: - Paywall preview carousel
 
-/// A single slide in the paywall preview carousel. Each case renders a SwiftUI mock that uses the
-/// app's actual design language (typography, colors, layout) so we don't need to ship and maintain
-/// PNG screenshots — the mocks update automatically when the real UI evolves.
+/// A single slide in the paywall preview carousel — each case shows real product UI (schedule list,
+/// Settings reminders, or Analytics-style weight chart), scaled to fit the carousel.
 private enum PaywallPreviewSlide: Equatable, Identifiable {
     case scheduleTimeline(petName: String, animalType: AnimalType)
     case reminderPush(petName: String, animalType: AnimalType)
@@ -1611,7 +1611,7 @@ private enum PaywallPreviewSlide: Equatable, Identifiable {
     }
 }
 
-/// Swipeable, auto-advancing paged carousel of SwiftUI app previews. Replaces the older text-only
+/// Swipeable, auto-advancing paged carousel of real in-app UI previews. Replaces the older text-only
 /// `PaywallRotatingBenefits` because image-led paywalls reliably outperform text-only paywalls.
 /// User swipes interrupt the auto-advance and continue cycling from the new position on the
 /// next tick.
@@ -1634,7 +1634,7 @@ private struct PaywallPreviewCarousel: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 160)
+            .frame(height: 172)
 
             Group {
                 if slides.indices.contains(currentIndex) {
@@ -1673,274 +1673,162 @@ private struct PaywallPreviewCarousel: View {
     private func slideView(_ slide: PaywallPreviewSlide) -> some View {
         switch slide {
         case .scheduleTimeline(let name, let type):
-            PaywallSchedulePreviewMock(petName: name, animalType: type)
-        case .reminderPush(let name, _):
-            PaywallReminderPushPreviewMock(petName: name)
+            PaywallScheduleProductPreview(petName: name, animalType: type)
+                .paywallCarouselScaledContent(width: 410, height: 248, scale: 0.68)
+        case .reminderPush(_, _):
+            PaywallSettingsNotificationsProductPreview()
+                .paywallCarouselScaledContent(width: 380, height: 260, scale: 0.62)
         case .weightChart:
-            PaywallWeightChartPreviewMock()
+            PaywallWeightTrendProductPreview()
+                .paywallCarouselScaledContent(width: 360, height: 210, scale: 0.78)
         }
     }
 }
 
-/// Mocked "Today's schedule" card with three rows — first one done, two upcoming. Uses the
-/// pet's first initial in the avatar tint so it feels personal even without a photo.
-private struct PaywallSchedulePreviewMock: View {
-    let petName: String
-    let animalType: AnimalType
+// MARK: - Paywall carousel (real product UI)
 
-    private var displayName: String {
-        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Your pet" : trimmed
+private extension View {
+    /// Crops and scales live app UI so it reads like a device screenshot inside the carousel.
+    func paywallCarouselScaledContent(width: CGFloat, height: CGFloat, scale: CGFloat) -> some View {
+        self
+            .frame(width: width, height: height, alignment: .top)
+            .clipped()
+            .scaleEffect(scale, anchor: .top)
+            .frame(width: width * scale, height: height * scale)
     }
+}
 
-    private var avatarInitial: String {
-        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty { return "P" }
-        return String(trimmed.uppercased().prefix(1))
+/// Same `ScheduleListView` as the Schedule tab, with sample today’s events for the user’s pet.
+private struct PaywallScheduleProductPreview: View {
+    @State private var viewModel: HomeViewModel
+
+    init(petName: String, animalType: AnimalType) {
+        _viewModel = State(initialValue: HomeViewModel.paywallCarouselSchedule(petName: petName, animalType: animalType))
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 6) {
-                Text("Today")
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text(displayName)
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                Image(systemName: animalType.systemImage)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 12)
-            .padding(.bottom, 10)
-
-            Divider()
-
-            VStack(spacing: 0) {
-                scheduleRow(time: "8:00 AM", activity: "Walk", icon: "figure.walk", done: true)
-                Divider().padding(.leading, 56)
-                scheduleRow(time: "12:00 PM", activity: "Lunch", icon: "fork.knife", done: false)
-                Divider().padding(.leading, 56)
-                scheduleRow(time: "6:00 PM", activity: "Heart pill", icon: "pills.fill", done: false)
-            }
-        }
-        .frame(maxWidth: 320)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(.systemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.08), radius: 14, y: 6)
+        ScheduleListView(viewModel: viewModel, hideCompleted: .constant(false))
+            .background(Color(.systemGroupedBackground))
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
+}
 
-    private func scheduleRow(time: String, activity: String, icon: String, done: Bool) -> some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Color.appPink.opacity(0.18))
-                    .frame(width: 32, height: 32)
-                Text(avatarInitial)
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(Color.appPink)
-            }
+/// Notifications section matching **Settings › Notifications** (reminder timing UI).
+private struct PaywallSettingsNotificationsProductPreview: View {
+    @State private var remindersEnabled = true
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(time)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                HStack(spacing: 4) {
-                    Image(systemName: icon)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(activity)
-                        .font(.subheadline.weight(.semibold))
+    var body: some View {
+        List {
+            Section("Notifications") {
+                Toggle("Enable event reminders", isOn: $remindersEnabled)
+                    .tint(Color.appPink)
+                HStack {
+                    Text("10 minutes before")
                         .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.appPink)
+                        .fontWeight(.semibold)
                 }
             }
-
-            Spacer(minLength: 4)
-
-            Image(systemName: done ? "checkmark.circle.fill" : "circle")
-                .font(.title3)
-                .foregroundStyle(done ? Color.green : Color.gray.opacity(0.4))
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .listStyle(.insetGrouped)
+        .scrollDisabled(true)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
-/// Mocked iOS-style notification banner showing a personalized reminder push.
-private struct PaywallReminderPushPreviewMock: View {
-    let petName: String
+/// Weight trends card using the same chart styling as **Analytics › Weight Trends** (sample data).
+private struct PaywallWeightTrendProductPreview: View {
+    @AppStorage("weightUnit") private var weightUnitRaw = "kg"
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .kg }
 
-    private var displayName: String {
-        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "your pet" : trimmed
+    private var sortedEntries: [WeightEntry] {
+        let cal = Calendar.current
+        let now = Date.now
+        let daysAgo: (Int) -> Date = { cal.date(byAdding: .day, value: -$0, to: now) ?? now }
+        return [
+            WeightEntry(date: daysAgo(28), kg: 11.8),
+            WeightEntry(date: daysAgo(21), kg: 12.0),
+            WeightEntry(date: daysAgo(14), kg: 12.2),
+            WeightEntry(date: daysAgo(7), kg: 12.4),
+            WeightEntry(date: daysAgo(0), kg: 12.6),
+        ].sorted { $0.date < $1.date }
     }
 
     var body: some View {
-        VStack(spacing: 14) {
-            Spacer(minLength: 28)
+        let sorted = sortedEntries
+        let diffKg = sorted.last!.kg - sorted[sorted.count - 2].kg
+        let displayValues = sorted.map { weightUnit.displayValue(fromKg: $0.kg) }
+        let minY = (displayValues.min() ?? 0) * 0.92
+        let maxY = (displayValues.max() ?? 1) * 1.08
+        let color = Color.appPink
+        let dateDomain = sorted.first!.date ... sorted.last!.date
 
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.appPink)
-                    .frame(width: 38, height: 38)
-                    .overlay(
-                        Image(systemName: "pawprint.fill")
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundStyle(.white)
-                    )
-
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack {
-                        Text("PETSCHEDULE")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .tracking(0.4)
-                        Spacer(minLength: 4)
-                        Text("now")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    Text("Time for \(displayName)'s evening meds")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .frame(maxWidth: 320)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(.ultraThinMaterial)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.gray.opacity(0.15), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.14), radius: 16, y: 8)
-
-            // Subtle hint that this is a Lock-Screen-style preview
-            HStack(spacing: 4) {
-                Image(systemName: "lock.fill")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                Text("Reminder delivered just before it's due")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer(minLength: 0)
-        }
-    }
-}
-
-/// Mocked weight tracking card with a small line chart trending downward (healthy weight loss).
-private struct PaywallWeightChartPreviewMock: View {
-    private let dataPoints: [Double] = [22.0, 21.6, 21.7, 21.1, 20.9, 20.5]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Weight")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Last 6 weeks")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Weight Trends")
+                    .font(AppTypography.groupTitle)
                 Spacer()
                 HStack(spacing: 4) {
-                    Image(systemName: "arrow.down.right")
-                    Text("-1.5 kg")
+                    Image(systemName: diffKg >= 0 ? "arrow.up.right" : "arrow.down.right")
+                        .foregroundStyle(diffKg >= 0 ? .orange : .green)
+                    Text(weightUnit.formatChange(diffKg))
+                        .foregroundStyle(diffKg >= 0 ? .orange : .green)
+                    Text("·")
+                        .foregroundStyle(.secondary)
+                    Text("\(weightUnit.formatValue(sorted.last!.kg)) now")
+                        .foregroundStyle(.secondary)
                 }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color.green)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Capsule().fill(Color.green.opacity(0.15)))
+                .font(AppTypography.compactControl)
             }
 
-            chart
-        }
-        .padding(14)
-        .frame(maxWidth: 320, maxHeight: 200)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(.systemBackground))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.gray.opacity(0.18), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.08), radius: 14, y: 6)
-    }
-
-    @ViewBuilder
-    private var chart: some View {
-        GeometryReader { geo in
-            let width = geo.size.width
-            let height = geo.size.height
-            let xStep = width / Double(max(dataPoints.count - 1, 1))
-            let minY = dataPoints.min() ?? 0
-            let maxY = dataPoints.max() ?? 1
-            let yRange = max(maxY - minY, 0.001)
-            let inset: Double = 0.12
-
-            let points: [CGPoint] = dataPoints.enumerated().map { idx, val in
-                let x = xStep * Double(idx)
-                let normalized = (val - minY) / yRange
-                let y = (1 - normalized) * height * (1 - 2 * inset) + height * inset
-                return CGPoint(x: x, y: y)
-            }
-
-            ZStack {
-                // Filled area under the line — soft pink gradient.
-                Path { path in
-                    guard let first = points.first else { return }
-                    path.move(to: CGPoint(x: first.x, y: height))
-                    path.addLine(to: first)
-                    for p in points.dropFirst() { path.addLine(to: p) }
-                    if let last = points.last {
-                        path.addLine(to: CGPoint(x: last.x, y: height))
-                    }
-                    path.closeSubpath()
-                }
-                .fill(
+            Chart(sorted) { e in
+                let y = weightUnit.displayValue(fromKg: e.kg)
+                LineMark(x: .value("Date", e.date), y: .value(weightUnit.label, y))
+                    .foregroundStyle(color)
+                    .interpolationMethod(.linear)
+                AreaMark(
+                    x: .value("Date", e.date),
+                    yStart: .value("Min", minY),
+                    yEnd: .value(weightUnit.label, y)
+                )
+                .foregroundStyle(
                     LinearGradient(
-                        colors: [Color.appPink.opacity(0.28), Color.appPink.opacity(0)],
+                        colors: [color.opacity(0.25), color.opacity(0.02)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-
-                // Trend line.
-                Path { path in
-                    guard let first = points.first else { return }
-                    path.move(to: first)
-                    for p in points.dropFirst() { path.addLine(to: p) }
-                }
-                .stroke(Color.appPink, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-
-                // Data points.
-                ForEach(0..<points.count, id: \.self) { idx in
-                    Circle()
-                        .fill(Color(.systemBackground))
-                        .frame(width: 7, height: 7)
-                        .overlay(
-                            Circle().stroke(Color.appPink, lineWidth: 1.5)
-                        )
-                        .position(points[idx])
+                .interpolationMethod(.linear)
+                PointMark(x: .value("Date", e.date), y: .value(weightUnit.label, y))
+                    .foregroundStyle(color)
+                    .symbolSize(24)
+            }
+            .chartYScale(domain: minY...maxY)
+            .chartXScale(domain: dateDomain)
+            .chartXAxis(.hidden)
+            .chartYAxis {
+                AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
+                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
+                    AxisValueLabel(centered: false) {
+                        if let v = v.as(Double.self) {
+                            Text(String(format: "%.1f", v))
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
+                        }
+                    }
                 }
             }
+            .frame(height: 96)
         }
+        .padding(12)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
@@ -2008,7 +1896,7 @@ private struct PaywallYearlyCard: View {
 
     private var savingsBadgeCaption: String? {
         guard let p = yearlySavingsPercent else { return nil }
-        return "SAVE \(p)% vs Monthly"
+        return "SAVE ~\(p)% vs Monthly"
     }
 
     private var accessibilitySubtitle: String {
