@@ -90,6 +90,7 @@ struct ScheduleRowView: View {
                     onAccept: { onMedicineAccept?(true) },
                     onDecline: { onMedicineAccept?(false) }
                 )
+                .layoutPriority(2)
             }
 
             Button {
@@ -163,45 +164,38 @@ private struct CareCompliancePill: View {
                         .fill(accepted ? Color.complianceAccept : Color.complianceDecline)
                 )
             } else {
-                VStack(alignment: .center, spacing: 6) {
+                // Single horizontal strip: short prompt + tight yes/no ticks so titles/descriptions keep room.
+                HStack(alignment: .center, spacing: 8) {
                     Text(kind.compliancePrompt)
                         .font(AppTypography.micro)
+                        .fontWeight(.medium)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: 6) {
                         Button(action: onAccept) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "checkmark")
-                                    .font(AppTypography.micro)
-                                    .foregroundStyle(.white)
-                                    .frame(width: 26, height: 26)
-                                    .background(Color.complianceAccept, in: Circle())
-                                Text(kind.acceptedResultLabel)
-                                    .font(AppTypography.compactControl)
-                                    .foregroundStyle(Color.complianceAccept)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.8)
-                            }
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 24, height: 24)
+                                .background(Color.complianceAccept, in: Circle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Yes, \(kind.acceptedResultLabel.lowercased())")
 
                         Button(action: onDecline) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "xmark")
-                                    .font(AppTypography.micro)
-                                    .foregroundStyle(.white)
-                                    .frame(width: 26, height: 26)
-                                    .background(Color.complianceDecline, in: Circle())
-                                Text(kind.declinedResultLabel)
-                                    .font(AppTypography.compactControl)
-                                    .foregroundStyle(Color.complianceDecline)
-                                    .lineLimit(1)
-                                    .minimumScaleFactor(0.8)
-                            }
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white)
+                                .frame(width: 24, height: 24)
+                                .background(Color.complianceDecline, in: Circle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("No, skipped")
                     }
                 }
+                .fixedSize(horizontal: true, vertical: false)
             }
         }
         .animation(.spring(duration: 0.25), value: accepted)

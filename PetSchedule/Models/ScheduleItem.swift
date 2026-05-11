@@ -6,21 +6,21 @@ enum ScheduleComplianceKind: Equatable, Hashable {
     case feed
     case water
 
-    /// Short question above the yes / no controls on schedule rows.
+    /// Short question beside the yes / no controls on schedule rows.
     var compliancePrompt: String {
         switch self {
-        case .medicine: return "Took it?"
-        case .feed:     return "Ate food?"
-        case .water:    return "Drank water?"
+        case .medicine: return "Took?"
+        case .feed:     return "Ate?"
+        case .water:    return "Drank?"
         }
     }
 
-    /// Past-tense outcomes on schedule rows (buttons + logged chip).
+    /// Past-tense outcomes on schedule rows (logged chip after the user answers).
     var acceptedResultLabel: String {
         switch self {
-        case .medicine: return "Taken"
-        case .feed:     return "Eaten"
-        case .water:    return "Drank water"
+        case .medicine: return "Took"
+        case .feed:     return "Ate"
+        case .water:    return "Drank"
         }
     }
 
