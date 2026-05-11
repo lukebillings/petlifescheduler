@@ -5,6 +5,12 @@ import UniformTypeIdentifiers
 import UIKit
 
 struct PetDetailSheet: View {
+    /// Scroll destination when opening from elsewhere (e.g. Analytics “add first reading”).
+    enum InitialScrollAnchor: Hashable {
+        case weight
+        case height
+    }
+
     /// Quick-jump targets for the section pill bar (matches `.id` on each `Section` below).
     private enum JumpSection: String, CaseIterable, Hashable {
         case age, photo, details, notes, vet, documents, export, weight, height, birthday, data
@@ -103,12 +109,19 @@ struct PetDetailSheet: View {
 
     private let petID: UUID
     private let isNew: Bool
+    private let initialScrollAnchor: InitialScrollAnchor?
     let onSave: (Pet) -> Void
     /// When set, shows “Remove pet from My Pets” and calls this before dismiss (e.g. `viewModel.deletePet`).
     var onRemovePet: (() -> Void)?
 
-    init(pet: Pet?, onSave: @escaping (Pet) -> Void, onRemovePet: (() -> Void)? = nil) {
+    init(
+        pet: Pet?,
+        initialScrollAnchor: InitialScrollAnchor? = nil,
+        onSave: @escaping (Pet) -> Void,
+        onRemovePet: (() -> Void)? = nil
+    ) {
         self.isNew = pet == nil
+        self.initialScrollAnchor = initialScrollAnchor
         self.onSave = onSave
         self.onRemovePet = onRemovePet
         self.petID = pet?.id ?? UUID()
@@ -673,6 +686,9 @@ struct PetDetailSheet: View {
                 }
                     }
                 }
+                .onAppear {
+                    applyInitialScrollAnchorIfNeeded(using: proxy)
+                }
             }
             .navigationTitle(isNew ? "New Pet" : name.trimmingCharacters(in: .whitespaces).isEmpty ? "Edit Pet" : name)
             .navigationBarTitleDisplayMode(.inline)
@@ -818,6 +834,22 @@ struct PetDetailSheet: View {
 
     private var visibleJumpSections: [JumpSection] {
         JumpSection.allCases.filter { $0.isVisible(isNewPet: isNew, previewPet: previewPet) }
+    }
+
+    /// After the sheet lays out, scroll to Weight or Height when launched from Analytics empty states.
+    private func applyInitialScrollAnchorIfNeeded(using proxy: ScrollViewProxy) {
+        guard let anchor = initialScrollAnchor else { return }
+        let section: JumpSection = switch anchor {
+        case .weight: .weight
+        case .height: .height
+        }
+        guard visibleJumpSections.contains(section) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            withAnimation(.easeInOut(duration: 0.28)) {
+                selectedJumpSection = section
+                proxy.scrollTo(section.rawValue, anchor: .top)
+            }
+        }
     }
 
     /// Horizontal capsules above the form; scrolls the grouped list to matching section anchors.

@@ -5,14 +5,32 @@ import UIKit
 // MARK: - Supporting Types
 
 private enum AnalyticsRange: String, CaseIterable {
-    case day   = "Day"
-    case week  = "Week"
+    case week = "Week"
     case month = "Month"
+    case year = "Year"
+
     var days: Int {
         switch self {
-        case .day:   return 1
-        case .week:  return 7
+        case .week: return 7
         case .month: return 30
+        case .year: return 365
+        }
+    }
+
+    /// Caps Chart X automatic ticks so labels stay readable on phone widths.
+    var chartXAxisDesiredCount: Int {
+        switch self {
+        case .week: return 7
+        case .month: return 5
+        case .year: return 6
+        }
+    }
+
+    var chartXAxisDateFormat: Date.FormatStyle {
+        switch self {
+        case .week: return .dateTime.weekday(.narrow)
+        case .month: return .dateTime.month(.abbreviated).day(.defaultDigits)
+        case .year: return .dateTime.month(.abbreviated)
         }
     }
 }
@@ -21,6 +39,13 @@ private struct ComplianceLogSheetPayload: Identifiable {
     let kind: ScheduleComplianceKind
     let pet: Pet?
     var id: String { "\(kind)-\(pet?.id.uuidString ?? "all")" }
+}
+
+/// Opens `PetDetailSheet` from Analytics with an optional scroll target (Weight / Height).
+private struct AnalyticsPetProfileLaunch: Identifiable {
+    let id = UUID()
+    let pet: Pet
+    let initialScrollAnchor: PetDetailSheet.InitialScrollAnchor
 }
 
 /// Dots under swipeable trend carousels; tracks `page` as the user swipes.
@@ -136,6 +161,8 @@ private enum AnalyticsJumpSection: String, CaseIterable, Hashable {
 struct AnalyticsView: View {
     @Bindable var viewModel: HomeViewModel
 
+    @AppStorage("pinkWaveHeaderEnabled") private var pinkWaveHeaderEnabled = true
+
     @State private var selectedRange: AnalyticsRange = .week
     @State private var selectedPetID: UUID? = nil
     @State private var selectedAnalyticsJumpSection: AnalyticsJumpSection?
@@ -147,8 +174,8 @@ struct AnalyticsView: View {
     @State private var complianceSwipeFeed = 0
     @State private var complianceSwipeWater = 0
 
-    /// Opens the pet editor from Analytics empty-state CTAs (weight / height).
-    @State private var petDetailSheetPet: Pet?
+    /// Opens the pet editor from Analytics empty-state CTAs (weight / height), scrolled to the right section.
+    @State private var analyticsPetProfileLaunch: AnalyticsPetProfileLaunch?
 
     @AppStorage("weightUnit") private var weightUnitRaw = "kg"
     @AppStorage("heightUnit") private var heightUnitRaw = "cm"
@@ -177,6 +204,38 @@ struct AnalyticsView: View {
     private var rangeStart: Date {
         let today = calendar.startOfDay(for: .now)
         return calendar.date(byAdding: .day, value: -(selectedRange.days - 1), to: today) ?? today
+    }
+
+    /// Exclusive upper bound for analytics windows (start of tomorrow).
+    private var rangeExclusiveEnd: Date {
+        calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: .now))
+            ?? Date.now.addingTimeInterval(86_400)
+    }
+
+    /// Inclusive chart domain end so scales match the selected period.
+    private var chartDomainEndInclusive: Date {
+        rangeExclusiveEnd.addingTimeInterval(-1)
+    }
+
+    private var chartXDateDomain: ClosedRange<Date> {
+        rangeStart...chartDomainEndInclusive
+    }
+
+    private func startOfMonth(for date: Date) -> Date {
+        let parts = calendar.dateComponents([.year, .month], from: date)
+        return calendar.date(from: parts) ?? calendar.startOfDay(for: date)
+    }
+
+    private func filteredWeightEntries(for pet: Pet) -> [WeightEntry] {
+        pet.weightHistory
+            .filter { $0.date >= rangeStart && $0.date < rangeExclusiveEnd }
+            .sorted { $0.date < $1.date }
+    }
+
+    private func filteredHeightEntries(for pet: Pet) -> [HeightEntry] {
+        pet.heightHistory
+            .filter { $0.date >= rangeStart && $0.date < rangeExclusiveEnd }
+            .sorted { $0.date < $1.date }
     }
 
     // Per-pet color palette for multi-series charts
@@ -213,7 +272,17 @@ struct AnalyticsView: View {
         NavigationStack {
             ScrollViewReader { proxy in
                 VStack(spacing: 0) {
-                    PinkWaveScreenHeader("Analytics")
+                    PinkWaveScreenHeader("Analytics", accessory: {
+                        Picker("Chart time range", selection: $selectedRange) {
+                            ForEach(AnalyticsRange.allCases, id: \.self) { range in
+                                Text(range.rawValue).tag(range)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .tint(pinkWaveHeaderEnabled ? .white : Color.appPink)
+                        .padding(.horizontal)
+                        .accessibilityLabel("Chart time range")
+                    })
                     analyticsJumpPillBar(proxy: proxy)
 
                     ScrollView {
@@ -263,8 +332,13 @@ struct AnalyticsView: View {
         .sheet(item: $complianceLogSheet) { payload in
             ComplianceLogSheet(viewModel: viewModel, kind: payload.kind, petFilter: payload.pet)
         }
-        .sheet(item: $petDetailSheetPet) { pet in
-            PetDetailSheet(pet: pet, onSave: { viewModel.updatePet($0) }, onRemovePet: nil)
+        .sheet(item: $analyticsPetProfileLaunch) { launch in
+            PetDetailSheet(
+                pet: launch.pet,
+                initialScrollAnchor: launch.initialScrollAnchor,
+                onSave: { viewModel.updatePet($0) },
+                onRemovePet: nil
+            )
         }
         .sheet(item: $addLogSheetPet) { pet in
             AddLogSheet(viewModel: viewModel, prefilledPet: pet)
@@ -393,15 +467,24 @@ struct AnalyticsView: View {
                         .font(AppTypography.groupTitle)
 
                     PetSwipePager(pets: petsForAnalyticsContext, page: $weightSwipePage) { pet in
-                        if pet.weightHistory.count >= 2 {
-                            weightCard(for: pet, color: petColor(for: pet.id))
-                        } else {
+                        let windowed = filteredWeightEntries(for: pet)
+                        if windowed.count >= 2 {
+                            weightCard(for: pet, entries: windowed, color: petColor(for: pet.id))
+                        } else if pet.weightHistory.count < 2 {
                             analyticsMeasurementEmptyCard(
                                 pet: pet,
+                                initialScrollAnchor: .weight,
                                 icon: "scalemass.fill",
                                 title: "No weight chart yet",
                                 message:
                                     "Add two weigh-ins under Weight in \(pet.name)’s profile."
+                            )
+                        } else {
+                            analyticsMeasurementSparsePeriodCard(
+                                icon: "scalemass.fill",
+                                title: "Need 2+ readings in this period",
+                                message:
+                                    "Switch to a wider range or log another weigh-in for \(pet.name) to see this chart."
                             )
                         }
                     }
@@ -411,8 +494,7 @@ struct AnalyticsView: View {
         }
     }
 
-    private func weightCard(for pet: Pet, color: Color) -> some View {
-        let sorted = pet.weightHistory.sorted { $0.date < $1.date }
+    private func weightCard(for pet: Pet, entries sorted: [WeightEntry], color: Color) -> some View {
         let diffKg = sorted.last!.kg - sorted[sorted.count - 2].kg
         let displayValues = sorted.map { weightUnit.displayValue(fromKg: $0.kg) }
         let minY   = (displayValues.min() ?? 0) * 0.92
@@ -462,12 +544,17 @@ struct AnalyticsView: View {
                     .symbolSize(30)
             }
             .chartYScale(domain: minY...maxY)
+            .chartXScale(domain: chartXDateDomain)
             .chartXAxis {
-                AxisMarks(values: sorted.map(\.date)) { value in
+                AxisMarks(values: .automatic(desiredCount: selectedRange.chartXAxisDesiredCount)) { value in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel {
+                    AxisValueLabel(centered: true) {
                         if let d = value.as(Date.self) {
-                            Text(d, format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                            Text(d, format: selectedRange.chartXAxisDateFormat)
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.62)
+                                .multilineTextAlignment(.center)
                         }
                     }
                 }
@@ -475,9 +562,12 @@ struct AnalyticsView: View {
             .chartYAxis {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel {
+                    AxisValueLabel(centered: false) {
                         if let v = v.as(Double.self) {
-                            Text(String(format: "%.1f", v)).font(.caption2)
+                            Text(String(format: "%.1f", v))
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
                         }
                     }
                 }
@@ -506,15 +596,24 @@ struct AnalyticsView: View {
                         .font(AppTypography.groupTitle)
 
                     PetSwipePager(pets: petsForAnalyticsContext, page: $heightSwipePage) { pet in
-                        if pet.heightHistory.count >= 2 {
-                            heightCard(for: pet, color: petColor(for: pet.id))
-                        } else {
+                        let windowed = filteredHeightEntries(for: pet)
+                        if windowed.count >= 2 {
+                            heightCard(for: pet, entries: windowed, color: petColor(for: pet.id))
+                        } else if pet.heightHistory.count < 2 {
                             analyticsMeasurementEmptyCard(
                                 pet: pet,
+                                initialScrollAnchor: .height,
                                 icon: "ruler.fill",
                                 title: "No height chart yet",
                                 message:
                                     "Add two measurements under Height in \(pet.name)’s profile."
+                            )
+                        } else {
+                            analyticsMeasurementSparsePeriodCard(
+                                icon: "ruler.fill",
+                                title: "Need 2+ readings in this period",
+                                message:
+                                    "Switch to a wider range or log another measurement for \(pet.name) to see this chart."
                             )
                         }
                     }
@@ -524,8 +623,7 @@ struct AnalyticsView: View {
         }
     }
 
-    private func heightCard(for pet: Pet, color: Color) -> some View {
-        let sorted = pet.heightHistory.sorted { $0.date < $1.date }
+    private func heightCard(for pet: Pet, entries sorted: [HeightEntry], color: Color) -> some View {
         let diffCm = sorted.last!.cm - sorted[sorted.count - 2].cm
         let displayValues = sorted.map { heightUnit.displayValue(fromCm: $0.cm) }
         let minY   = (displayValues.min() ?? 0) * 0.92
@@ -575,12 +673,17 @@ struct AnalyticsView: View {
                     .symbolSize(30)
             }
             .chartYScale(domain: minY...maxY)
+            .chartXScale(domain: chartXDateDomain)
             .chartXAxis {
-                AxisMarks(values: sorted.map(\.date)) { value in
+                AxisMarks(values: .automatic(desiredCount: selectedRange.chartXAxisDesiredCount)) { value in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel {
+                    AxisValueLabel(centered: true) {
                         if let d = value.as(Date.self) {
-                            Text(d, format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                            Text(d, format: selectedRange.chartXAxisDateFormat)
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.62)
+                                .multilineTextAlignment(.center)
                         }
                     }
                 }
@@ -588,9 +691,12 @@ struct AnalyticsView: View {
             .chartYAxis {
                 AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel {
+                    AxisValueLabel(centered: false) {
                         if let v = v.as(Double.self) {
-                            Text(String(format: "%.0f", v)).font(.caption2)
+                            Text(String(format: "%.0f", v))
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
                         }
                     }
                 }
@@ -639,6 +745,7 @@ struct AnalyticsView: View {
                 && $0.quickLogKind == .mood
                 && $0.petMood != nil
                 && $0.time >= rangeStart
+                && $0.time < rangeExclusiveEnd
         }
         .sorted { $0.time < $1.time }
     }
@@ -740,12 +847,17 @@ struct AnalyticsView: View {
                     .symbolSize(28)
             }
             .chartYScale(domain: 0.5...5.5)
+            .chartXScale(domain: chartXDateDomain)
             .chartXAxis {
-                AxisMarks(values: items.map(\.time)) { value in
+                AxisMarks(values: .automatic(desiredCount: selectedRange.chartXAxisDesiredCount)) { value in
                     AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel {
+                    AxisValueLabel(centered: true) {
                         if let d = value.as(Date.self) {
-                            Text(d, format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                            Text(d, format: selectedRange.chartXAxisDateFormat)
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.62)
+                                .multilineTextAlignment(.center)
                         }
                     }
                 }
@@ -757,6 +869,8 @@ struct AnalyticsView: View {
                         if let i = value.as(Int.self), let m = PetMood.mood(forChartScore: i) {
                             moodEmojiAlignedLabel(m, font: .caption2)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                         }
                     }
                 }
@@ -820,21 +934,15 @@ struct AnalyticsView: View {
         guard !kindItems.isEmpty else { return [] }
 
         switch selectedRange {
-        case .day:
-            let todayItems = kindItems.filter { calendar.isDateInToday($0.time) }
-            guard !todayItems.isEmpty else { return [] }
-            let accepted = todayItems.filter { $0.medicineAccepted == true }.count
-            return [ComplianceRatePoint(
-                date: calendar.startOfDay(for: .now),
-                petName: pet.name, petID: pet.id,
-                accepted: accepted, total: todayItems.count
-            )]
-
         case .week:
             // Always emit all 7 days so the line spans the full x-axis.
             return (0..<7).reversed().compactMap { offset -> ComplianceRatePoint? in
-                guard let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: .now)) else { return nil }
-                let items = kindItems.filter { calendar.isDate($0.time, inSameDayAs: day) }
+                guard let day = calendar.date(byAdding: .day, value: -offset, to: calendar.startOfDay(for: .now)),
+                      let nextDay = calendar.date(byAdding: .day, value: 1, to: day)
+                else { return nil }
+                let sliceEnd = min(nextDay, rangeExclusiveEnd)
+                let sliceStart = max(day, rangeStart)
+                let items = kindItems.filter { $0.time >= sliceStart && $0.time < sliceEnd }
                 return ComplianceRatePoint(
                     date: day, petName: pet.name, petID: pet.id,
                     accepted: items.filter { $0.medicineAccepted == true }.count,
@@ -845,17 +953,39 @@ struct AnalyticsView: View {
         case .month:
             return (0..<5).reversed().compactMap { weekOffset -> ComplianceRatePoint? in
                 guard let weekStart = calendar.date(byAdding: .weekOfYear, value: -weekOffset, to: calendar.startOfDay(for: .now)),
-                      let weekEnd   = calendar.date(byAdding: .day, value: 7, to: weekStart)
+                      let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart)
                 else { return nil }
-                let items = kindItems.filter { $0.time >= weekStart && $0.time < weekEnd }
+                let sliceStart = max(weekStart, rangeStart)
+                let sliceEnd = min(weekEnd, rangeExclusiveEnd)
+                guard sliceStart < sliceEnd else { return nil }
+                let items = kindItems.filter { $0.time >= sliceStart && $0.time < sliceEnd }
                 guard !items.isEmpty else { return nil }
                 return ComplianceRatePoint(
-                    date: weekStart, petName: pet.name, petID: pet.id,
+                    date: sliceStart, petName: pet.name, petID: pet.id,
+                    accepted: items.filter { $0.medicineAccepted == true }.count,
+                    total: items.count
+                )
+            }
+
+        case .year:
+            return (0..<12).reversed().compactMap { monthsBack -> ComplianceRatePoint? in
+                guard let ref = calendar.date(byAdding: .month, value: -monthsBack, to: calendar.startOfDay(for: .now))
+                else { return nil }
+                let monthStart = startOfMonth(for: ref)
+                guard let monthEnd = calendar.date(byAdding: .month, value: 1, to: monthStart) else { return nil }
+                let sliceStart = max(monthStart, rangeStart)
+                let sliceEnd = min(monthEnd, rangeExclusiveEnd)
+                guard sliceStart < sliceEnd else { return nil }
+                let items = kindItems.filter { $0.time >= sliceStart && $0.time < sliceEnd }
+                guard !items.isEmpty else { return nil }
+                return ComplianceRatePoint(
+                    date: monthStart, petName: pet.name, petID: pet.id,
                     accepted: items.filter { $0.medicineAccepted == true }.count,
                     total: items.count
                 )
             }
         }
+
     }
 
     @ViewBuilder
@@ -958,17 +1088,31 @@ struct AnalyticsView: View {
                     .symbolSize(30)
                 }
                 .chartYScale(domain: 0...1)
+                .chartXScale(domain: chartXDateDomain)
                 .chartXAxis {
-                    AxisMarks(values: .automatic(desiredCount: selectedRange == .week ? 7 : 4)) { _ in
+                    AxisMarks(values: .automatic(desiredCount: selectedRange.chartXAxisDesiredCount)) { value in
                         AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
-                        AxisValueLabel(format: .dateTime.month(.abbreviated).day()).font(.caption2)
+                        AxisValueLabel(centered: true) {
+                            if let d = value.as(Date.self) {
+                                Text(d, format: selectedRange.chartXAxisDateFormat)
+                                    .font(.caption2)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.62)
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
                     }
                 }
                 .chartYAxis {
                     AxisMarks(position: .leading, values: [0, 0.5, 1.0]) { v in
                         AxisGridLine().foregroundStyle(Color(.separator).opacity(0.4))
-                        AxisValueLabel {
-                            if let d = v.as(Double.self) { Text("\(Int(d * 100))%").font(.caption2) }
+                        AxisValueLabel(centered: false) {
+                            if let d = v.as(Double.self) {
+                                Text("\(Int(d * 100))%")
+                                    .font(.caption2)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.75)
+                            }
                         }
                     }
                 }
@@ -1027,7 +1171,13 @@ struct AnalyticsView: View {
     }
 
     /// Opens the pet profile so the guardian can add weight or height readings.
-    private func analyticsMeasurementEmptyCard(pet: Pet, icon: String, title: String, message: String) -> some View {
+    private func analyticsMeasurementEmptyCard(
+        pet: Pet,
+        initialScrollAnchor: PetDetailSheet.InitialScrollAnchor,
+        icon: String,
+        title: String,
+        message: String
+    ) -> some View {
         VStack(spacing: 16) {
             Image(systemName: icon)
                 .font(AppTypography.emptyStateSymbol)
@@ -1042,12 +1192,33 @@ struct AnalyticsView: View {
                 .multilineTextAlignment(.center)
 
             analyticsCapsuleCTAButton(title: "Tap to add", accessibilityLabel: "Tap to add in \(pet.name)'s profile") {
-                petDetailSheetPet = pet
+                analyticsPetProfileLaunch = AnalyticsPetProfileLaunch(pet: pet, initialScrollAnchor: initialScrollAnchor)
             }
             .accessibilityHint("Opens this pet’s profile.")
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)
+        .padding(.horizontal, 18)
+        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    /// Weight / height history exists but fewer than two readings fall inside the selected chart window.
+    private func analyticsMeasurementSparsePeriodCard(icon: String, title: String, message: String) -> some View {
+        VStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(AppTypography.emptyStateSymbol)
+                .foregroundStyle(Color.appPink.opacity(0.45))
+            Text(title)
+                .font(AppTypography.cardTitle)
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.center)
+            Text(message)
+                .font(AppTypography.supportingText)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
         .padding(.horizontal, 18)
         .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
     }
