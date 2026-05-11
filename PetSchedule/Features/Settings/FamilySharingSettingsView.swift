@@ -29,6 +29,14 @@ struct FamilySharingSettingsView: View {
             }
 
             Section {
+                Text("Tip: Invite people here whenever you're ready—same pets, schedules, and logs for everyone who accepts. They need iCloud on their device.")
+                    .font(AppTypography.supportingText)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("Add people")
+            }
+
+            Section {
                 Button {
                     showInviteSheet = true
                 } label: {

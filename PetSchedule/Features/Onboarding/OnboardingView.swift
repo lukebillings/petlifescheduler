@@ -5,7 +5,7 @@ import StoreKit
 import SwiftUI
 import UserNotifications
 
-/// Subscription plan currently selected on a paywall (onboarding step 11 or post-onboarding hard paywall).
+/// Subscription plan currently selected on a paywall (onboarding paywall step or post-onboarding hard paywall).
 enum PaywallPlan: Equatable {
     case monthly
     case yearly
@@ -210,7 +210,6 @@ struct OnboardingView: View {
     @State private var activityTime: Date = Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: .now) ?? .now
     @State private var householdPetCount: HouseholdPetCount = .one
     @State private var selectedFeatureInterest: OnboardingFeatureInterest?
-    @State private var showHouseholdInviteSheet = false
     /// Draft for step 1 — avoid `@AppStorage` on every keystroke with `@Bindable` (device crashes).
     @State private var displayNameDraft = ""
     /// Draft for step 6 — avoids writing `@AppStorage` on every chip tap (can re-enter with `@Bindable` and crash on device).
@@ -219,7 +218,7 @@ struct OnboardingView: View {
     @State private var weightUnitDraft = WeightUnit.kg.rawValue
     @State private var heightUnitDraft = HeightUnit.cm.rawValue
 
-    // Paywall (step 11) state
+    // Paywall (final onboarding step) state
     @State private var entitlementStore = SubscriptionEntitlementStore.shared
     @State private var products = SubscriptionProductLoader()
     @State private var paywallSelectedPlan: PaywallPlan = .monthly
@@ -228,7 +227,7 @@ struct OnboardingView: View {
     @State private var notificationPermissionAlertMessage: String?
     @State private var showNotificationPermissionAlert = false
 
-    private let totalSteps = 12
+    private let totalSteps = 11
 
     var body: some View {
         VStack(spacing: 0) {
@@ -275,9 +274,6 @@ struct OnboardingView: View {
                     StepFeatureInterest(selection: $selectedFeatureInterest)
                         .transition(slideTransition)
                 case 10:
-                    StepHouseholdInvite(showInviteSheet: $showHouseholdInviteSheet)
-                        .transition(slideTransition)
-                case 11:
                     Step5Paywall(
                         pet: previewPet,
                         ownsMultiplePets: householdPetCount != .one,
@@ -299,8 +295,8 @@ struct OnboardingView: View {
 
             // Fixed bottom bar — identical position on every screen
             VStack(spacing: 14) {
-                // Skip — optional photo, schedule, notifications, or household invite.
-                if step == 3 || step == 4 || step == 5 || step == 10 {
+                // Skip — optional photo, schedule, or notifications.
+                if step == 3 || step == 4 || step == 5 {
                     Button {
                         if step == 3 {
                             addPetIfNeeded()
@@ -327,7 +323,7 @@ struct OnboardingView: View {
 
                 Button(action: advance) {
                         Group {
-                            if step == 11 && paywallPurchaseState == .purchasing {
+                            if step == 10 && paywallPurchaseState == .purchasing {
                                 ProgressView()
                                     .progressViewStyle(.circular)
                                     .tint(.white)
@@ -352,7 +348,7 @@ struct OnboardingView: View {
             .padding(.top, 8)
         }
         .overlay(alignment: .topTrailing) {
-            if step == 11 {
+            if step == 10 {
                 Button {
                     completeOnboarding()
                 } label: {
@@ -378,18 +374,13 @@ struct OnboardingView: View {
             if newStep == 8 {
                 heightUnitDraft = heightUnitRaw
             }
-            if newStep == 11 {
+            if newStep == 10 {
                 Task { await products.refresh() }
                 Task { await entitlementStore.refreshFromCurrentEntitlements() }
             }
         }
-        .onChange(of: showHouseholdInviteSheet) { _, isShowing in
-            if !isShowing && step == 10 {
-                withAnimation { step += 1 }
-            }
-        }
         .onChange(of: entitlementStore.isSubscribed) { _, isSubscribed in
-            if isSubscribed && step == 11 {
+            if isSubscribed && step == 10 {
                 completeOnboarding()
             }
         }
@@ -410,8 +401,7 @@ struct OnboardingView: View {
         switch step {
         case 3: return petPhotoData == nil ? "Add Photo" : "Continue"
         case 5: return "Enable Notifications"
-        case 10: return "Invite household members"
-        case 11:
+        case 10:
             if products.isLoading { return "Loading…" }
             switch paywallSelectedPlan {
             case .monthly: return "Continue with Monthly"
@@ -442,7 +432,7 @@ struct OnboardingView: View {
             return petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 9:
             return selectedFeatureInterest == nil
-        case 11:
+        case 10:
             return paywallPurchaseState != .idle
                 || (products.monthlyProduct == nil && products.yearlyProduct == nil)
         default:
@@ -467,12 +457,6 @@ struct OnboardingView: View {
 
     private func advance() {
         if step == 10 {
-            HapticManager.impact(.light)
-            showHouseholdInviteSheet = true
-            return
-        }
-
-        if step == 11 {
             Task { await beginPurchase() }
             return
         }
@@ -1284,56 +1268,6 @@ private struct StepFeatureInterest: View {
                 .padding(.horizontal, 28)
                 .padding(.top, 12)
                 .padding(.bottom, 8)
-        }
-    }
-}
-
-// MARK: - Household invite (before paywall)
-
-private struct StepHouseholdInvite: View {
-    @Binding var showInviteSheet: Bool
-
-    var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 28) {
-                Spacer().frame(minHeight: 44)
-
-                ZStack {
-                    Circle()
-                        .fill(Color.appPink.opacity(0.12))
-                        .frame(width: 120, height: 120)
-                    Image(systemName: "person.3.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundStyle(Color.appPink.gradient)
-                        .padding(30)
-                        .frame(width: 120, height: 120)
-                }
-
-                VStack(spacing: 10) {
-                    Text("Invite your household")
-                        .font(AppTypography.screenTitle)
-                        .multilineTextAlignment(.center)
-                    Text("Share your PetSchedule with partners, family, or roommates so everyone sees the same pets, schedules, and logs. They need iCloud on their device to join.")
-                        .font(AppTypography.secondaryLabel)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                Text("You can skip for now or add people anytime in Settings → Household.")
-                    .font(AppTypography.supportingText)
-                    .foregroundStyle(.tertiary)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 4)
-
-                Spacer(minLength: 120)
-            }
-            .padding(.horizontal, 28)
-        }
-        .sheet(isPresented: $showInviteSheet) {
-            CloudSharingSheet(isPresented: $showInviteSheet, container: HouseholdCloudKitService.shared.container)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
         }
     }
 }

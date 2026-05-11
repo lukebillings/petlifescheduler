@@ -202,7 +202,7 @@ struct SettingsView: View {
                         Label("Household sharing", systemImage: "person.3.fill")
                     }
                 } footer: {
-                    Text("Invite family via iCloud so pets and schedules stay in sync. Each person uses their own Apple ID.")
+                    Text("Tip: Add partners, family, or roommates anytime—open Household sharing and tap Invite household members. Everyone stays on the same pets and schedules via iCloud; each person uses their own Apple ID.")
                 }
 
                 Section {
