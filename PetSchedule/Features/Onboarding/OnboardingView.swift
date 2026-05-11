@@ -1637,6 +1637,11 @@ private struct PaywallPreviewCarousel: View {
     let slides: [PaywallPreviewSlide]
     var interval: TimeInterval = 3.5
 
+    /// Vertical space for the scaled preview inside each page (caption + page dots sit below).
+    private let previewAreaHeight: CGFloat = 220
+    /// Horizontal padding applied to each slide (`28` × 2 is subtracted from page width for fit math).
+    private let slideHorizontalPadding: CGFloat = 28
+
     /// Scroll anchor id (matches each slide’s `id`, including pet name).
     @State private var scrollPosition: String?
     /// `Task`-based advance avoids Combine `Autoconnect` reuse issues; cancelled whenever the slide set changes.
@@ -1653,12 +1658,13 @@ private struct PaywallPreviewCarousel: View {
         VStack(spacing: 12) {
             GeometryReader { geo in
                 let pageWidth = max(geo.size.width, 1)
+                let contentWidth = max(pageWidth - slideHorizontalPadding * 2, 1)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 0) {
                         ForEach(slides) { slide in
-                            slideView(slide)
-                                .padding(.horizontal, 28)
-                                .frame(width: pageWidth, height: 172, alignment: .top)
+                            slideView(slide, availableWidth: contentWidth, availableHeight: previewAreaHeight)
+                                .padding(.horizontal, slideHorizontalPadding)
+                                .frame(width: pageWidth, height: previewAreaHeight, alignment: .top)
                                 .id(slide.id)
                         }
                     }
@@ -1667,7 +1673,7 @@ private struct PaywallPreviewCarousel: View {
                 .scrollTargetBehavior(.paging)
                 .scrollPosition(id: $scrollPosition)
             }
-            .frame(height: 172)
+            .frame(height: previewAreaHeight)
 
             Group {
                 if let id = activeSlideID, let current = slides.first(where: { $0.id == id }) {
@@ -1754,17 +1760,32 @@ private struct PaywallPreviewCarousel: View {
     }
 
     @ViewBuilder
-    private func slideView(_ slide: PaywallPreviewSlide) -> some View {
+    private func slideView(_ slide: PaywallPreviewSlide, availableWidth: CGFloat, availableHeight: CGFloat) -> some View {
         switch slide {
         case .scheduleTimeline(let name, let type):
             PaywallScheduleProductPreview(petName: name, animalType: type)
-                .paywallCarouselScaledContent(width: 410, height: 248, scale: 0.68)
+                .paywallCarouselFit(
+                    designWidth: 410,
+                    designHeight: 440,
+                    availableWidth: availableWidth,
+                    availableHeight: availableHeight
+                )
         case .reminderPush(_, _):
             PaywallSettingsNotificationsProductPreview()
-                .paywallCarouselScaledContent(width: 380, height: 260, scale: 0.62)
+                .paywallCarouselFit(
+                    designWidth: 380,
+                    designHeight: 290,
+                    availableWidth: availableWidth,
+                    availableHeight: availableHeight
+                )
         case .weightChart:
             PaywallWeightTrendProductPreview()
-                .paywallCarouselScaledContent(width: 360, height: 210, scale: 0.78)
+                .paywallCarouselFit(
+                    designWidth: 360,
+                    designHeight: 248,
+                    availableWidth: availableWidth,
+                    availableHeight: availableHeight
+                )
         }
     }
 }
@@ -1772,13 +1793,28 @@ private struct PaywallPreviewCarousel: View {
 // MARK: - Paywall carousel (real product UI)
 
 private extension View {
-    /// Crops and scales live app UI so it reads like a device screenshot inside the carousel.
-    func paywallCarouselScaledContent(width: CGFloat, height: CGFloat, scale: CGFloat) -> some View {
-        self
-            .frame(width: width, height: height, alignment: .top)
-            .clipped()
-            .scaleEffect(scale, anchor: .top)
-            .frame(width: width * scale, height: height * scale)
+    /// Lays out the preview at a fixed “design” size, then scales **uniformly** so the entire rect
+    /// fits inside the carousel cell — no fixed scale factor, so tall schedule rows / charts are
+    /// not cropped before scaling.
+    func paywallCarouselFit(
+        designWidth: CGFloat,
+        designHeight: CGFloat,
+        availableWidth: CGFloat,
+        availableHeight: CGFloat
+    ) -> some View {
+        let aw = max(availableWidth, 1)
+        let ah = max(availableHeight, 1)
+        let scale = min(aw / designWidth, ah / designHeight)
+        return HStack(spacing: 0) {
+            Spacer(minLength: 0)
+            self
+                .frame(width: designWidth, height: designHeight, alignment: .topLeading)
+                .clipped()
+                .scaleEffect(scale, anchor: .top)
+                .frame(width: designWidth * scale, height: designHeight * scale)
+            Spacer(minLength: 0)
+        }
+        .frame(width: aw, height: ah, alignment: .top)
     }
 }
 

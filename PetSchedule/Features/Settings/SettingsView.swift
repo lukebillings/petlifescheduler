@@ -218,7 +218,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Widgets & shortcuts")
                 } footer: {
-                    Text("Hold the Lock Screen or Home Screen, tap + , search PetSchedule, then pin any widget sizes you like.")
+                    Text("Press and hold the Home Screen or Lock Screen. Tap Edit in the top-left, tap Add Widget, search for PetSchedule, then choose a widget size you like.")
                 }
 
                 Section("Units") {
