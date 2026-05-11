@@ -3,6 +3,7 @@ import UserNotifications
 import StoreKit
 
 struct SettingsView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @Bindable var viewModel: HomeViewModel
     var onLaunchFeedbackCheckIn: () -> Void
 
@@ -12,6 +13,7 @@ struct SettingsView: View {
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("soundEffectsEnabled") private var soundEffectsEnabled = true
     @AppStorage("interfaceAnimationsEnabled") private var interfaceAnimationsEnabled = true
+    @AppStorage("pinkWaveHeaderEnabled") private var pinkWaveHeaderEnabled = true
     @AppStorage("timeFormat")  private var timeFormatRaw  = "24h"
     @AppStorage("weightUnit")  private var weightUnitRaw  = "kg"
     @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
@@ -21,6 +23,9 @@ struct SettingsView: View {
     private var heightUnit:  HeightUnit  { HeightUnit(rawValue: heightUnitRaw)   ?? .cm }
 
     @State private var showingResetConfirm = false
+    @State private var testNotificationStatusMessage: String?
+    @State private var showingTestNotificationStatus = false
+    @State private var notificationPermissionDenied = false
     @State private var customMinutes: Int = 15
     @State private var showCustomField = false
 
@@ -56,15 +61,42 @@ struct SettingsView: View {
                         .tint(Color.appPink)
                         .onChange(of: remindersEnabled) { _, enabled in
                             if enabled {
-                                UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in
-                                    DispatchQueue.main.async {
-                                        viewModel.syncWidgetSchedule()
+                                Task { @MainActor in
+                                    let center = UNUserNotificationCenter.current()
+                                    let settings = await center.notificationSettings()
+
+                                    let granted: Bool
+                                    switch settings.authorizationStatus {
+                                    case .authorized, .provisional, .ephemeral:
+                                        granted = true
+                                    case .notDetermined:
+                                        granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+                                    case .denied:
+                                        granted = false
+                                    @unknown default:
+                                        granted = false
                                     }
+
+                                    if !granted {
+                                        // Keep the UI honest: reminders cannot be enabled without OS permission.
+                                        remindersEnabled = false
+                                    }
+                                    viewModel.syncWidgetSchedule()
                                 }
                             } else {
                                 viewModel.syncWidgetSchedule()
                             }
                         }
+
+                    if notificationPermissionDenied {
+                        Button {
+                            guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                            UIApplication.shared.open(url)
+                        } label: {
+                            Label("Open iOS notification settings", systemImage: "gearshape")
+                                .foregroundStyle(.primary)
+                        }
+                    }
 
                     if remindersEnabled {
                         ForEach(ReminderOption.allCases, id: \.rawValue) { option in
@@ -108,9 +140,19 @@ struct SettingsView: View {
                             }
                         }
                     }
+
+                    Button {
+                        Task { await sendTestNotificationNow() }
+                    } label: {
+                        Label("Send test notification", systemImage: "bell.badge")
+                            .foregroundStyle(.primary)
+                    }
                 }
                 .onChange(of: reminderMinutes) { _, _ in
                     viewModel.syncWidgetSchedule()
+                }
+                .task {
+                    await refreshNotificationPermissionState()
                 }
 
                 Section {
@@ -128,10 +170,15 @@ struct SettingsView: View {
                         Label("Interface animations", systemImage: "sparkles")
                     }
                     .tint(Color.appPink)
+
+                    Toggle(isOn: $pinkWaveHeaderEnabled) {
+                        Label("Pink wave header", systemImage: "water.waves")
+                    }
+                    .tint(Color.appPink)
                 } header: {
                     Text("App")
                 } footer: {
-                    Text("Lists and panels slide in subtly when they load. Turn off here for less motion; Settings › Accessibility › Motion › Reduce Motion also disables these animations.")
+                    Text("Lists and panels slide in subtly when they load. Turn off here for less motion; Settings › Accessibility › Motion › Reduce Motion also disables these animations. You can also disable the pink wave header style across tabs.")
                 }
 
                 Section {
@@ -225,7 +272,7 @@ struct SettingsView: View {
                 }
 
                 Section("Legal") {
-                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy")!) {
+                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy/")!) {
                         HStack {
                             Label("Privacy Policy", systemImage: "hand.raised.fill")
                             Spacer()
@@ -234,7 +281,7 @@ struct SettingsView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions")!) {
+                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!) {
                         HStack {
                             Label("Terms & Conditions", systemImage: "doc.text.fill")
                             Spacer()
@@ -243,7 +290,7 @@ struct SettingsView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions")!) {
+                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!) {
                         HStack {
                             Label("Terms of Service", systemImage: "checkmark.seal.fill")
                             Spacer()
@@ -269,6 +316,10 @@ struct SettingsView: View {
             }
             .background(Color(.systemGroupedBackground))
             .toolbar(.hidden, for: .navigationBar)
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                Task { await refreshNotificationPermissionState() }
+            }
             .confirmationDialog(
                 "Reset all data?",
                 isPresented: $showingResetConfirm,
@@ -282,6 +333,55 @@ struct SettingsView: View {
             } message: {
                 Text("All pets and schedules will be deleted. This cannot be undone.")
             }
+            .alert("Test notification", isPresented: $showingTestNotificationStatus, actions: {
+                Button("OK", role: .cancel) {}
+            }, message: {
+                Text(testNotificationStatusMessage ?? "Unable to send test notification.")
+            })
+        }
+    }
+
+    @MainActor
+    private func sendTestNotificationNow() async {
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        let status = settings.authorizationStatus
+
+        if status == .notDetermined {
+            let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+            if !granted {
+                testNotificationStatusMessage = "Notifications are disabled. Turn them on in iOS Settings to test push alerts."
+                showingTestNotificationStatus = true
+                return
+            }
+        } else if status == .denied {
+            testNotificationStatusMessage = "Notifications are disabled for PetSchedule. Enable them in iOS Settings, then try again."
+            showingTestNotificationStatus = true
+            return
+        }
+
+        let scheduled = await ScheduleReminderScheduler.scheduleTestNotification()
+        if scheduled {
+            testNotificationStatusMessage = "Sent. You should see a test notification in a few seconds."
+        } else {
+            testNotificationStatusMessage = "Couldn’t schedule a test notification right now. Please try again."
+        }
+        showingTestNotificationStatus = true
+    }
+
+    @MainActor
+    private func refreshNotificationPermissionState() async {
+        let status = await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            notificationPermissionDenied = false
+        case .denied:
+            notificationPermissionDenied = true
+            remindersEnabled = false
+        case .notDetermined:
+            notificationPermissionDenied = false
+        @unknown default:
+            notificationPermissionDenied = false
         }
     }
 }

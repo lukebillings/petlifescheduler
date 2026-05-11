@@ -47,6 +47,7 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
     var contentBottomPadding: CGFloat
     @ViewBuilder var accessory: () -> Accessory
     @ViewBuilder var trailing: () -> Trailing
+    @AppStorage("pinkWaveHeaderEnabled") private var pinkWaveHeaderEnabled = true
 
     init(
         _ title: String,
@@ -67,7 +68,7 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
             HStack(alignment: .center, spacing: 12) {
                 Text(title)
                     .font(AppTypography.screenTitle)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(pinkWaveHeaderEnabled ? .white : .primary)
 
                 Spacer(minLength: 0)
 
@@ -81,28 +82,37 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
         .padding(.bottom, contentBottomPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         /// Keeps clock / cellular / battery legible against `appPink` when the header reaches into the status bar.
-        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbarColorScheme(pinkWaveHeaderEnabled ? .dark : .light, for: .navigationBar)
         .background {
-            TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
-                GeometryReader { proxy in
-                    let topInset = proxy.safeAreaInsets.top
-                    let phase = CGFloat(timeline.date.timeIntervalSinceReferenceDate * 1.15)
-                    let width = proxy.size.width
-                    let height = proxy.size.height + topInset
-                    ZStack(alignment: .top) {
-                        // Wave path leaves the troughs unfilled; match the screen body (grouped grey).
-                        Color(.systemGroupedBackground)
-                            .frame(width: width, height: height)
-                            .offset(y: -topInset)
-                        PinkWaveHeaderCapShape(wavePhase: phase)
-                            .fill(Color.appPink)
-                            .frame(width: width, height: height)
-                            .offset(y: -topInset)
+            if pinkWaveHeaderEnabled {
+                TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
+                    GeometryReader { proxy in
+                        let topInset = proxy.safeAreaInsets.top
+                        let phase = CGFloat(timeline.date.timeIntervalSinceReferenceDate * 1.15)
+                        let width = proxy.size.width
+                        let height = proxy.size.height + topInset
+                        ZStack(alignment: .top) {
+                            // Wave path leaves the troughs unfilled; match the screen body (grouped grey).
+                            Color(.systemGroupedBackground)
+                                .frame(width: width, height: height)
+                                .offset(y: -topInset)
+                            PinkWaveHeaderCapShape(wavePhase: phase)
+                                .fill(Color.appPink)
+                                .frame(width: width, height: height)
+                                .offset(y: -topInset)
+                        }
                     }
                 }
+                .allowsHitTesting(false)
+                .ignoresSafeArea(edges: .top)
+            } else {
+                GeometryReader { proxy in
+                    let topInset = proxy.safeAreaInsets.top
+                    Color(.systemGroupedBackground)
+                        .offset(y: -topInset)
+                        .ignoresSafeArea(edges: .top)
+                }
             }
-            .allowsHitTesting(false)
-            .ignoresSafeArea(edges: .top)
         }
     }
 }

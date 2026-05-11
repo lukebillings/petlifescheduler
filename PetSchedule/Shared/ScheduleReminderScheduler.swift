@@ -7,6 +7,7 @@ enum ScheduleReminderScheduler {
     private static let storageEnabledKey = "remindersEnabled"
     private static let storageMinutesKey = "reminderMinutes"
     static let notificationIdentifierPrefix = "petschedule.event-reminder."
+    static let testNotificationIdentifierPrefix = "petschedule.test-reminder."
 
     /// Ensures banners appear while the app is in the foreground (otherwise easy to think reminders “don’t work”).
     private static let delegateBootstrap: Void = {
@@ -18,6 +19,42 @@ enum ScheduleReminderScheduler {
         _ = delegateBootstrap
         Task {
             await rescheduleAsync(for: items)
+        }
+    }
+
+    /// Schedules a one-off test notification a few seconds from now so users can verify push banners/sound.
+    /// Returns `true` if scheduled, `false` when notification authorization is unavailable.
+    @discardableResult
+    static func scheduleTestNotification(after seconds: TimeInterval = 3) async -> Bool {
+        _ = delegateBootstrap
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+
+        let isAuthorized: Bool = {
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                return true
+            default:
+                return false
+            }
+        }()
+
+        guard isAuthorized else { return false }
+
+        let content = UNMutableNotificationContent()
+        content.title = "PetSchedule test notification"
+        content.body = "Push reminders are working on this device."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, seconds), repeats: false)
+        let identifier = testNotificationIdentifierPrefix + UUID().uuidString
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+
+        do {
+            try await center.add(request)
+            return true
+        } catch {
+            return false
         }
     }
 

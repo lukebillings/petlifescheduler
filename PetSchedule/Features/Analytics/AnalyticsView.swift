@@ -1101,7 +1101,7 @@ struct AnalyticsView: View {
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
 
-            analyticsCapsuleCTAButton(title: "Tap to add event", accessibilityLabel: "Add \(noun) event for \(pet.name)") {
+            analyticsCapsuleCTAButton(title: "Add 1st \(noun) event", accessibilityLabel: "Add first \(noun) event for \(pet.name)") {
                 addEventCompliancePayload = AddEventCompliancePayload(
                     pet: pet,
                     presetActivity: Self.compliancePresetActivity(kind)

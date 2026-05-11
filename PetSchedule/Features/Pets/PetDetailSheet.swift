@@ -470,10 +470,12 @@ struct PetDetailSheet: View {
                             Task { weightEntryImageData = try? await item?.loadTransferable(type: Data.self) }
                         }
 
-                    if weightHistory.count >= 2 {
-                        WeightChartView(entries: weightHistory, unit: weightUnit)
-                            .frame(height: 180)
-                            .padding(.vertical, 8)
+                    if !weightHistory.isEmpty {
+                        if weightHistory.count >= 2 {
+                            WeightChartView(entries: weightHistory, unit: weightUnit)
+                                .frame(height: 180)
+                                .padding(.vertical, 8)
+                        }
 
                         weightReadingsList(entries: weightHistory, unit: weightUnit)
 
@@ -486,23 +488,6 @@ struct PetDetailSheet: View {
                         }
                         .buttonStyle(.plain)
                         .frame(maxWidth: .infinity, alignment: .trailing)
-                    } else if !weightHistory.isEmpty {
-                        HStack {
-                            Image(systemName: "scalemass.fill")
-                                .foregroundStyle(Color.appPink)
-                            Text("Latest: \(weightUnit.formatValue(weightHistory.last!.kg))")
-                                .font(AppTypography.secondaryLabel)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Button {
-                                withAnimation { weightHistory.removeAll() }
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(.red)
-                                    .font(AppTypography.supportingText)
-                            }
-                            .buttonStyle(.plain)
-                        }
                     }
                     }
                 } header: {
@@ -597,10 +582,12 @@ struct PetDetailSheet: View {
                             Task { heightEntryImageData = try? await item?.loadTransferable(type: Data.self) }
                         }
 
-                    if heightHistory.count >= 2 {
-                        HeightChartView(entries: heightHistory, unit: heightUnit)
-                            .frame(height: 180)
-                            .padding(.vertical, 8)
+                    if !heightHistory.isEmpty {
+                        if heightHistory.count >= 2 {
+                            HeightChartView(entries: heightHistory, unit: heightUnit)
+                                .frame(height: 180)
+                                .padding(.vertical, 8)
+                        }
 
                         heightReadingsList(entries: heightHistory, unit: heightUnit)
 
@@ -613,23 +600,6 @@ struct PetDetailSheet: View {
                         }
                         .buttonStyle(.plain)
                         .frame(maxWidth: .infinity, alignment: .trailing)
-                    } else if !heightHistory.isEmpty {
-                        HStack {
-                            Image(systemName: "ruler.fill")
-                                .foregroundStyle(Color.appPink)
-                            Text("Latest: \(heightUnit.formatValue(heightHistory.last!.cm))")
-                                .font(AppTypography.secondaryLabel)
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            Button {
-                                withAnimation { heightHistory.removeAll() }
-                            } label: {
-                                Image(systemName: "trash")
-                                    .foregroundStyle(.red)
-                                    .font(AppTypography.supportingText)
-                            }
-                            .buttonStyle(.plain)
-                        }
                     }
                     }
                 } header: {

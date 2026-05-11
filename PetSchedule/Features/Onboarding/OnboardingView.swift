@@ -196,6 +196,7 @@ struct OnboardingView: View {
     @AppStorage("timeFormat")  private var timeFormatRaw  = "24h"
     @AppStorage("weightUnit")  private var weightUnitRaw  = "kg"
     @AppStorage("heightUnit")  private var heightUnitRaw  = "cm"
+    @AppStorage("remindersEnabled") private var remindersEnabled = false
     @AppStorage(UserProfileStorage.displayNameKey) private var userDisplayName = ""
 
     @State private var step = 0
@@ -489,7 +490,12 @@ struct OnboardingView: View {
                 viewModel.syncWidgetSchedule()
             }
         case 5:
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { _, _ in }
+            Task { @MainActor in
+                let granted = (try? await UNUserNotificationCenter.current()
+                    .requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+                remindersEnabled = granted
+                viewModel.syncWidgetSchedule()
+            }
         case 6:
             timeFormatRaw = timeFormatDraft
         case 7:
@@ -1224,7 +1230,6 @@ private struct StepFeatureInterest: View {
                     ForEach(OnboardingFeatureInterest.allCases) { option in
                         OnboardingChoiceButton(
                             title: option.title,
-                            caption: option.caption,
                             isSelected: selection == option
                         ) {
                             selection = option
@@ -2081,12 +2086,11 @@ private struct PaywallMonthlyCard: View {
     }
 }
 
-/// Centralized legal URLs used by the paywall footer. Kept as placeholders that match the
-/// strings in `SettingsView`; update both when the real public URLs are ready.
+/// Centralized legal URLs used by the paywall footer. Must stay in sync with the links in `SettingsView`.
 private enum PaywallLegalURLs {
-    static let privacy = URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy")!
-    static let terms = URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions")!
-    static let tos = URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions")!
+    static let privacy = URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy/")!
+    static let terms = URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!
+    static let tos = URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!
 }
 
 private struct PaywallSubscriptionFooter: View {

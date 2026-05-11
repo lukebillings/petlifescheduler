@@ -19,7 +19,7 @@ enum FeatureTutorialStep: Int, CaseIterable, Hashable {
     var detail: String {
         switch self {
         case .schedule:
-            return "Today’s events live here. Tap + to schedule events, routines, and reminders; use + Log to add quick logs for walks, feeds, water, bathroom breaks, and mood."
+            return "Today’s events live here. Tap Event (calendar icon) to schedule events, routines, and reminders; use Log (document icon) to add quick logs for walks, feeds, water, bathroom breaks, and mood."
         case .pets:
             return "Keep each pet’s profile with photos, weight, height, documents, and vet details."
         case .analytics:
