@@ -1432,7 +1432,7 @@ private func paywallPreviewSlides(
         priorityID = "schedule"
     }
 
-    if let priorityIdx = slides.firstIndex(where: { $0.id == priorityID }), priorityIdx != 0 {
+    if let priorityIdx = slides.firstIndex(where: { $0.stableSlideKind == priorityID }), priorityIdx != 0 {
         let priority = slides.remove(at: priorityIdx)
         slides.insert(priority, at: 0)
     }
@@ -1594,11 +1594,25 @@ private enum PaywallPreviewSlide: Equatable, Identifiable {
     case reminderPush(petName: String, animalType: AnimalType)
     case weightChart
 
-    var id: String {
+    /// Fixed kind for reordering the carousel (`paywallPreviewSlides`); not the same as `id`.
+    var stableSlideKind: String {
         switch self {
         case .scheduleTimeline: return "schedule"
-        case .reminderPush:     return "reminder"
-        case .weightChart:      return "weight"
+        case .reminderPush: return "reminder"
+        case .weightChart: return "weight"
+        }
+    }
+
+    /// Unique per slide *content* so SwiftUI does not reuse a `TabView` page host when the pet name
+    /// or type changes while the paywall is visible (that reuse produced “invalid reuse after initialization failure”).
+    var id: String {
+        switch self {
+        case .scheduleTimeline(let petName, let animalType):
+            return "schedule-\(animalType.rawValue)-\(petName)"
+        case .reminderPush(let petName, let animalType):
+            return "reminder-\(animalType.rawValue)-\(petName)"
+        case .weightChart:
+            return "weight"
         }
     }
 
@@ -1615,30 +1629,49 @@ private enum PaywallPreviewSlide: Equatable, Identifiable {
 /// `PaywallRotatingBenefits` because image-led paywalls reliably outperform text-only paywalls.
 /// User swipes interrupt the auto-advance and continue cycling from the new position on the
 /// next tick.
+///
+/// Uses a paging `ScrollView` + `scrollPosition` instead of `TabView(.page)` so we never hit
+/// `UIPageViewController`’s aggressive child reuse (a frequent source of “invalid reuse after initialization failure”
+/// with heterogeneous pages like `ScheduleListView` vs charts).
 private struct PaywallPreviewCarousel: View {
     let slides: [PaywallPreviewSlide]
     var interval: TimeInterval = 3.5
 
-    @State private var currentIndex: Int = 0
-    /// Stored as `@State` so the publisher is created once per view instance, not on every body
-    /// re-evaluation (which would cause duplicate ticks).
-    @State private var autoAdvance = Timer.publish(every: 3.5, on: .main, in: .common).autoconnect()
+    /// Scroll anchor id (matches each slide’s `id`, including pet name).
+    @State private var scrollPosition: String?
+    /// `Task`-based advance avoids Combine `Autoconnect` reuse issues; cancelled whenever the slide set changes.
+    @State private var autoAdvanceTask: Task<Void, Never>?
+
+    private var activeSlideID: String? {
+        guard let scrollPosition, slides.contains(where: { $0.id == scrollPosition }) else {
+            return slides.first?.id
+        }
+        return scrollPosition
+    }
 
     var body: some View {
         VStack(spacing: 12) {
-            TabView(selection: $currentIndex) {
-                ForEach(Array(slides.enumerated()), id: \.offset) { idx, slide in
-                    slideView(slide)
-                        .padding(.horizontal, 28)
-                        .tag(idx)
+            GeometryReader { geo in
+                let pageWidth = max(geo.size.width, 1)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 0) {
+                        ForEach(slides) { slide in
+                            slideView(slide)
+                                .padding(.horizontal, 28)
+                                .frame(width: pageWidth, height: 172, alignment: .top)
+                                .id(slide.id)
+                        }
+                    }
+                    .scrollTargetLayout()
                 }
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: $scrollPosition)
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
             .frame(height: 172)
 
             Group {
-                if slides.indices.contains(currentIndex) {
-                    Text(slides[currentIndex].caption)
+                if let id = activeSlideID, let current = slides.first(where: { $0.id == id }) {
+                    Text(current.caption)
                         .font(AppTypography.secondaryEmphasis)
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.primary)
@@ -1646,27 +1679,78 @@ private struct PaywallPreviewCarousel: View {
                 }
             }
             .frame(minHeight: 36)
-            .id("caption-\(currentIndex)")
+            .id("caption-\(activeSlideID ?? "")")
             .transition(.opacity)
-            .animation(.easeInOut(duration: 0.3), value: currentIndex)
+            .animation(.easeInOut(duration: 0.3), value: activeSlideID)
 
             HStack(spacing: 6) {
-                ForEach(0..<slides.count, id: \.self) { idx in
+                ForEach(slides) { slide in
+                    let isCurrent = slide.id == activeSlideID
                     Capsule()
-                        .fill(idx == currentIndex ? Color.appPink : Color.gray.opacity(0.3))
-                        .frame(width: idx == currentIndex ? 16 : 6, height: 6)
-                        .animation(.spring(duration: 0.3), value: currentIndex)
+                        .fill(isCurrent ? Color.appPink : Color.gray.opacity(0.3))
+                        .frame(width: isCurrent ? 16 : 6, height: 6)
+                        .animation(.spring(duration: 0.3), value: activeSlideID)
                 }
             }
         }
-        .onReceive(autoAdvance) { _ in
-            guard !slides.isEmpty else { return }
-            withAnimation(.easeInOut(duration: 0.45)) {
-                currentIndex = (currentIndex + 1) % slides.count
-            }
+        .onAppear {
+            syncScrollPositionToSlides()
+            startAutoAdvanceIfNeeded()
+        }
+        .onDisappear {
+            autoAdvanceTask?.cancel()
+            autoAdvanceTask = nil
+        }
+        .onChange(of: slides.map(\.id)) { _, _ in
+            syncScrollPositionToSlides()
+            startAutoAdvanceIfNeeded()
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(slides.indices.contains(currentIndex) ? slides[currentIndex].caption : "App preview")
+        .accessibilityLabel(slides.first(where: { $0.id == activeSlideID })?.caption ?? "App preview")
+    }
+
+    private func syncScrollPositionToSlides() {
+        guard !slides.isEmpty else { return }
+        if scrollPosition == nil {
+            scrollPosition = slides[0].id
+            return
+        }
+        if slides.contains(where: { $0.id == scrollPosition }) { return }
+
+        // Pet name / type changed: keep the same slide *kind* (schedule / reminder / weight) if it still exists.
+        let prior = scrollPosition ?? ""
+        let kind: String? = {
+            if prior == "weight" { return "weight" }
+            if prior.hasPrefix("schedule-") { return "schedule" }
+            if prior.hasPrefix("reminder-") { return "reminder" }
+            return nil
+        }()
+        if let kind, let match = slides.first(where: { $0.stableSlideKind == kind }) {
+            scrollPosition = match.id
+        } else {
+            scrollPosition = slides[0].id
+        }
+    }
+
+    private func startAutoAdvanceIfNeeded() {
+        autoAdvanceTask?.cancel()
+        guard slides.count > 1 else { return }
+        let tickSeconds = interval
+        autoAdvanceTask = Task { @MainActor in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(tickSeconds))
+                guard !Task.isCancelled else { break }
+                guard slides.count > 1 else { break }
+                withAnimation(.easeInOut(duration: 0.45)) {
+                    let current = scrollPosition ?? slides[0].id
+                    guard let idx = slides.firstIndex(where: { $0.id == current }) else {
+                        scrollPosition = slides[0].id
+                        return
+                    }
+                    scrollPosition = slides[(idx + 1) % slides.count].id
+                }
+            }
+        }
     }
 
     @ViewBuilder
@@ -1715,14 +1799,28 @@ private struct PaywallScheduleProductPreview: View {
 }
 
 /// Notifications section matching **Settings › Notifications** (reminder timing UI).
+/// Implemented with static layout (no `List`) so UIKit table reuse never nests inside the paywall `TabView`.
 private struct PaywallSettingsNotificationsProductPreview: View {
     @State private var remindersEnabled = true
 
     var body: some View {
-        List {
-            Section("Notifications") {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Notifications")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+                .padding(.bottom, 6)
+
+            VStack(spacing: 0) {
                 Toggle("Enable event reminders", isOn: $remindersEnabled)
                     .tint(Color.appPink)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 11)
+
+                Divider().padding(.leading, 16)
+
                 HStack {
                     Text("10 minutes before")
                         .foregroundStyle(.primary)
@@ -1731,10 +1829,12 @@ private struct PaywallSettingsNotificationsProductPreview: View {
                         .foregroundStyle(Color.appPink)
                         .fontWeight(.semibold)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
             }
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
-        .listStyle(.insetGrouped)
-        .scrollDisabled(true)
+        .frame(maxWidth: 360)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
     }
