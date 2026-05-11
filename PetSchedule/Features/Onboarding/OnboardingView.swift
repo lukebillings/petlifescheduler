@@ -224,6 +224,8 @@ struct OnboardingView: View {
     @State private var paywallSelectedPlan: PaywallPlan = .monthly
     @State private var paywallPurchaseState: PaywallPurchaseState = .idle
     @State private var paywallErrorMessage: String?
+    @State private var notificationPermissionAlertMessage: String?
+    @State private var showNotificationPermissionAlert = false
 
     private let totalSteps = 12
 
@@ -390,6 +392,17 @@ struct OnboardingView: View {
                 completeOnboarding()
             }
         }
+        .alert("Notifications", isPresented: $showNotificationPermissionAlert) {
+            Button("OK", role: .cancel) {}
+            if notificationPermissionAlertMessage?.contains("Settings") == true {
+                Button("Open Settings") {
+                    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text(notificationPermissionAlertMessage ?? "")
+        }
     }
 
     private var buttonLabel: String {
@@ -491,8 +504,25 @@ struct OnboardingView: View {
             }
         case 5:
             Task { @MainActor in
-                let granted = (try? await UNUserNotificationCenter.current()
-                    .requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+                let center = UNUserNotificationCenter.current()
+                let settings = await center.notificationSettings()
+                let granted: Bool
+                switch settings.authorizationStatus {
+                case .authorized, .provisional, .ephemeral:
+                    granted = true
+                case .notDetermined:
+                    granted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+                case .denied:
+                    granted = false
+                    notificationPermissionAlertMessage = "iOS notification permission was already denied, so Apple won't show the popup again. You can enable notifications in Settings."
+                    showNotificationPermissionAlert = true
+                @unknown default:
+                    granted = false
+                }
+                if settings.authorizationStatus == .notDetermined && !granted {
+                    notificationPermissionAlertMessage = "Notifications are off right now. You can enable them in Settings at any time."
+                    showNotificationPermissionAlert = true
+                }
                 remindersEnabled = granted
                 viewModel.syncWidgetSchedule()
             }
@@ -545,6 +575,9 @@ struct OnboardingView: View {
             switch try await entitlementStore.purchase(product) {
             case .success:
                 HapticManager.impact(.medium)
+                if entitlementStore.isSubscribed {
+                    completeOnboarding()
+                }
             case .userCancelled:
                 break
             case .pending:

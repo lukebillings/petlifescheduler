@@ -215,19 +215,10 @@ struct SettingsView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    Link(destination: URL(string: "https://support.apple.com/guide/shortcuts/get-started-apdf90c652a48/ios")!) {
-                        HStack {
-                            Label("Shortcuts icon on Home Screen", systemImage: "arrow.turn.up.right.circle.fill")
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(AppTypography.supportingText)
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
                 } header: {
                     Text("Widgets & shortcuts")
                 } footer: {
-                    Text("Hold the Lock Screen or Home Screen, tap + , search PetSchedule, then pin any widget sizes you like. Shortcuts lets you bookmark common actions beside your apps.")
+                    Text("Hold the Lock Screen or Home Screen, tap + , search PetSchedule, then pin any widget sizes you like.")
                 }
 
                 Section("Units") {
