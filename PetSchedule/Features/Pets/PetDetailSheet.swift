@@ -508,14 +508,6 @@ struct PetDetailSheet: View {
                             Text("Enter the height and the date it was taken, then tap + to save. You can attach a photo (optional).")
                                 .font(AppTypography.supportingText)
                                 .foregroundStyle(.secondary)
-                            Button {
-                                openIOSMeasureApp()
-                            } label: {
-                                Label("Open iOS Measure app", systemImage: "ruler")
-                                    .font(AppTypography.compactControl)
-                                    .foregroundStyle(Color.appPink)
-                            }
-                            .buttonStyle(.plain)
                             HStack(spacing: 12) {
                                 HStack(spacing: 6) {
                                     TextField("0.0", text: $heightInput)
@@ -1056,11 +1048,6 @@ struct PetDetailSheet: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(doc.displayName)
         try? doc.data.write(to: url)
         return url
-    }
-
-    private func openIOSMeasureApp() {
-        guard let url = URL(string: "measure://") else { return }
-        UIApplication.shared.open(url)
     }
 
     @ViewBuilder
