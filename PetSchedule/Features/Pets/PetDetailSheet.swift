@@ -99,6 +99,7 @@ struct PetDetailSheet: View {
     @State private var showRemovePetConfirm = false
     @State private var showVetDetailsCopiedToast = false
     @State private var selectedJumpSection: JumpSection?
+    @State private var expandedMeasurementImageData: Data?
 
     private let petID: UUID
     private let isNew: Bool
@@ -507,6 +508,14 @@ struct PetDetailSheet: View {
                             Text("Enter the height and the date it was taken, then tap + to save. You can attach a photo (optional).")
                                 .font(AppTypography.supportingText)
                                 .foregroundStyle(.secondary)
+                            Button {
+                                openIOSMeasureApp()
+                            } label: {
+                                Label("Open iOS Measure app", systemImage: "ruler")
+                                    .font(AppTypography.compactControl)
+                                    .foregroundStyle(Color.appPink)
+                            }
+                            .buttonStyle(.plain)
                             HStack(spacing: 12) {
                                 HStack(spacing: 6) {
                                     TextField("0.0", text: $heightInput)
@@ -684,6 +693,33 @@ struct PetDetailSheet: View {
                 if !shareItems.isEmpty {
                     ShareSheetView(activityItems: shareItems)
                 }
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { expandedMeasurementImageData != nil },
+                    set: { isPresented in
+                        if !isPresented { expandedMeasurementImageData = nil }
+                    }
+                )
+            ) {
+                NavigationStack {
+                    ZStack {
+                        Color.black.ignoresSafeArea()
+                        if let data = expandedMeasurementImageData, let image = UIImage(data: data) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFit()
+                                .padding(20)
+                        }
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            Button("Done") { expandedMeasurementImageData = nil }
+                                .foregroundStyle(.white)
+                        }
+                    }
+                }
+                .presentationBackground(.black)
             }
             .fileExporter(
                 isPresented: $showingPDFExporter,
@@ -883,6 +919,7 @@ struct PetDetailSheet: View {
                             .scaledToFill()
                             .frame(width: 36, height: 36)
                             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .onTapGesture { expandedMeasurementImageData = data }
                     }
                     Text(entry.date.formatted(date: .abbreviated, time: .omitted))
                         .font(AppTypography.supportingText)
@@ -924,6 +961,7 @@ struct PetDetailSheet: View {
                             .scaledToFill()
                             .frame(width: 36, height: 36)
                             .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            .onTapGesture { expandedMeasurementImageData = data }
                     }
                     Text(entry.date.formatted(date: .abbreviated, time: .omitted))
                         .font(AppTypography.supportingText)
@@ -1018,6 +1056,11 @@ struct PetDetailSheet: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(doc.displayName)
         try? doc.data.write(to: url)
         return url
+    }
+
+    private func openIOSMeasureApp() {
+        guard let url = URL(string: "measure://") else { return }
+        UIApplication.shared.open(url)
     }
 
     @ViewBuilder
