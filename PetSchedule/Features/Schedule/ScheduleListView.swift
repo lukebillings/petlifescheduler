@@ -50,58 +50,60 @@ struct ScheduleListView: View {
                     Spacer()
                 }
             } else {
-                VStack(spacing: 18) {
-                    // ── All-day events (birthdays) ────────────────────────────
-                    if !allDayItems.isEmpty {
-                        ForEach(Array(allDayItems.enumerated()), id: \.element.id) { dayIndex, item in
-                            BirthdayRowView(item: item) {
-                                viewingPet = item.pet
+                GlassEffectContainer(spacing: 12) {
+                    VStack(spacing: 12) {
+                        // ── All-day events (birthdays) ────────────────────────────
+                        if !allDayItems.isEmpty {
+                            ForEach(Array(allDayItems.enumerated()), id: \.element.id) { dayIndex, item in
+                                BirthdayRowView(item: item) {
+                                    viewingPet = item.pet
+                                }
+                                .modifier(SlideInRowModifier(index: dayIndex))
                             }
-                            .modifier(SlideInRowModifier(index: dayIndex))
                         }
-                    }
 
-                    // ── Timed items with "NOW" bar ────────────────────────────
-                    if !timedItems.isEmpty {
-                        ForEach(Array(timedItems.enumerated()), id: \.element.id) { index, item in
-                            let isPast = index < nowInsertionIndex
+                        // ── Timed items with "NOW" bar ────────────────────────────
+                        if !timedItems.isEmpty {
+                            ForEach(Array(timedItems.enumerated()), id: \.element.id) { index, item in
+                                let isPast = index < nowInsertionIndex
 
-                            // Insert "NOW" divider before the first future event
-                            if index == nowInsertionIndex {
+                                // Insert "NOW" divider before the first future event
+                                if index == nowInsertionIndex {
+                                    NowDivider(time: now)
+                                }
+
+                                ScheduleRowView(item: item) {
+                                    let wasCompleted = item.isCompleted
+                                    viewModel.toggleCompletion(for: item)
+                                    if !wasCompleted {
+                                        HapticManager.playCompletion()
+                                        HapticManager.notification(.success)
+                                        confettiTrigger += 1
+                                    }
+                                } onTap: {
+                                    editingItem = item
+                                } onPetTap: {
+                                    viewingPet = item.pet
+                                } onMedicineAccept: { accepted in
+                                    viewModel.setMedicineAccepted(accepted, for: item)
+                                    HapticManager.notification(.success)
+                                }
+                                .opacity(isPast ? 0.82 : 1.0)
+                                .saturation(isPast ? 0.88 : 1.0)
+                                .modifier(SlideInRowModifier(index: allDayItems.count + index))
+                            }
+
+                            // If all events are in the past, show NOW bar after last item
+                            if nowInsertionIndex == timedItems.count && !timedItems.isEmpty {
                                 NowDivider(time: now)
                             }
-
-                            ScheduleRowView(item: item) {
-                                let wasCompleted = item.isCompleted
-                                viewModel.toggleCompletion(for: item)
-                                if !wasCompleted {
-                                    HapticManager.playCompletion()
-                                    HapticManager.notification(.success)
-                                    confettiTrigger += 1
-                                }
-                            } onTap: {
-                                editingItem = item
-                            } onPetTap: {
-                                viewingPet = item.pet
-                            } onMedicineAccept: { accepted in
-                                viewModel.setMedicineAccepted(accepted, for: item)
-                                HapticManager.notification(.success)
-                            }
-                            .opacity(isPast ? 0.82 : 1.0)
-                            .saturation(isPast ? 0.88 : 1.0)
-                            .modifier(SlideInRowModifier(index: allDayItems.count + index))
-                        }
-
-                        // If all events are in the past, show NOW bar after last item
-                        if nowInsertionIndex == timedItems.count && !timedItems.isEmpty {
-                            NowDivider(time: now)
                         }
                     }
                 }
                 .overlay(ConfettiView(trigger: confettiTrigger).allowsHitTesting(false))
             }
         }
-        .padding(.horizontal)
+        .padding(.horizontal, 12)
         .padding(.top, 8)
         .onReceive(timer) { t in now = t }
         .sheet(item: $editingItem) { item in
@@ -188,22 +190,20 @@ private struct BirthdayRowView: View {
 
             Image(systemName: "gift.fill")
                 .font(AppTypography.sectionHeading)
-                .foregroundStyle(Color.appPink)
+                .foregroundStyle(Color.appPink.opacity(0.85))
                 .symbolEffect(.pulse)
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(
-            LinearGradient(
-                colors: [Color.appPink.opacity(0.15), Color.appPink.opacity(0.05)],
-                startPoint: .leading, endPoint: .trailing
-            ),
-            in: RoundedRectangle(cornerRadius: 24)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(Color.appPink.opacity(0.35), lineWidth: 1)
-        )
+        .background {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.appPink.opacity(0.1))
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.appPink.opacity(0.28), lineWidth: 1)
+        }
+        .glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
 }
 

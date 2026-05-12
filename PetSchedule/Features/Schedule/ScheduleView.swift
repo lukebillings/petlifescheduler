@@ -15,7 +15,7 @@ struct ScheduleView: View {
                     PinkWaveScreenHeader("Schedule")
 
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 14) {
+                        HStack(spacing: 12) {
                             ForEach(viewModel.pets) { pet in
                                 let isSelected = viewModel.selectedPet?.id == pet.id
                                 let pending = viewModel.pendingTodayTaskCount(for: pet)
@@ -25,29 +25,32 @@ struct ScheduleView: View {
                                         viewModel.togglePetFilter(pet)
                                     }
                                 } label: {
-                                    VStack(spacing: 6) {
+                                    VStack(spacing: 5) {
                                         ZStack(alignment: .topTrailing) {
-                                            PetAvatarView(pet: pet, size: 60)
+                                            PetAvatarView(pet: pet, size: 52)
                                                 .overlay {
                                                     if isSelected {
                                                         Circle()
-                                                            .strokeBorder(Color.appPink, lineWidth: 3)
+                                                            .strokeBorder(Color.appPink, lineWidth: 2.5)
+                                                    } else {
+                                                        Circle()
+                                                            .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                                                     }
                                                 }
-                                                .scaleEffect(isSelected ? 1.05 : 1.0)
+                                                .scaleEffect(isSelected ? 1.04 : 1.0)
 
                                             if pending > 0 {
                                                 Text(pending > 99 ? "99+" : "\(pending)")
                                                     .font(AppTypography.micro)
                                                     .foregroundStyle(.white)
                                                     .padding(.horizontal, pending > 9 ? 5 : 0)
-                                                    .frame(minWidth: 18, minHeight: 18)
+                                                    .frame(minWidth: 17, minHeight: 17)
                                                     .background(Color.appPink, in: Capsule())
                                                     .overlay(
                                                         Capsule()
                                                             .strokeBorder(Color.white.opacity(0.35), lineWidth: 1)
                                                     )
-                                                    .offset(x: 8, y: -8)
+                                                    .offset(x: 7, y: -7)
                                             }
                                         }
                                         Text(pet.name)
@@ -59,23 +62,26 @@ struct ScheduleView: View {
                             }
                         }
                         .padding(.horizontal)
-                        .padding(.top, 12)
-                        .padding(.bottom, 10)
+                        .padding(.top, 10)
+                        .padding(.bottom, 8)
+                    }
+                    .mask {
+                        LinearGradient(
+                            stops: [
+                                .init(color: .black.opacity(0), location: 0),
+                                .init(color: .black, location: 0.05),
+                                .init(color: .black, location: 0.95),
+                                .init(color: .black.opacity(0), location: 1),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
                     }
                     .background(Color(.systemGroupedBackground))
 
-                    // View mode picker
-                    Picker("View", selection: $viewModel.selectedView) {
-                        ForEach(HomeViewModel.ViewMode.allCases, id: \.self) { mode in
-                            Text(mode.rawValue).tag(mode)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    .padding(.top, 16)
-                    .onChange(of: viewModel.selectedView) {
-                        HapticManager.impact(.light)
-                    }
+                    ScheduleViewModeCapsule(selection: $viewModel.selectedView)
+                        .padding(.horizontal)
+                        .padding(.top, 12)
 
                     // Shared Today header — shown in both list and calendar modes.
                     scheduleDateHeaderBar
@@ -99,7 +105,7 @@ struct ScheduleView: View {
                         Spacer(minLength: 100)
                     }
                 }
-
+                .scrollEdgeEffectStyle(.soft, for: .top)
 
             }
             .background(Color(.systemGroupedBackground))
@@ -205,6 +211,39 @@ struct ScheduleView: View {
         }
         .buttonStyle(.plain)
         .fixedSize(horizontal: true, vertical: false)
+    }
+}
+
+/// List / month toggle on a material capsule (replaces the system segmented control).
+private struct ScheduleViewModeCapsule: View {
+    @Binding var selection: HomeViewModel.ViewMode
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(HomeViewModel.ViewMode.allCases, id: \.self) { mode in
+                let selected = selection == mode
+                Button {
+                    withAnimation(.spring(duration: 0.25)) {
+                        selection = mode
+                    }
+                    HapticManager.impact(.light)
+                } label: {
+                    Image(systemName: mode == .list ? "list.bullet.rectangle" : "calendar")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(selected ? Color.white : Color.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 9)
+                        .background(
+                            selected ? Color.appPink : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(mode.rawValue))
+            }
+        }
+        .padding(4)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 

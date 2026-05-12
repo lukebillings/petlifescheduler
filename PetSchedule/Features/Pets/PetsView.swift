@@ -49,6 +49,7 @@ struct PetsView: View {
                             }
                             .padding()
                         }
+                        .scrollEdgeEffectStyle(.soft, for: .top)
                     }
                 }
             }

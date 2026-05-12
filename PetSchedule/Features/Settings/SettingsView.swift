@@ -2,6 +2,20 @@ import SwiftUI
 import UserNotifications
 import StoreKit
 
+/// Rounded SF Symbol used as a leading affordance in Settings rows (system “inset grouped” style).
+private struct SettingsTintedSymbol: View {
+    let systemName: String
+
+    var body: some View {
+        Image(systemName: systemName)
+            .font(.body.weight(.semibold))
+            .foregroundStyle(Color.appPink)
+            .frame(width: 30, height: 30)
+            .background(Color.appPink.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .accessibilityHidden(true)
+    }
+}
+
 struct SettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Bindable var viewModel: HomeViewModel
@@ -57,8 +71,13 @@ struct SettingsView: View {
                 PinkWaveScreenHeader("Settings")
                 List {
                 Section("Notifications") {
-                    Toggle("Enable event reminders", isOn: $remindersEnabled.animation())
-                        .tint(Color.appPink)
+                    Toggle(isOn: $remindersEnabled.animation()) {
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "bell.badge.fill")
+                            Text("Enable event reminders")
+                        }
+                    }
+                    .tint(Color.appPink)
                         .onChange(of: remindersEnabled) { _, enabled in
                             if enabled {
                                 Task { @MainActor in
@@ -93,8 +112,11 @@ struct SettingsView: View {
                             guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
                             UIApplication.shared.open(url)
                         } label: {
-                            Label("Open iOS notification settings", systemImage: "gearshape")
-                                .foregroundStyle(.primary)
+                            HStack(spacing: 12) {
+                                SettingsTintedSymbol(systemName: "gearshape")
+                                Text("Open iOS notification settings")
+                                    .foregroundStyle(.primary)
+                            }
                         }
                     }
 
@@ -144,8 +166,11 @@ struct SettingsView: View {
                     Button {
                         Task { await sendTestNotificationNow() }
                     } label: {
-                        Label("Send test notification", systemImage: "bell.badge")
-                            .foregroundStyle(.primary)
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "bell.and.waves.left.and.right.fill")
+                            Text("Send test notification")
+                                .foregroundStyle(.primary)
+                        }
                     }
                 }
                 .onChange(of: reminderMinutes) { _, _ in
@@ -157,22 +182,34 @@ struct SettingsView: View {
 
                 Section {
                     Toggle(isOn: $hapticsEnabled) {
-                        Label("Haptic feedback", systemImage: "iphone.radiowaves.left.and.right")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "iphone.radiowaves.left.and.right")
+                            Text("Haptic feedback")
+                        }
                     }
                     .tint(Color.appPink)
 
                     Toggle(isOn: $soundEffectsEnabled) {
-                        Label("Sound effects", systemImage: "speaker.wave.2.fill")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "speaker.wave.2.fill")
+                            Text("Sound effects")
+                        }
                     }
                     .tint(Color.appPink)
 
                     Toggle(isOn: $interfaceAnimationsEnabled) {
-                        Label("Interface animations", systemImage: "sparkles")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "sparkles")
+                            Text("Interface animations")
+                        }
                     }
                     .tint(Color.appPink)
 
                     Toggle(isOn: $pinkWaveHeaderEnabled) {
-                        Label("Pink wave header", systemImage: "water.waves")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "water.waves")
+                            Text("Pink wave header")
+                        }
                     }
                     .tint(Color.appPink)
                 } header: {
@@ -186,8 +223,11 @@ struct SettingsView: View {
                         HapticManager.impact(.light)
                         onLaunchFeedbackCheckIn()
                     } label: {
-                        Label("Quick check-in", systemImage: "bubble.left.and.bubble.right.fill")
-                            .foregroundStyle(.primary)
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "bubble.left.and.bubble.right.fill")
+                            Text("Quick check-in")
+                                .foregroundStyle(.primary)
+                        }
                     }
                 } header: {
                     Text("Feedback")
@@ -199,7 +239,11 @@ struct SettingsView: View {
                     NavigationLink {
                         FamilySharingSettingsView(viewModel: viewModel)
                     } label: {
-                        Label("Household sharing", systemImage: "person.3.fill")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "person.3.fill")
+                            Text("Household sharing")
+                                .foregroundStyle(.primary)
+                        }
                     }
                 } footer: {
                     Text("Tip: Add partners, family, or roommates anytime—open Household sharing and tap Invite household members. Everyone stays on the same pets and schedules via iCloud; each person uses their own Apple ID.")
@@ -207,8 +251,10 @@ struct SettingsView: View {
 
                 Section {
                     Link(destination: URL(string: "https://support.apple.com/guide/iphone/add-widgets-iphb8ca0114/ios")!) {
-                        HStack {
-                            Label("Widgets on Home Screen", systemImage: "square.grid.2x2.fill")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "square.grid.2x2.fill")
+                            Text("Widgets on Home Screen")
+                                .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.right")
                                 .font(AppTypography.supportingText)
@@ -227,7 +273,10 @@ struct SettingsView: View {
                             Text(fmt.pickerLabel).tag(fmt.rawValue)
                         }
                     } label: {
-                        Label("Clock", systemImage: "clock")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "clock")
+                            Text("Clock")
+                        }
                     }
                     .onChange(of: timeFormatRaw) { _, _ in
                         viewModel.syncWidgetSchedule()
@@ -238,7 +287,10 @@ struct SettingsView: View {
                             Text(unit.pickerLabel).tag(unit.rawValue)
                         }
                     } label: {
-                        Label("Weight", systemImage: "scalemass")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "scalemass")
+                            Text("Weight")
+                        }
                     }
 
                     Picker(selection: $heightUnitRaw) {
@@ -246,7 +298,10 @@ struct SettingsView: View {
                             Text(unit.pickerLabel).tag(unit.rawValue)
                         }
                     } label: {
-                        Label("Height", systemImage: "ruler")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "ruler")
+                            Text("Height")
+                        }
                     }
                 }
 
@@ -257,15 +312,20 @@ struct SettingsView: View {
                             AppStore.requestReview(in: scene)
                         }
                     } label: {
-                        Label("Rate PetSchedule", systemImage: "star.fill")
-                            .foregroundStyle(.primary)
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "star.fill")
+                            Text("Rate PetSchedule")
+                                .foregroundStyle(.primary)
+                        }
                     }
                 }
 
                 Section("Legal") {
                     Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy/")!) {
-                        HStack {
-                            Label("Privacy Policy", systemImage: "hand.raised.fill")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "hand.raised.fill")
+                            Text("Privacy Policy")
+                                .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.right")
                                 .font(AppTypography.supportingText)
@@ -273,8 +333,10 @@ struct SettingsView: View {
                         }
                     }
                     Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!) {
-                        HStack {
-                            Label("Terms & Conditions", systemImage: "doc.text.fill")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "doc.text.fill")
+                            Text("Terms & Conditions")
+                                .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.right")
                                 .font(AppTypography.supportingText)
@@ -282,8 +344,10 @@ struct SettingsView: View {
                         }
                     }
                     Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!) {
-                        HStack {
-                            Label("Terms of Service", systemImage: "checkmark.seal.fill")
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "checkmark.seal.fill")
+                            Text("Terms of Service")
+                                .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.right")
                                 .font(AppTypography.supportingText)
@@ -296,12 +360,18 @@ struct SettingsView: View {
                     Button(role: .destructive) {
                         showingResetConfirm = true
                     } label: {
-                        Label("Reset & Restart Onboarding", systemImage: "arrow.counterclockwise")
+                        HStack(spacing: 12) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.body.weight(.semibold))
+                                .frame(width: 30, height: 30)
+                            Text("Reset & Restart Onboarding")
+                        }
                     }
                 } footer: {
                     Text("This will clear all pets and schedules and restart the setup flow.")
                 }
                 }
+                .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
                 .background(Color(.systemGroupedBackground))
             }

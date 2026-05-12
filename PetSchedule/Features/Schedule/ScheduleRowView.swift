@@ -38,7 +38,7 @@ struct ScheduleRowView: View {
 
             Image(systemName: item.activityIcon)
                 .font(AppTypography.rowIcon)
-                .foregroundStyle(Color.appPink)
+                .foregroundStyle(Color.secondary)
                 .frame(width: 22)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -51,7 +51,7 @@ struct ScheduleRowView: View {
 
                     Text(item.activityName)
                         .font(AppTypography.secondaryLabel)
-                        .opacity(0.9)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
@@ -108,33 +108,28 @@ struct ScheduleRowView: View {
         .padding(.vertical, 16)
         .background {
             if item.quickLogKind != nil {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.appPink.opacity(0.2))
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.appPink.opacity(0.08))
             }
         }
         .overlay {
             if item.quickLogKind != nil {
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.appPink.opacity(0.35), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.appPink.opacity(0.32), lineWidth: 1)
             }
         }
-        .modifier(ScheduleRowGlassModifier(isQuickLog: item.quickLogKind != nil))
+        .modifier(ScheduleRowGlassModifier())
+        .opacity(item.isCompleted ? 0.74 : 1.0)
+        .saturation(item.isCompleted ? 0.9 : 1.0)
         // Spacer is not hit-testable; without this, taps in the middle of the row miss the row tap.
-        .contentShape(RoundedRectangle(cornerRadius: 24))
+        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .onTapGesture { onTap?() }
     }
 }
 
 private struct ScheduleRowGlassModifier: ViewModifier {
-    let isQuickLog: Bool
-
-    @ViewBuilder
     func body(content: Content) -> some View {
-        if isQuickLog {
-            content
-        } else {
-            content.glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 24))
-        }
+        content.glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 }
 

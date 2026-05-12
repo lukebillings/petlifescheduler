@@ -2,9 +2,9 @@ import SwiftUI
 
 /// Capsule-shaped pink header fill; bottom edge is a smooth wave into the screen body.
 private struct PinkWaveHeaderCapShape: Shape {
-    var waveAmplitude: CGFloat = 9
+    var waveAmplitude: CGFloat = 6
     /// Number of full wave cycles across the width.
-    var cycles: CGFloat = 2.5
+    var cycles: CGFloat = 2
     /// Horizontal phase (radians) — advances over time so the wave appears to travel.
     var wavePhase: CGFloat = 0
 
@@ -16,7 +16,7 @@ private struct PinkWaveHeaderCapShape: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         let steps = max(24, Int(rect.width / 8))
-        let baseline = rect.maxY - waveAmplitude * 1.25
+        let baseline = rect.maxY - waveAmplitude * 1.15
 
         path.move(to: CGPoint(x: 0, y: 0))
         path.addLine(to: CGPoint(x: rect.maxX, y: 0))
@@ -51,8 +51,8 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
 
     init(
         _ title: String,
-        titleAccessorySpacing: CGFloat = 14,
-        contentBottomPadding: CGFloat = 28,
+        titleAccessorySpacing: CGFloat = 12,
+        contentBottomPadding: CGFloat = 18,
         @ViewBuilder accessory: @escaping () -> Accessory = { EmptyView() },
         @ViewBuilder trailing: @escaping () -> Trailing = { EmptyView() }
     ) {
@@ -69,6 +69,11 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
                 Text(title)
                     .font(AppTypography.screenTitle)
                     .foregroundStyle(pinkWaveHeaderEnabled ? .white : .primary)
+                    .shadow(
+                        color: pinkWaveHeaderEnabled ? .black.opacity(0.22) : .clear,
+                        radius: 10,
+                        y: 3
+                    )
 
                 Spacer(minLength: 0)
 
@@ -78,7 +83,7 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
 
             accessory()
         }
-        .padding(.top, 20)
+        .padding(.top, 16)
         .padding(.bottom, contentBottomPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         /// Keeps clock / cellular / battery legible against `appPink` when the header reaches into the status bar.
@@ -88,7 +93,7 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
                 TimelineView(.animation(minimumInterval: 1 / 30, paused: false)) { timeline in
                     GeometryReader { proxy in
                         let topInset = proxy.safeAreaInsets.top
-                        let phase = CGFloat(timeline.date.timeIntervalSinceReferenceDate * 1.15)
+                        let phase = CGFloat(timeline.date.timeIntervalSinceReferenceDate * 0.55)
                         let width = proxy.size.width
                         let height = proxy.size.height + topInset
                         ZStack(alignment: .top) {
@@ -97,7 +102,17 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
                                 .frame(width: width, height: height)
                                 .offset(y: -topInset)
                             PinkWaveHeaderCapShape(wavePhase: phase)
-                                .fill(Color.appPink)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.appPink,
+                                            Color.appPink.opacity(0.78),
+                                            Color.appPink.opacity(0.42),
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottom
+                                    )
+                                )
                                 .frame(width: width, height: height)
                                 .offset(y: -topInset)
                         }
@@ -120,8 +135,8 @@ struct PinkWaveScreenHeader<Accessory: View, Trailing: View>: View {
 extension PinkWaveScreenHeader where Accessory == EmptyView {
     init(
         _ title: String,
-        titleAccessorySpacing: CGFloat = 14,
-        contentBottomPadding: CGFloat = 28,
+        titleAccessorySpacing: CGFloat = 12,
+        contentBottomPadding: CGFloat = 18,
         @ViewBuilder trailing: @escaping () -> Trailing
     ) {
         self.init(

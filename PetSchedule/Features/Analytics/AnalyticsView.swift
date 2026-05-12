@@ -113,6 +113,46 @@ private enum AnalyticsSwipeLayout {
     static let dotsSpacingFromPager: CGFloat = 8
 }
 
+/// Week / Month / Year control on liquid glass (replaces segmented control under the Analytics header).
+private struct AnalyticsTimeRangeControl: View {
+    @Binding var selection: AnalyticsRange
+    /// When the pink header is on, text uses light colors so it stays legible on the tint.
+    var lightOnPinkHeader: Bool
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(AnalyticsRange.allCases, id: \.self) { range in
+                let on = selection == range
+                Button {
+                    withAnimation(.spring(duration: 0.22)) { selection = range }
+                    HapticManager.impact(.light)
+                } label: {
+                    Text(range.rawValue)
+                        .font(AppTypography.secondaryEmphasis)
+                        .foregroundStyle(
+                            lightOnPinkHeader
+                            ? (on ? Color.white : Color.white.opacity(0.78))
+                            : (on ? Color.white : Color.primary)
+                        )
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(
+                            on
+                            ? (lightOnPinkHeader ? Color.white.opacity(0.22) : Color.appPink)
+                            : Color.clear,
+                            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("\(range.rawValue) chart range"))
+            }
+        }
+        .padding(4)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal)
+    }
+}
+
 /// Quick-jump targets for the analytics pill bar (matches `.id` on each anchored block).
 private enum AnalyticsJumpSection: String, CaseIterable, Hashable {
     case summary
@@ -273,15 +313,10 @@ struct AnalyticsView: View {
             ScrollViewReader { proxy in
                 VStack(spacing: 0) {
                     PinkWaveScreenHeader("Analytics", accessory: {
-                        Picker("Chart time range", selection: $selectedRange) {
-                            ForEach(AnalyticsRange.allCases, id: \.self) { range in
-                                Text(range.rawValue).tag(range)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .tint(pinkWaveHeaderEnabled ? .white : Color.appPink)
-                        .padding(.horizontal)
-                        .accessibilityLabel("Chart time range")
+                        AnalyticsTimeRangeControl(
+                            selection: $selectedRange,
+                            lightOnPinkHeader: pinkWaveHeaderEnabled
+                        )
                     })
                     analyticsJumpPillBar(proxy: proxy)
 
@@ -317,6 +352,7 @@ struct AnalyticsView: View {
                         .padding(.top, 12)
                         .modifier(InterfaceContentEntranceModifier(delay: 0.06))
                     }
+                    .scrollEdgeEffectStyle(.soft, for: .top)
                 }
             }
             .toolbar(.hidden, for: .navigationBar)
@@ -371,23 +407,26 @@ struct AnalyticsView: View {
                         HStack(spacing: 8) {
                             Image(systemName: section.pillSymbol)
                                 .font(AppTypography.secondaryEmphasis)
-                                .foregroundStyle(sel ? Color.white : Color.primary)
+                                .foregroundStyle(sel ? Color.white : Color.secondary)
                             Text(section.pillTitle)
                                 .font(AppTypography.secondaryEmphasis)
-                                .foregroundStyle(sel ? Color.white : Color.primary)
+                                .foregroundStyle(sel ? Color.white : Color.secondary)
                         }
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(sel ? Color.appPink : Color(.secondarySystemBackground), in: Capsule())
+                        .background(sel ? Color.appPink : Color.clear, in: Capsule())
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
         }
         .scrollClipDisabled()
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 4)
         .background(Color(.systemGroupedBackground))
     }
 
