@@ -241,12 +241,12 @@ struct SettingsView: View {
                     } label: {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "person.3.fill")
-                            Text("Household sharing")
+                            Text("Household")
                                 .foregroundStyle(.primary)
                         }
                     }
                 } footer: {
-                    Text("Tip: Add partners, family, or roommates anytime—open Household sharing and tap Invite household members. Everyone stays on the same pets and schedules via iCloud; each person uses their own Apple ID.")
+                    Text("Open Household, then Invite someone, so partners or family see the same pets and schedule over iCloud.")
                 }
 
                 Section {

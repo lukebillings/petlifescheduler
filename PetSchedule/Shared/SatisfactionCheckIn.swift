@@ -193,6 +193,11 @@ struct SatisfactionCheckInSheet: View {
                     symbol: "gearshape.fill",
                     tutorial: .settings
                 )
+                goalRow(
+                    title: "Sharing pets & schedule with someone else",
+                    symbol: "person.3.fill",
+                    tutorial: .inviteOthers
+                )
             } header: {
                 Text("What are you mainly trying to do?")
                     .foregroundStyle(Color.appPink)

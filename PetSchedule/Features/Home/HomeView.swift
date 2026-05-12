@@ -102,7 +102,7 @@ struct HomeView: View {
                         withAnimation(.spring(duration: 0.35)) {
                             satisfactionContextualTip = nil
                         }
-                        selectedTab = .schedule
+                        selectedTab = tip == .inviteOthers ? .settings : .schedule
                     }
                     .padding(.horizontal, 16)
                     .padding(.bottom, 64)
@@ -118,7 +118,7 @@ struct HomeView: View {
                         case .schedule: selectedTab = .schedule
                         case .pets: selectedTab = .pets
                         case .analytics: selectedTab = .analytics
-                        case .settings: selectedTab = .settings
+                        case .settings, .inviteOthers: selectedTab = .settings
                         }
                     }
                     .transition(.opacity)
@@ -133,7 +133,7 @@ struct HomeView: View {
                         case .schedule: selectedTab = .schedule
                         case .pets: selectedTab = .pets
                         case .analytics: selectedTab = .analytics
-                        case .settings: selectedTab = .settings
+                        case .settings, .inviteOthers: selectedTab = .settings
                         }
                     },
                     onPresentContextualTip: { step in

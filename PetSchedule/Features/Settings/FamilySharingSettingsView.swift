@@ -15,7 +15,18 @@ struct FamilySharingSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Label(syncStatusTitle, systemImage: syncGlyph)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(usesSharedDatabase ? "Sharing is on" : "Sharing is off")
+                        .font(.headline)
+                    Text(usesSharedDatabase
+                         ? "This phone is part of a household. Pets and schedules update together over iCloud."
+                         : "Right now only you see this pet data on iCloud. Send an invite when you want someone else on the same plan.")
+                        .font(AppTypography.supportingText)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+
                 if sync.isSyncing {
                     ProgressView()
                 }
@@ -24,45 +35,35 @@ struct FamilySharingSettingsView: View {
                         .font(AppTypography.supportingText)
                         .foregroundStyle(.red)
                 }
-            } header: {
-                Text("Status")
-            }
-
-            Section {
-                Text("Tip: Invite people here whenever you're ready—same pets, schedules, and logs for everyone who accepts. They need iCloud on their device.")
-                    .font(AppTypography.supportingText)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Add people")
             }
 
             Section {
                 Button {
                     showInviteSheet = true
                 } label: {
-                    Label("Invite household members", systemImage: "person.badge.plus")
+                    Label("Invite someone", systemImage: "person.badge.plus")
                 }
                 .disabled(!canInviteAsOwner)
 
                 Button {
                     Task { await sync.syncNow(viewModel) }
                 } label: {
-                    Label("Sync now", systemImage: "arrow.triangle.2.circlepath")
+                    Label("Update now", systemImage: "arrow.triangle.2.circlepath")
                 }
             } header: {
-                Text("Sharing")
+                Text("Household")
             } footer: {
-                Text("Uses iCloud so pets and schedules stay up to date for everyone who accepts the invitation. They must sign in to iCloud on their device.")
+                Text(sharingFooter)
             }
 
             Section {
-                TextField("Your display name", text: $userDisplayName)
+                TextField("Your name", text: $userDisplayName)
                     .textContentType(.name)
 
-                TextField("Add another person’s name", text: $rosterDraft)
+                TextField("Another household name (optional)", text: $rosterDraft)
                     .textContentType(.name)
 
-                Button("Add to picker list") {
+                Button("Add name") {
                     let n = rosterDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !n.isEmpty else { return }
                     var extras = UserProfileStorage.rosterExtraNames()
@@ -72,7 +73,7 @@ struct FamilySharingSettingsView: View {
                 }
 
                 if UserProfileStorage.rosterExtraNames().isEmpty {
-                    Text("Extra names appear in Logged by when adding events or logs.")
+                    Text("No extra names yet.")
                         .font(AppTypography.supportingText)
                         .foregroundStyle(.secondary)
                 } else {
@@ -81,15 +82,10 @@ struct FamilySharingSettingsView: View {
                     }
                 }
             } header: {
-                Text("Household names")
-            }
-
-            Section {
-                Text(participantsFooter)
+                Text("Who did it?")
+            } footer: {
+                Text("When you log a feeding or walk, you can pick a name. Add people here so their names are easy to choose—even before they join on their phone.")
                     .font(AppTypography.supportingText)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("Participants")
             }
 
             Section {
@@ -97,10 +93,10 @@ struct FamilySharingSettingsView: View {
                     UserDefaults.standard.set(false, forKey: UserDefaultsKeys.prefersSharedDatabase)
                     sync.clearModificationCache()
                 } label: {
-                    Label("Leave household on this device", systemImage: "rectangle.portrait.and.arrow.forward")
+                    Label("Stop sharing on this phone", systemImage: "rectangle.portrait.and.arrow.forward")
                 }
             } footer: {
-                Text("Stops using the shared iCloud library on this device (your local draft stays until you reset data).")
+                Text("This phone stops using the shared household data. Your local copy stays until you reset app data elsewhere in Settings.")
             }
         }
         .navigationTitle("Household")
@@ -113,19 +109,14 @@ struct FamilySharingSettingsView: View {
         }
     }
 
-    private var syncStatusTitle: String {
-        usesSharedDatabase ? "Joined shared household" : "Organizer — private iCloud library"
-    }
-
-    private var syncGlyph: String {
-        usesSharedDatabase ? "person.3.fill" : "house.fill"
-    }
-
     private var canInviteAsOwner: Bool {
         !usesSharedDatabase
     }
 
-    private var participantsFooter: String {
-        "After someone accepts, they appear in Apple’s share participants UI when you tap Invite again. Everyone sees Logged by names on events."
+    private var sharingFooter: String {
+        if canInviteAsOwner {
+            return "Each person needs iCloud turned on with their own Apple ID. After they accept, you all see the same pets and calendar. Tap Invite again anytime to see who is already in."
+        }
+        return "Each person needs iCloud on. The person who invited you can add more people from their own phone."
     }
 }

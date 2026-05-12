@@ -1,11 +1,12 @@
 import SwiftUI
 
-/// Ordered like **Schedule → My Pets → Analytics → Settings** tab bar.
+/// Ordered like **Schedule → My Pets → Analytics → Settings → Invite others** (last step stays on the Settings tab).
 enum FeatureTutorialStep: Int, CaseIterable, Hashable {
     case schedule
     case pets
     case analytics
     case settings
+    case inviteOthers
 
     var title: String {
         switch self {
@@ -13,6 +14,7 @@ enum FeatureTutorialStep: Int, CaseIterable, Hashable {
         case .pets: return "My Pets"
         case .analytics: return "Analytics"
         case .settings: return "Settings"
+        case .inviteOthers: return "Invite others"
         }
     }
 
@@ -26,6 +28,8 @@ enum FeatureTutorialStep: Int, CaseIterable, Hashable {
             return "Spot trends for medicine, feeding, and water over time. Export when you need a summary."
         case .settings:
             return "Turn on reminders, choose units and time format, and tweak how the app feels."
+        case .inviteOthers:
+            return "Tap Household, then Invite someone. When they accept, you all see the same pets and schedule over iCloud — each person needs their own Apple ID with iCloud on."
         }
     }
 
@@ -35,14 +39,52 @@ enum FeatureTutorialStep: Int, CaseIterable, Hashable {
         case .pets: return "pawprint.fill"
         case .analytics: return "chart.bar.fill"
         case .settings: return "gearshape.fill"
+        case .inviteOthers: return "person.3.fill"
         }
     }
 
     var nextButtonTitle: String {
         switch self {
-        case .settings: return "Get started"
+        case .inviteOthers: return "Get started"
         default: return "Next"
         }
+    }
+}
+
+/// Non-interactive preview of the Household row in Settings, shown on the “Invite others” tutorial step.
+private struct TutorialHouseholdSettingsRowPreview: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("In Settings, look for")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 12) {
+                Image(systemName: "person.3.fill")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(Color.appPink)
+                    .frame(width: 30, height: 30)
+                    .background(Color.appPink.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .accessibilityHidden(true)
+
+                Text("Household")
+                    .font(.body)
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 8)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Household row in Settings, opens household sharing")
     }
 }
 
@@ -71,6 +113,10 @@ struct ContextualHelpTipCard: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
+            if step == .inviteOthers {
+                TutorialHouseholdSettingsRowPreview()
+            }
+
             Button {
                 HapticManager.impact(.medium)
                 onGotIt()
@@ -90,7 +136,11 @@ struct ContextualHelpTipCard: View {
                 .shadow(color: .black.opacity(0.15), radius: 20, y: 6)
         )
         .accessibilityElement(children: .contain)
-        .accessibilityHint("Tip for the \(step.title) tab. Dismiss to keep using the app.")
+        .accessibilityHint(
+            step == .inviteOthers
+                ? "Tip for inviting others from Settings. Dismiss to keep using the app."
+                : "Tip for the \(step.title) tab. Dismiss to keep using the app."
+        )
     }
 }
 
@@ -140,6 +190,11 @@ struct FeatureTutorialOverlay: View {
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
 
+                    if step == .inviteOthers {
+                        TutorialHouseholdSettingsRowPreview()
+                            .padding(.top, 4)
+                    }
+
                     HStack(spacing: 7) {
                         ForEach(FeatureTutorialStep.allCases, id: \.self) { s in
                             Capsule()
@@ -161,7 +216,7 @@ struct FeatureTutorialOverlay: View {
                             .background(Color.appPink, in: RoundedRectangle(cornerRadius: 27))
                     }
                     .padding(.top, 12)
-                    .accessibilityHint(step == .settings ? "Closes the tour." : "Shows the next tip.")
+                    .accessibilityHint(step == .inviteOthers ? "Closes the tour." : "Shows the next tip.")
                 }
                 .padding(26)
                 .background(
