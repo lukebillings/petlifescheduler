@@ -200,7 +200,7 @@ struct EditEventSheet: View {
             }
             .navigationTitle("Edit Event")
             .navigationBarTitleDisplayMode(.inline)
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
             .presentationDragIndicator(.visible)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {

@@ -169,7 +169,7 @@ struct AddLogSheet: View {
             }
             .navigationTitle("Log")
             .navigationBarTitleDisplayMode(.inline)
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
             .presentationDragIndicator(.visible)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -391,7 +391,7 @@ struct EditLogSheet: View {
             }
             .navigationTitle("Edit Log")
             .navigationBarTitleDisplayMode(.inline)
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.large])
             .presentationDragIndicator(.visible)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
