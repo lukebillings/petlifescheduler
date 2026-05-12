@@ -245,6 +245,45 @@ final class HomeViewModel {
             ))
         }
 
+        // Spread two made-up household members — Bob and Jill — across the dummy schedule so
+        // demos and App Store screenshots show a realistic shared household. Assignment is
+        // deterministic per activity so a recurring task keeps the same owner over the 30 days,
+        // while medicine alternates day-by-day to demonstrate hand-offs.
+        let dayCal = Calendar.current
+        for i in items.indices {
+            let lower = items[i].activityName.lowercased()
+            let isMedicine = lower.contains("medic")
+                || lower.contains("metacam")
+                || lower.contains("predni")
+                || lower.contains("fin & body")
+                || lower.contains("tablet")
+                || lower.contains("pill")
+            let isOutdoorOrWater = lower.contains("walk")
+                || lower.contains("run")
+                || lower.contains("play")
+                || lower.contains("water")
+                || lower.contains("drink")
+            let assignedIsBob: Bool
+            if isMedicine {
+                let ordinal = dayCal.ordinality(of: .day, in: .era, for: items[i].time) ?? 0
+                assignedIsBob = ordinal % 2 == 0
+            } else if isOutdoorOrWater {
+                assignedIsBob = true
+            } else {
+                // Feeding, grooming, mood logs, and anything else default to Jill.
+                assignedIsBob = false
+            }
+            let assigned = assignedIsBob ? "Bob" : "Jill"
+            // Created by the *other* member so both names appear as event authors.
+            let creator = assignedIsBob ? "Jill" : "Bob"
+            items[i].assignedToDisplayName = assigned
+            items[i].createdByDisplayName = creator
+            items[i].assigneeAccent = assignedIsBob ? .blue : .pink
+            if items[i].isCompleted {
+                items[i].completedByDisplayName = assigned
+            }
+        }
+
         vm.scheduleItems = items
         return vm
     }
@@ -262,6 +301,18 @@ final class HomeViewModel {
             HouseholdSyncCoordinator.shared.clearModificationCache()
         }
         resetPostTutorialHintUserDefaults()
+        syncWidgetSchedule()
+    }
+
+    /// Replaces pets and schedule with sample **dog**, **cat**, and **fish** profiles plus ~30 days of events (for demos and screenshots).
+    func populateWithDummyDogCatFishData() {
+        let demo = HomeViewModel.analyticsPreview
+        pets = demo.pets
+        scheduleItems = demo.scheduleItems
+        selectedPet = nil
+        selectedView = .list
+        selectedCalendarDate = .now
+        HouseholdLocalStore.save(viewModel: self)
         syncWidgetSchedule()
     }
 

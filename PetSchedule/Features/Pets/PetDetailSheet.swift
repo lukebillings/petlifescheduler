@@ -10,11 +10,14 @@ struct PetDetailSheet: View {
     enum InitialScrollAnchor: Hashable {
         case weight
         case height
+        case vet
+        case documents
+        case export
     }
 
     /// Quick-jump targets for the section pill bar (matches `.id` on each `Section` below).
     private enum JumpSection: String, CaseIterable, Hashable {
-        case age, photo, details, notes, vet, documents, export, weight, height, birthday, data
+        case age, photo, details, notes, vet, export, documents, weight, height, birthday, data
 
         var pillTitle: String {
             switch self {
@@ -307,62 +310,6 @@ struct PetDetailSheet: View {
                 }
                 .id(JumpSection.vet.rawValue)
 
-                // ── Documents ──────────────────────────────────────────────
-                Section {
-                    Button {
-                        showingDocumentPicker = true
-                    } label: {
-                        Label("Add Document from Files", systemImage: "icloud.and.arrow.up")
-                            .foregroundStyle(Color.appPink)
-                            .font(AppTypography.secondaryEmphasis)
-                    }
-
-                    ForEach(documents) { doc in
-                        HStack(spacing: 12) {
-                            Image(systemName: doc.iconName)
-                                .font(.title3)
-                                .foregroundStyle(Color.appPink)
-                                .frame(width: 28)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(doc.displayName)
-                                    .font(AppTypography.secondaryLabel)
-                                    .lineLimit(1)
-                                Text("\(doc.sizeString) · \(doc.dateAdded.formatted(date: .abbreviated, time: .omitted))")
-                                    .font(AppTypography.supportingText)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            // Preview / share button
-                            ShareLink(item: documentShareURL(for: doc), preview: SharePreview(doc.displayName)) {
-                                Image(systemName: "square.and.arrow.up")
-                                    .font(AppTypography.compactControl)
-                                    .foregroundStyle(.secondary)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
-                                withAnimation { documents.removeAll { $0.id == doc.id } }
-                            } label: {
-                                Label("Delete", systemImage: "trash")
-                            }
-                        }
-                    }
-
-                    if documents.isEmpty {
-                        Text("No documents yet. Tap above to import from iCloud Drive or your device.")
-                            .font(AppTypography.supportingText)
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    sectionHeaderWithLabel(
-                        title: "Documents",
-                        systemImage: "folder.fill",
-                        subtitle: "Attach files such as lab results, vaccination records, or insurance—kept on this device."
-                    )
-                }
-                .id(JumpSection.documents.rawValue)
-
                 Section {
                     Button {
                         downloadPetDataAsPDF()
@@ -422,6 +369,62 @@ struct PetDetailSheet: View {
                     )
                 }
                 .id(JumpSection.export.rawValue)
+
+                // ── Documents ──────────────────────────────────────────────
+                Section {
+                    Button {
+                        showingDocumentPicker = true
+                    } label: {
+                        Label("Add Document from Files", systemImage: "icloud.and.arrow.up")
+                            .foregroundStyle(Color.appPink)
+                            .font(AppTypography.secondaryEmphasis)
+                    }
+
+                    ForEach(documents) { doc in
+                        HStack(spacing: 12) {
+                            Image(systemName: doc.iconName)
+                                .font(.title3)
+                                .foregroundStyle(Color.appPink)
+                                .frame(width: 28)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(doc.displayName)
+                                    .font(AppTypography.secondaryLabel)
+                                    .lineLimit(1)
+                                Text("\(doc.sizeString) · \(doc.dateAdded.formatted(date: .abbreviated, time: .omitted))")
+                                    .font(AppTypography.supportingText)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            // Preview / share button
+                            ShareLink(item: documentShareURL(for: doc), preview: SharePreview(doc.displayName)) {
+                                Image(systemName: "square.and.arrow.up")
+                                    .font(AppTypography.compactControl)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                withAnimation { documents.removeAll { $0.id == doc.id } }
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                    }
+
+                    if documents.isEmpty {
+                        Text("No documents yet. Tap above to import from iCloud Drive or your device.")
+                            .font(AppTypography.supportingText)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    sectionHeaderWithLabel(
+                        title: "Documents",
+                        systemImage: "folder.fill",
+                        subtitle: "Attach files such as lab results, vaccination records, or insurance—kept on this device."
+                    )
+                }
+                .id(JumpSection.documents.rawValue)
 
                 Section {
                     VStack(alignment: .leading, spacing: 14) {
@@ -883,6 +886,9 @@ struct PetDetailSheet: View {
         let section: JumpSection = switch anchor {
         case .weight: .weight
         case .height: .height
+        case .vet: .vet
+        case .documents: .documents
+        case .export: .export
         }
         guard visibleJumpSections.contains(section) else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
