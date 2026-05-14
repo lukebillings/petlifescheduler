@@ -97,6 +97,9 @@ struct TodayEventsWidgetView: View {
         return family == .systemMedium && displayedEvents.count >= 2
     }
 
+    /// Second-line pet name (matches schedule row detail line); skipped on smallest dense layout.
+    private var showPetSubtitle: Bool { !cardLayoutCompact }
+
     private var noEventsToday: Bool {
         entry.totalTodayEventCount == 0 && entry.events.isEmpty
     }
@@ -105,8 +108,13 @@ struct TodayEventsWidgetView: View {
         entry.events.isEmpty && entry.totalTodayEventCount > 0
     }
 
+    /// Same card spacing as `GlassEffectContainer` in `ScheduleListView`.
+    private var eventListSpacing: CGFloat { 12 }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: compactCards ? 6 : (isLargeFamily ? 10 : 8)) {
+        VStack(alignment: .leading, spacing: compactCards ? 8 : 10) {
+            WidgetScheduleDateHeader(referenceDate: entry.date, compact: compactCards)
+
             if noEventsToday {
                 Text("No events today")
                     .font(compactCards ? AppTypography.cardTitle : AppTypography.sectionHeading)
@@ -115,19 +123,31 @@ struct TodayEventsWidgetView: View {
                     .font(AppTypography.supportingText)
                     .foregroundStyle(.secondary)
             } else if allDoneToday {
-                Text("All done!")
-                    .font(compactCards ? AppTypography.sectionHeading : AppTypography.groupTitle)
-                    .foregroundStyle(.primary)
-                Text("\(entry.totalTodayEventCount) completed")
-                    .font(AppTypography.supportingText)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Spacer()
+                    VStack(spacing: 6) {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(compactCards ? AppTypography.groupTitle : AppTypography.emptyStateSymbol)
+                            .foregroundStyle(Color.appPink.opacity(0.5))
+                        Text("All done for today!")
+                            .font(AppTypography.secondaryLabel)
+                            .foregroundStyle(.secondary)
+                        Text("\(entry.totalTodayEventCount) completed")
+                            .font(AppTypography.supportingText)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .multilineTextAlignment(.center)
+                    Spacer()
+                }
+                .padding(.vertical, compactCards ? 4 : 8)
             } else {
-                VStack(alignment: .leading, spacing: compactCards ? 6 : (isLargeFamily ? 8 : 6)) {
+                VStack(alignment: .leading, spacing: eventListSpacing) {
                     ForEach(displayedEvents) { ev in
                         WidgetScheduleEventRow(
                             event: ev,
                             timeFormat24h: entry.timeFormat24h,
-                            compact: cardLayoutCompact
+                            compact: cardLayoutCompact,
+                            showPetSubtitle: showPetSubtitle
                         )
                     }
                 }
@@ -136,8 +156,35 @@ struct TodayEventsWidgetView: View {
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+}
+
+// MARK: - Schedule header parity (`ScheduleView.scheduleDateHeaderBar`)
+
+private struct WidgetScheduleDateHeader: View {
+    var referenceDate: Date
+    var compact: Bool
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 6) {
+            Text("Today")
+                .font(compact ? AppTypography.cardTitle : AppTypography.sectionHeading)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+
+            Text(referenceDate.formatted(.dateTime.day().month(.abbreviated)))
+                .font(AppTypography.compactControl)
+                .foregroundStyle(.white)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.blue, in: Capsule())
+
+            Spacer(minLength: 0)
+        }
     }
 }
 
@@ -206,19 +253,26 @@ private struct WidgetPetAvatar: View {
     }
 }
 
-/// Mirrors `ScheduleRowView`: avatar, pink activity icon, time + title, completion glyph; quick log uses pink tint + stroke, otherwise liquid glass.
+/// Mirrors `ScheduleRowView`: avatar, secondary activity icon, time + title (+ optional pet line), completion; quick log tint matches in-app cards.
 private struct WidgetScheduleEventRow: View {
     let event: WidgetScheduleEventDTO
     let timeFormat24h: Bool
     var compact: Bool
+    var showPetSubtitle: Bool = true
 
     private var isQuickLog: Bool { event.isQuickLog == true }
 
     private var avatarSize: CGFloat { compact ? 44 : 48 }
 
+    private var rowVerticalPadding: CGFloat { compact ? 12 : 16 }
+
     private var activityIconName: String {
         if let name = event.activitySystemImage, !name.isEmpty { return name }
         return "calendar"
+    }
+
+    private var trimmedPetName: String {
+        event.petName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var body: some View {
@@ -231,7 +285,7 @@ private struct WidgetScheduleEventRow: View {
 
             Image(systemName: activityIconName)
                 .font(AppTypography.rowIcon)
-                .foregroundStyle(Color.appPink)
+                .foregroundStyle(Color.secondary)
                 .frame(width: 22)
 
             VStack(alignment: .leading, spacing: 4) {
@@ -244,11 +298,19 @@ private struct WidgetScheduleEventRow: View {
 
                     Text(event.activityName)
                         .font(AppTypography.secondaryLabel)
-                        .opacity(0.9)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
                 .minimumScaleFactor(compact ? 0.8 : 1)
+
+                if showPetSubtitle, !trimmedPetName.isEmpty {
+                    Text(trimmedPetName)
+                        .font(AppTypography.supportingText)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .layoutPriority(1)
@@ -256,25 +318,27 @@ private struct WidgetScheduleEventRow: View {
             Spacer(minLength: 0)
 
             Image(systemName: event.isCompleted ? "checkmark.circle.fill" : "circle")
-                .font(compact ? .title3 : AppTypography.completionControl)
+                .font(AppTypography.completionControl)
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(event.isCompleted ? Color.complianceAccept : Color.primary)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.vertical, rowVerticalPadding)
         .background {
             if isQuickLog {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.appPink.opacity(0.2))
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color.appPink.opacity(0.08))
             }
         }
         .overlay {
             if isQuickLog {
-                RoundedRectangle(cornerRadius: 24)
-                    .stroke(Color.appPink.opacity(0.35), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(Color.appPink.opacity(0.32), lineWidth: 1)
             }
         }
         .modifier(WidgetScheduleRowGlassModifier(isQuickLog: isQuickLog))
+        .opacity(event.isCompleted ? 0.74 : 1.0)
+        .saturation(event.isCompleted ? 0.9 : 1.0)
     }
 }
 
@@ -286,7 +350,7 @@ private struct WidgetScheduleRowGlassModifier: ViewModifier {
         if isQuickLog {
             content
         } else {
-            content.glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 24))
+            content.glassEffect(.regular.interactive(), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
     }
 }

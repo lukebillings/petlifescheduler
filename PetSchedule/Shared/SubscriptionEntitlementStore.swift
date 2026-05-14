@@ -41,8 +41,8 @@ final class SubscriptionEntitlementStore {
     /// Product ID of the currently-active subscription, if any. Useful for "Manage" UI.
     private(set) var activeProductID: String?
 
-    /// `true` once `refreshFromCurrentEntitlements()` has run at least once. Routing code uses
-    /// this to avoid flashing the hard paywall on launch before StoreKit returns entitlements.
+    /// `true` once `refreshFromCurrentEntitlements()` has run at least once. Used when UI needs to
+    /// wait for a first StoreKit sync (app launch no longer gates on subscription).
     private(set) var initialCheckComplete: Bool = false
 
     private var updatesTask: Task<Void, Never>?

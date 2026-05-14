@@ -4,37 +4,41 @@ import SwiftUI
 struct PetScheduleApp: App {
     @UIApplicationDelegateAdaptor(PetScheduleAppDelegate.self) private var appDelegate
     @State private var homeViewModel = HomeViewModel.bootstrapFromPersistence()
-    /// Drives the post-onboarding hard paywall — `HomeView` only renders when this is `true`.
-    /// Reads the same singleton used by the onboarding paywall so a successful purchase flips
-    /// the routing immediately.
-    @State private var entitlementStore = SubscriptionEntitlementStore.shared
+    /// StoreKit entitlements refresh in `SubscriptionEntitlementStore` on launch; routing no longer
+    /// blocks returning users behind a full-screen paywall.
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     /// One-shot tour of main tabs after the onboarding paywall (same session only).
     @State private var showPostPaywallFeatureTutorial = false
 
     var body: some Scene {
         WindowGroup {
+            #if targetEnvironment(simulator)
+            if AppStoreScreenshotHarnessScene.isActive {
+                AppStoreScreenshotHarnessRoot(scene: AppStoreScreenshotHarnessScene.currentFromEnvironment())
+            } else {
+                Group {
+                    if !hasCompletedOnboarding {
+                        OnboardingView(viewModel: homeViewModel) {
+                            showPostPaywallFeatureTutorial = true
+                            hasCompletedOnboarding = true
+                        }
+                    } else {
+                        HomeView(viewModel: homeViewModel, showFeatureTutorial: $showPostPaywallFeatureTutorial)
+                    }
+                }
+            }
+            #else
             Group {
                 if !hasCompletedOnboarding {
                     OnboardingView(viewModel: homeViewModel) {
                         showPostPaywallFeatureTutorial = true
                         hasCompletedOnboarding = true
                     }
-                } else if !entitlementStore.initialCheckComplete {
-                    // Brief moment on launch before StoreKit returns the user's entitlements.
-                    // Render an empty background to avoid flashing the paywall for users who
-                    // already have an active subscription on this Apple Account.
-                    Color(.systemBackground)
-                        .ignoresSafeArea()
-                } else if !entitlementStore.isSubscribed {
-                    // Hard gate: completed onboarding but no active subscription. The user can
-                    // subscribe or restore — there is no skip path. Once the entitlement flips
-                    // to true, this view is replaced by `HomeView` automatically.
-                    PostOnboardingPaywallView(viewModel: homeViewModel)
                 } else {
                     HomeView(viewModel: homeViewModel, showFeatureTutorial: $showPostPaywallFeatureTutorial)
                 }
             }
+            #endif
         }
     }
 }

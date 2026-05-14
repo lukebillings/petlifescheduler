@@ -159,8 +159,8 @@ private struct CareCompliancePill: View {
                         .fill(accepted ? Color.complianceAccept : Color.complianceDecline)
                 )
             } else {
-                // Single horizontal strip: short prompt + tight yes/no ticks so titles/descriptions keep room.
-                HStack(alignment: .center, spacing: 8) {
+                // Prompt above yes/no so the row title keeps horizontal space.
+                VStack(alignment: .center, spacing: 6) {
                     Text(kind.compliancePrompt)
                         .font(AppTypography.micro)
                         .fontWeight(.medium)

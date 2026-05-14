@@ -1469,7 +1469,8 @@ private struct PaywallContentBody: View {
             .padding(.bottom, 0)
             .background(Color(.systemBackground))
         }
-        .padding(.top, 20)
+        /// Extra top inset so the large title clears the status bar / Dynamic Island comfortably.
+        .padding(.top, 40)
         .frame(maxWidth: .infinity, alignment: .top)
     }
 
@@ -1572,7 +1573,8 @@ private struct PaywallPreviewCarousel: View {
     var interval: TimeInterval = 3.5
 
     /// Vertical space for the scaled preview inside each page (caption + page dots sit below).
-    private let previewAreaHeight: CGFloat = 220
+    /// Taller than before so schedule + compliance rows scale down with the full feature still visible.
+    private let previewAreaHeight: CGFloat = 268
     /// Horizontal padding applied to each slide (`28` × 2 is subtracted from page width for fit math).
     private let slideHorizontalPadding: CGFloat = 28
 
@@ -1700,23 +1702,23 @@ private struct PaywallPreviewCarousel: View {
             PaywallScheduleProductPreview(petName: name, animalType: type)
                 .paywallCarouselFit(
                     designWidth: 410,
-                    designHeight: 440,
+                    designHeight: 640,
                     availableWidth: availableWidth,
                     availableHeight: availableHeight
                 )
         case .reminderPush(_, _):
             PaywallSettingsNotificationsProductPreview()
                 .paywallCarouselFit(
-                    designWidth: 380,
-                    designHeight: 290,
+                    designWidth: 400,
+                    designHeight: 340,
                     availableWidth: availableWidth,
                     availableHeight: availableHeight
                 )
         case .weightChart:
             PaywallWeightTrendProductPreview()
                 .paywallCarouselFit(
-                    designWidth: 360,
-                    designHeight: 248,
+                    designWidth: 400,
+                    designHeight: 300,
                     availableWidth: availableWidth,
                     availableHeight: availableHeight
                 )
@@ -1728,8 +1730,9 @@ private struct PaywallPreviewCarousel: View {
 
 private extension View {
     /// Lays out the preview at a fixed “design” size, then scales **uniformly** so the entire rect
-    /// fits inside the carousel cell — no fixed scale factor, so tall schedule rows / charts are
-    /// not cropped before scaling.
+    /// fits inside the carousel cell. Design height/width are generous so real product UI (schedule
+    /// rows with compliance, charts, etc.) is not clipped **before** scaling — only the final cell
+    /// clips to `availableWidth` × `availableHeight`.
     func paywallCarouselFit(
         designWidth: CGFloat,
         designHeight: CGFloat,
@@ -1743,12 +1746,12 @@ private extension View {
             Spacer(minLength: 0)
             self
                 .frame(width: designWidth, height: designHeight, alignment: .topLeading)
-                .clipped()
                 .scaleEffect(scale, anchor: .top)
                 .frame(width: designWidth * scale, height: designHeight * scale)
             Spacer(minLength: 0)
         }
         .frame(width: aw, height: ah, alignment: .top)
+        .clipped()
     }
 }
 
@@ -2243,13 +2246,11 @@ final class SubscriptionProductLoader {
 
 // MARK: - Post-onboarding hard paywall
 
-/// Full-screen subscription gate shown whenever the user has finished onboarding but does not
-/// have an active premium entitlement. Re-uses the exact paywall body from onboarding for visual
-/// consistency, but exposes only **Subscribe** and **Restore Purchases** — no skip path.
+/// Full-screen subscription gate — same UI as the onboarding paywall, but without the onboarding
+/// chrome. **Not** presented at app launch; kept for previews or future entry points (e.g. Settings).
 ///
-/// The view observes `SubscriptionEntitlementStore.shared`; once `isSubscribed` flips to `true`
-/// (purchase succeeded, restore succeeded, or a renewal arrived via `Transaction.updates`), the
-/// owner (`PetScheduleApp`) re-renders and replaces this view with `HomeView`.
+/// Observes `SubscriptionEntitlementStore.shared`; when `isSubscribed` becomes `true`, callers can
+/// dismiss or navigate away.
 struct PostOnboardingPaywallView: View {
     @Bindable var viewModel: HomeViewModel
 
@@ -2340,7 +2341,7 @@ struct PostOnboardingPaywallView: View {
                         errorMessage: errorMessage,
                         onRestorePurchases: { Task { await beginRestorePurchases() } }
                     )
-                    .padding(.top, 24)
+                    .padding(.top, 12)
                 }
 
                 VStack(spacing: 14) {

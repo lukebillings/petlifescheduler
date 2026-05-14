@@ -26,7 +26,7 @@ enum AppStoreScreenshotHarnessScene: String, CaseIterable {
 @MainActor
 enum AppStoreScreenshotHarness {
     static func viewModel(for scene: AppStoreScreenshotHarnessScene) -> HomeViewModel {
-        var vm = HomeViewModel.analyticsPreview
+        let vm = HomeViewModel.analyticsPreview
         guard scene == .store, let maxIndex = vm.pets.firstIndex(where: { $0.name == "Max" }) else {
             return vm
         }
