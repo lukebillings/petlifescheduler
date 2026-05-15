@@ -14,7 +14,7 @@ enum ScheduleReminderScheduler {
         UNUserNotificationCenter.current().delegate = NotificationPresentationDelegate.shared
     }()
 
-    /// Removes previously scheduled PetSchedule reminders and schedules up to the next occurrences for eligible items.
+    /// Removes previously scheduled PetLifeScheduler reminders and schedules up to the next occurrences for eligible items.
     static func reschedule(for items: [ScheduleItem]) {
         _ = delegateBootstrap
         Task {
@@ -42,7 +42,7 @@ enum ScheduleReminderScheduler {
         guard isAuthorized else { return false }
 
         let content = UNMutableNotificationContent()
-        content.title = "PetSchedule test notification"
+        content.title = "PetLifeScheduler test notification"
         content.body = "Push reminders are working on this device."
         content.sound = .default
 

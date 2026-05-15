@@ -31,7 +31,7 @@ enum AppStoreScreenshotHarness {
             return vm
         }
         var maxPet = vm.pets[maxIndex]
-        let stub = Data("PetSchedule demo document".utf8)
+        let stub = Data("PetLifeScheduler demo document".utf8)
         maxPet.documents = [
             PetDocument(name: "Lab results", data: stub, fileExtension: "pdf"),
             PetDocument(name: "X-ray", data: stub, fileExtension: "png"),

@@ -372,7 +372,7 @@ final class HouseholdCloudKitService {
         }
 
         let share = CKShare(rootRecord: root)
-        share[CKShare.SystemFieldKey.title] = "PetSchedule household" as CKRecordValue
+        share[CKShare.SystemFieldKey.title] = "PetLifeScheduler household" as CKRecordValue
         share.publicPermission = .none
 
         // CloudKit requires the share and its root to be saved together the first time; saving only the share can fail or destabilize on device.

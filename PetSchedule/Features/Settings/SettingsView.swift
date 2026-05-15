@@ -264,7 +264,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Widgets & shortcuts")
                 } footer: {
-                    Text("Press and hold the Home Screen or Lock Screen. Tap Edit in the top-left, tap Add Widget, search for PetSchedule, then choose a widget size you like.")
+                    Text("Press and hold the Home Screen or Lock Screen. Tap Edit in the top-left, tap Add Widget, search for PetLifeScheduler, then choose a widget size you like.")
                 }
 
                 Section("Units") {
@@ -314,7 +314,7 @@ struct SettingsView: View {
                     } label: {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "star.fill")
-                            Text("Rate PetSchedule")
+                            Text("Rate PetLifeScheduler")
                                 .foregroundStyle(.primary)
                         }
                     }
@@ -416,7 +416,7 @@ struct SettingsView: View {
                 return
             }
         } else if status == .denied {
-            testNotificationStatusMessage = "Notifications are disabled for PetSchedule. Enable them in iOS Settings, then try again."
+            testNotificationStatusMessage = "Notifications are disabled for PetLifeScheduler. Enable them in iOS Settings, then try again."
             showingTestNotificationStatus = true
             return
         }

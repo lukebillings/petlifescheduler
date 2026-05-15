@@ -53,7 +53,7 @@ enum SatisfactionCheckIn {
 
     static func openFeatureRequestMailComposer() {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        let subject = "PetSchedule — feature idea"
+        let subject = "PetLifeScheduler — feature idea"
         let body =
             """
             Hi,
@@ -136,7 +136,7 @@ struct SatisfactionCheckInSheet: View {
             Text("Quick check-in")
                 .font(AppTypography.panelTitle)
 
-            Text("Is PetSchedule working well for you so far?")
+            Text("Is PetLifeScheduler working well for you so far?")
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

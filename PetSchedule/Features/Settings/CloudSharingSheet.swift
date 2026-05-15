@@ -145,7 +145,7 @@ struct CloudSharingSheet: UIViewControllerRepresentable {
         }
 
         func itemTitle(for csc: UICloudSharingController) -> String? {
-            "PetSchedule household"
+            "PetLifeScheduler household"
         }
 
         func itemThumbnailData(for csc: UICloudSharingController) -> Data? {

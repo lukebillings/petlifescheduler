@@ -1227,7 +1227,7 @@ private struct StepFeatureInterest: View {
                 .padding(.top, 28)
 
                 VStack(spacing: 10) {
-                    Text("What's the main reason you're using Pet Schedule?")
+                    Text("What's the main reason you're using PetLifeScheduler?")
                         .font(AppTypography.screenTitle)
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.78)
@@ -2280,7 +2280,7 @@ struct PostOnboardingPaywallView: View {
         }
         let name = petName.trimmingCharacters(in: .whitespacesAndNewlines)
         if name.isEmpty {
-            return "Unlock PetSchedule Premium"
+            return "Unlock PetLifeScheduler Premium"
         }
         if ownsMultiplePets {
             return "Keep \(name) and all your pets on schedule"

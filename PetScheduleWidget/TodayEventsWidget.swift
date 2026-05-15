@@ -119,7 +119,7 @@ struct TodayEventsWidgetView: View {
                 Text("No events today")
                     .font(compactCards ? AppTypography.cardTitle : AppTypography.sectionHeading)
                     .foregroundStyle(.primary)
-                Text("Add some in PetSchedule")
+                Text("Add some in PetLifeScheduler")
                     .font(AppTypography.supportingText)
                     .foregroundStyle(.secondary)
             } else if allDoneToday {
