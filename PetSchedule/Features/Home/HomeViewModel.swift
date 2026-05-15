@@ -496,18 +496,23 @@ final class HomeViewModel {
         return data
     }
 
+    /// Same ordering as `ScheduleListView` (all-day rows, then timed by time).
+    private func widgetTodayScheduleItems(on date: Date = .now) -> [ScheduleItem] {
+        let cal = Calendar.current
+        let regular = scheduleItems.filter { cal.isDate($0.time, inSameDayAs: date) }
+        let birthdays = pets.compactMap { birthdayItem(for: $0, on: date) }
+        let merged = (birthdays + regular).sorted { $0.time < $1.time }
+        let allDay = merged.filter(\.isAllDay)
+        let timed = merged.filter { !$0.isAllDay }
+        return allDay + timed
+    }
+
     /// Writes today’s schedule into the App Group and asks WidgetKit to refresh.
     func syncWidgetSchedule() {
-        let cal = Calendar.current
-        let today = Date()
-        let regular = scheduleItems.filter { cal.isDateInToday($0.time) }
-        let birthdays = pets.compactMap { birthdayItem(for: $0, on: today) }
-        let merged = (birthdays + regular).sorted { $0.time < $1.time }
-        let totalToday = merged.count
-        let upcoming = merged.filter { !$0.isCompleted }
-        let nextForWidget = Array(upcoming.prefix(4))
+        let ordered = widgetTodayScheduleItems()
+        let totalToday = ordered.count
         let tf24 = TimeFormat.current == .twentyFourHour
-        let dtos = nextForWidget.map { Self.widgetDTO(from: $0) }
+        let dtos = ordered.prefix(8).map { Self.widgetDTO(from: $0) }
         ScheduleWidgetShared.savePayload(
             WidgetSchedulePayload(
                 updatedAt: Date(),
@@ -516,7 +521,7 @@ final class HomeViewModel {
                 events: dtos
             )
         )
-        WidgetCenter.shared.reloadAllTimelines()
+        WidgetCenter.shared.reloadTimelines(ofKind: ScheduleWidgetShared.todayEventsWidgetKind)
         ScheduleReminderScheduler.reschedule(for: scheduleItems)
         Task { @MainActor in
             HouseholdSyncCoordinator.shared.scheduleCloudSync(from: self)
@@ -527,6 +532,7 @@ final class HomeViewModel {
     static func bootstrapFromPersistence() -> HomeViewModel {
         let vm = HomeViewModel()
         _ = HouseholdLocalStore.applyIfAvailable(to: vm)
+        vm.syncWidgetSchedule()
         return vm
     }
 }

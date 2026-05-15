@@ -3,6 +3,7 @@ import Foundation
 /// Payload written by the app and read by the home screen widget (App Group).
 enum ScheduleWidgetShared {
     static let appGroupIdentifier = "group.com.lukebillings.PetSchedule"
+    static let todayEventsWidgetKind = "com.lukebillings.PetSchedule.todayEvents"
     private static let payloadKey = "widgetSchedulePayload.v2"
 
     private static var suite: UserDefaults? {
@@ -10,14 +11,36 @@ enum ScheduleWidgetShared {
     }
 
     static func savePayload(_ payload: WidgetSchedulePayload) {
-        guard let data = try? JSONEncoder().encode(payload) else { return }
-        suite?.set(data, forKey: payloadKey)
+        guard let suite else { return }
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(payload) {
+            suite.set(data, forKey: payloadKey)
+            suite.synchronize()
+            return
+        }
+        var lean = payload
+        lean.events = payload.events.map { event in
+            var copy = event
+            copy.petPhotoJPEGData = nil
+            return copy
+        }
+        if let data = try? encoder.encode(lean) {
+            suite.set(data, forKey: payloadKey)
+            suite.synchronize()
+        }
     }
 
     static func loadPayload() -> WidgetSchedulePayload? {
         guard let data = suite?.data(forKey: payloadKey),
               let decoded = try? JSONDecoder().decode(WidgetSchedulePayload.self, from: data) else { return nil }
         return decoded
+    }
+
+    /// Keeps widget rows aligned with the Today tab when the payload was written on a prior day.
+    static func eventsForToday(from payload: WidgetSchedulePayload?, on date: Date = .now) -> [WidgetScheduleEventDTO] {
+        guard let payload else { return [] }
+        let cal = Calendar.current
+        return payload.events.filter { cal.isDate($0.time, inSameDayAs: date) || $0.isAllDay }
     }
 }
 
@@ -27,7 +50,7 @@ struct WidgetSchedulePayload: Codable {
     var timeFormat24h: Bool
     /// All events on the current day (completed + upcoming), for empty vs “all done” in the widget.
     var totalTodayEventCount: Int
-    /// Next upcoming events today only (max 2), incomplete, sorted by time.
+    /// Today’s schedule rows (all-day first, then by time) — same ordering as `ScheduleListView`.
     var events: [WidgetScheduleEventDTO]
 
     enum CodingKeys: String, CodingKey {
