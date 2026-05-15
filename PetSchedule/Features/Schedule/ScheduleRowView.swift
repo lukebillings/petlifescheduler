@@ -53,7 +53,8 @@ struct ScheduleRowView: View {
                         .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-                        .truncationMode(.middle)
+                        .truncationMode(.tail)
+                        .layoutPriority(1)
                 }
 
                 HStack(spacing: 8) {
@@ -81,28 +82,28 @@ struct ScheduleRowView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .layoutPriority(1)
 
-            Spacer()
+            HStack(spacing: 8) {
+                if let kind = item.complianceKind {
+                    CareCompliancePill(
+                        kind: kind,
+                        accepted: item.medicineAccepted,
+                        onAccept: { onMedicineAccept?(true) },
+                        onDecline: { onMedicineAccept?(false) }
+                    )
+                }
 
-            if let kind = item.complianceKind {
-                CareCompliancePill(
-                    kind: kind,
-                    accepted: item.medicineAccepted,
-                    onAccept: { onMedicineAccept?(true) },
-                    onDecline: { onMedicineAccept?(false) }
-                )
-                .layoutPriority(2)
+                Button {
+                    onToggle()
+                } label: {
+                    Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
+                        .font(AppTypography.completionControl)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(item.isCompleted ? Color.complianceAccept : .primary)
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(.plain)
             }
-
-            Button {
-                onToggle()
-            } label: {
-                Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(AppTypography.completionControl)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(item.isCompleted ? Color.complianceAccept : .primary)
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .buttonStyle(.plain)
+            .fixedSize(horizontal: true, vertical: false)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)

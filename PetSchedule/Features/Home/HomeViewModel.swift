@@ -427,20 +427,10 @@ final class HomeViewModel {
     }
 
     /// Stores yes/no for medicine, feed, and water (`ScheduleItem.complianceKind`).
+    /// Does not mark the schedule row complete — use `toggleCompletion` for that.
     func setMedicineAccepted(_ accepted: Bool, for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
-        let wasIncomplete = !scheduleItems[index].isCompleted
-        let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
         scheduleItems[index].medicineAccepted = accepted
-        scheduleItems[index].isCompleted = true
-        if scheduleItems[index].completedByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           !profile.isEmpty
-        {
-            scheduleItems[index].completedByDisplayName = profile
-        }
-        if wasIncomplete {
-            AppRatingPrompt.recordTaskCompleted()
-        }
         syncWidgetSchedule()
     }
 
