@@ -407,9 +407,6 @@ final class HomeViewModel {
         let profile = UserProfileStorage.trimmedDisplayName().trimmingCharacters(in: .whitespacesAndNewlines)
         if !wasCompleted {
             scheduleItems[index].isCompleted = true
-            if scheduleItems[index].complianceKind != nil, scheduleItems[index].medicineAccepted == nil {
-                scheduleItems[index].medicineAccepted = true
-            }
             if scheduleItems[index].completedByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                !profile.isEmpty
             {
@@ -419,9 +416,6 @@ final class HomeViewModel {
         } else {
             scheduleItems[index].isCompleted = false
             scheduleItems[index].completedByDisplayName = ""
-            if scheduleItems[index].complianceKind != nil {
-                scheduleItems[index].medicineAccepted = nil
-            }
         }
         syncWidgetSchedule()
     }

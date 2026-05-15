@@ -422,14 +422,6 @@ struct EditLogSheet: View {
                             viewModel.scheduleItems[idx].assignedToDisplayName = assignedTo.trimmingCharacters(in: .whitespacesAndNewlines)
                             viewModel.scheduleItems[idx].completedByDisplayName = resolvedCompletedBy
                             viewModel.scheduleItems[idx].assigneeAccent = assigneeAccent
-                            if viewModel.scheduleItems[idx].complianceKind != nil {
-                                if isCompleted, viewModel.scheduleItems[idx].medicineAccepted == nil {
-                                    viewModel.scheduleItems[idx].medicineAccepted = true
-                                }
-                                if !isCompleted {
-                                    viewModel.scheduleItems[idx].medicineAccepted = nil
-                                }
-                            }
                         }
                         viewModel.syncWidgetSchedule()
                         dismiss()
