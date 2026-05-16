@@ -48,52 +48,51 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .medicationCompliance: return "Medication compliance"
-        case .petDetailsAndProfiles: return "Pet details & profiles"
-        case .weightLogging: return "Weight logging"
-        case .walksAndActivities: return "Walks & activities"
-        case .feedingAndDailyCare: return "Feeding & daily care"
+        case .medicationCompliance: return "I forget tasks & meds"
+        case .petDetailsAndProfiles: return "I lose documents & records"
+        case .weightLogging: return "I lose track of weight & health"
+        case .walksAndActivities: return "I forget walks & activities"
+        case .feedingAndDailyCare: return "I miss feeding & daily care"
         }
     }
 
     var caption: String {
         switch self {
         case .medicationCompliance:
-            return "Reminders and routines so doses don't get missed"
+            return "Meds, treatments, or tasks that should happen on a schedule"
         case .petDetailsAndProfiles:
-            return "Store vet info, notes, and everything about each pet"
+            return "Vet letters, insurance, microchip details, and notes"
         case .weightLogging:
-            return "Log weight over time and spot changes early"
+            return "Hard to notice gradual changes without a log"
         case .walksAndActivities:
-            return "Schedule walks, playtime, and what's happening next"
+            return "Walks, play, grooming, or vet appointments"
         case .feedingAndDailyCare:
-            return "Keep meals, water, and everyday tasks on track"
+            return "Meals, water, treats, or handoffs between carers"
         }
     }
 
-    /// Big headline at the top of the paywall — interest-specific, with the user's pet woven in
-    /// when there's exactly one. Multi-pet households get plural copy that doesn't single out one
-    /// name (avoids awkward "Luna and all your pets's meds" possessive constructions).
+    /// Feature-led paywall headline — matches the capability that solves the problem the user
+    /// picked in onboarding (not the problem wording itself).
     func paywallHeadline(petName: String, ownsMultiplePets: Bool) -> String {
         let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
         let hasName = !trimmed.isEmpty && !ownsMultiplePets
 
         switch self {
         case .medicationCompliance:
-            if ownsMultiplePets { return "Never miss a dose for any of your pets" }
-            return hasName ? "Never miss \(trimmed)'s meds again" : "Never miss a dose again"
+            if ownsMultiplePets { return "Medication reminders for every pet" }
+            return hasName ? "Medication reminders for \(trimmed)" : "Medication reminders & dose logging"
         case .petDetailsAndProfiles:
-            if ownsMultiplePets { return "Every pet's details in one place" }
-            return hasName ? "Everything about \(trimmed) in one place" : "Everything about your pet in one place"
+            if ownsMultiplePets { return "Pet profiles & documents for every pet" }
+            return hasName ? "Pet profiles & documents for \(trimmed)" : "Pet profiles & documents in one place"
         case .weightLogging:
-            if ownsMultiplePets { return "Track every pet's weight, spot changes early" }
-            return hasName ? "Track \(trimmed)'s weight, spot changes early" : "Track your pet's weight, spot changes early"
+            if ownsMultiplePets { return "Weight logging for every pet" }
+            return hasName ? "Weight logging for \(trimmed)" : "Weight logging & health charts"
         case .walksAndActivities:
-            if ownsMultiplePets { return "Keep every pet's walks and play on track" }
-            return hasName ? "Keep \(trimmed)'s walks and play on track" : "Keep your pet's walks and play on track"
+            if ownsMultiplePets { return "Walk & activity scheduling for every pet" }
+            return hasName ? "Walk & activity scheduling for \(trimmed)" : "Walk & activity scheduling"
         case .feedingAndDailyCare:
-            if ownsMultiplePets { return "Keep every pet fed and cared for, every day" }
-            return hasName ? "Keep \(trimmed) fed and cared for, every day" : "Keep your pet fed and cared for, every day"
+            if ownsMultiplePets { return "Feeding logs & care reminders for every pet" }
+            return hasName ? "Feeding logs & care reminders for \(trimmed)" : "Feeding logs & daily care reminders"
         }
     }
 
@@ -355,8 +354,10 @@ struct OnboardingView: View {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 28))
                         .foregroundStyle(.secondary)
-                        .padding(20)
                 }
+                .padding(.trailing, 20)
+                .safeAreaPadding(.top, 8)
+                .padding(.top, 12)
                 .accessibilityLabel("Skip paywall")
             }
         }
@@ -518,7 +519,7 @@ struct OnboardingView: View {
         case 8:
             heightUnitRaw = heightUnitDraft
         case 9:
-            // Persist the user's "main reason" so the post-onboarding paywall can keep the
+            // Persist the user's problem choice so the post-onboarding paywall can keep the
             // same personalization after onboarding is done.
             UserDefaults.standard.set(
                 selectedFeatureInterest?.rawValue ?? "",
@@ -995,6 +996,8 @@ private struct Step4Notifications: View {
 private struct OnboardingChoiceButton: View {
     let title: String
     var caption: String? = nil
+    var singleLineTitle: Bool = false
+    var showsSelectionIndicator: Bool = true
     let isSelected: Bool
     let action: () -> Void
 
@@ -1006,17 +1009,22 @@ private struct OnboardingChoiceButton: View {
                         .font(AppTypography.groupTitle)
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.leading)
+                        .lineLimit(singleLineTitle ? 1 : nil)
+                        .minimumScaleFactor(singleLineTitle ? 0.8 : 1)
                     if let caption, !caption.isEmpty {
                         Text(caption)
                             .font(AppTypography.supportingText)
                             .foregroundStyle(.secondary)
                     }
                 }
-                Spacer(minLength: 8)
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(isSelected ? Color.appPink : Color(.tertiaryLabel))
+                if showsSelectionIndicator {
+                    Spacer(minLength: 8)
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.title2)
+                        .foregroundStyle(isSelected ? Color.appPink : Color(.tertiaryLabel))
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -1205,7 +1213,7 @@ private struct StepHeightUnits: View {
     }
 }
 
-// MARK: - Feature interest (before paywall)
+// MARK: - Problem selection (before paywall)
 
 private struct StepFeatureInterest: View {
     @Binding var selection: OnboardingFeatureInterest?
@@ -1227,14 +1235,14 @@ private struct StepFeatureInterest: View {
                 .padding(.top, 28)
 
                 VStack(spacing: 10) {
-                    Text("What's the main reason you're using PetLifeScheduler?")
-                        .font(AppTypography.screenTitle)
+                    Text("What's the biggest problem you face right now?")
+                        .font(AppTypography.panelTitle)
                         .multilineTextAlignment(.center)
-                        .minimumScaleFactor(0.78)
-                        .lineLimit(4)
+                        .minimumScaleFactor(0.9)
+                        .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity)
-                    Text("Pick the closest match, for example meds, pet records, weight, walks, or feeding.")
+                    Text("Pick what sounds most like you — we'll tailor reminders and your setup.")
                         .font(AppTypography.secondaryLabel)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -1248,6 +1256,8 @@ private struct StepFeatureInterest: View {
                     ForEach(OnboardingFeatureInterest.allCases) { option in
                         OnboardingChoiceButton(
                             title: option.title,
+                            singleLineTitle: true,
+                            showsSelectionIndicator: false,
                             isSelected: selection == option
                         ) {
                             selection = option
@@ -1260,7 +1270,7 @@ private struct StepFeatureInterest: View {
             }
             .frame(maxHeight: .infinity)
 
-            Text("You'll still have access to every feature. This just tells us what you care about most.")
+            Text("You'll still have access to every feature. This just helps us focus on what matters most to you.")
                 .font(AppTypography.supportingText)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -1287,7 +1297,7 @@ private struct Step5Paywall: View {
     var errorMessage: String?
     var onRestorePurchases: () -> Void
 
-    /// Preview slides for the paged carousel — ordered so the user's "main reason" choice from
+    /// Preview slides for the paged carousel — ordered so the user's problem choice from
     /// step 9 surfaces first. Falls back to schedule → reminder → weight chart for users who
     /// haven't picked an interest.
     private var previewSlides: [PaywallPreviewSlide] {
@@ -1323,25 +1333,26 @@ private struct Step5Paywall: View {
     ]
 
     var body: some View {
-        VStack(spacing: 0) {
+        ScrollView(showsIndicators: false) {
             PaywallContentBody(
                 headline: paywallHeadline,
                 previewSlides: previewSlides,
                 personalizedBullets: paywallBullets,
+                yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
                 petCount: petCount,
                 products: products,
                 selectedPlan: $selectedPlan,
                 purchaseState: purchaseState,
                 errorMessage: errorMessage,
-                onRestorePurchases: onRestorePurchases
+                onRestorePurchases: onRestorePurchases,
+                reservesCloseButtonInset: true
             )
-            Spacer(minLength: 0)
         }
     }
 }
 
 /// Builds the canonical preview-carousel slide list, optionally promoting one slide to the first
-/// position based on the user's onboarding "main reason" choice. Both paywalls (onboarding and
+/// position based on the user's onboarding problem choice. Both paywalls (onboarding and
 /// post-onboarding) call this so the ordering logic stays in one place.
 private func paywallPreviewSlides(
     petName: String,
@@ -1391,17 +1402,21 @@ private struct PaywallContentBody: View {
     let purchaseState: PaywallPurchaseState
     let errorMessage: String?
     let onRestorePurchases: () -> Void
+    /// Extra trailing inset so the title clears the skip control on the onboarding paywall.
+    var reservesCloseButtonInset: Bool = false
 
     var body: some View {
-        VStack(alignment: .center, spacing: 0) {
+        VStack(alignment: .center, spacing: 24) {
             Text(headline)
                 .font(AppTypography.screenTitle)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
+                .padding(.leading, 28)
+                .padding(.trailing, reservesCloseButtonInset ? 52 : 28)
+                .frame(maxWidth: .infinity)
 
             PaywallPreviewCarousel(slides: previewSlides, interval: 3.5)
+                .layoutPriority(1)
 
             Group {
                 if products.isLoading {
@@ -1469,8 +1484,8 @@ private struct PaywallContentBody: View {
             .padding(.bottom, 0)
             .background(Color(.systemBackground))
         }
-        /// Extra top inset so the large title clears the status bar / Dynamic Island comfortably.
-        .padding(.top, 40)
+        .safeAreaPadding(.top, 12)
+        .padding(.top, 24)
         .frame(maxWidth: .infinity, alignment: .top)
     }
 
@@ -1573,8 +1588,7 @@ private struct PaywallPreviewCarousel: View {
     var interval: TimeInterval = 3.5
 
     /// Vertical space for the scaled preview inside each page (caption + page dots sit below).
-    /// Taller than before so schedule + compliance rows scale down with the full feature still visible.
-    private let previewAreaHeight: CGFloat = 268
+    private let previewAreaHeight: CGFloat = 288
     /// Horizontal padding applied to each slide (`28` × 2 is subtracted from page width for fit math).
     private let slideHorizontalPadding: CGFloat = 28
 
@@ -1592,24 +1606,30 @@ private struct PaywallPreviewCarousel: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            GeometryReader { geo in
-                let pageWidth = max(geo.size.width, 1)
-                let contentWidth = max(pageWidth - slideHorizontalPadding * 2, 1)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 0) {
-                        ForEach(slides) { slide in
-                            slideView(slide, availableWidth: contentWidth, availableHeight: previewAreaHeight)
-                                .padding(.horizontal, slideHorizontalPadding)
-                                .frame(width: pageWidth, height: previewAreaHeight, alignment: .top)
-                                .id(slide.id)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    ForEach(slides) { slide in
+                        GeometryReader { geo in
+                            let contentWidth = max(geo.size.width - slideHorizontalPadding * 2, 1)
+                            slideView(
+                                slide,
+                                availableWidth: contentWidth,
+                                availableHeight: previewAreaHeight
+                            )
+                            .padding(.horizontal, slideHorizontalPadding)
+                            .frame(width: geo.size.width, height: previewAreaHeight, alignment: .center)
                         }
+                        .containerRelativeFrame(.horizontal, count: 1, spacing: 0)
+                        .frame(height: previewAreaHeight)
+                        .id(slide.id)
                     }
-                    .scrollTargetLayout()
                 }
-                .scrollTargetBehavior(.paging)
-                .scrollPosition(id: $scrollPosition)
+                .scrollTargetLayout()
             }
+            .scrollTargetBehavior(.paging)
+            .scrollPosition(id: $scrollPosition)
             .frame(height: previewAreaHeight)
+            .fixedSize(horizontal: false, vertical: true)
 
             Group {
                 if let id = activeSlideID, let current = slides.first(where: { $0.id == id }) {
@@ -1718,7 +1738,7 @@ private struct PaywallPreviewCarousel: View {
             PaywallWeightTrendProductPreview()
                 .paywallCarouselFit(
                     designWidth: 400,
-                    designHeight: 300,
+                    designHeight: 200,
                     availableWidth: availableWidth,
                     availableHeight: availableHeight
                 )
@@ -1729,10 +1749,8 @@ private struct PaywallPreviewCarousel: View {
 // MARK: - Paywall carousel (real product UI)
 
 private extension View {
-    /// Lays out the preview at a fixed “design” size, then scales **uniformly** so the entire rect
-    /// fits inside the carousel cell. Design height/width are generous so real product UI (schedule
-    /// rows with compliance, charts, etc.) is not clipped **before** scaling — only the final cell
-    /// clips to `availableWidth` × `availableHeight`.
+    /// Lays out the preview at a fixed “design” size, then scales **uniformly** so the entire UI
+    /// fits inside the carousel cell without clipping.
     func paywallCarouselFit(
         designWidth: CGFloat,
         designHeight: CGFloat,
@@ -1742,16 +1760,15 @@ private extension View {
         let aw = max(availableWidth, 1)
         let ah = max(availableHeight, 1)
         let scale = min(aw / designWidth, ah / designHeight)
-        return HStack(spacing: 0) {
-            Spacer(minLength: 0)
+        let scaledW = designWidth * scale
+        let scaledH = designHeight * scale
+        return ZStack {
             self
                 .frame(width: designWidth, height: designHeight, alignment: .topLeading)
-                .scaleEffect(scale, anchor: .top)
-                .frame(width: designWidth * scale, height: designHeight * scale)
-            Spacer(minLength: 0)
+                .scaleEffect(scale, anchor: .topLeading)
+                .frame(width: scaledW, height: scaledH, alignment: .topLeading)
         }
-        .frame(width: aw, height: ah, alignment: .top)
-        .clipped()
+        .frame(width: aw, height: ah, alignment: .center)
     }
 }
 
@@ -2259,7 +2276,7 @@ struct PostOnboardingPaywallView: View {
     @State private var selectedPlan: PaywallPlan = .monthly
     @State private var purchaseState: PaywallPurchaseState = .idle
     @State private var errorMessage: String?
-    /// The user's "main reason" choice from onboarding step 9 (persisted to `UserDefaults`).
+    /// The user's problem choice from onboarding step 9 (persisted to `UserDefaults`).
     /// Drives the personalized headline, plan-card caption, and bullets after onboarding.
     @AppStorage(OnboardingFeatureInterest.persistenceKey) private var persistedFeatureInterestRaw: String = ""
 
