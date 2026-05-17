@@ -2,6 +2,20 @@ import SwiftUI
 import UserNotifications
 import StoreKit
 
+@ViewBuilder
+private func widgetSetupStep(_ number: Int, _ text: String) -> some View {
+    HStack(alignment: .top, spacing: 10) {
+        Text("\(number).")
+            .font(.subheadline.monospacedDigit())
+            .foregroundStyle(.secondary)
+            .frame(width: 20, alignment: .trailing)
+        Text(text)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
 /// Rounded SF Symbol used as a leading affordance in Settings rows (system “inset grouped” style).
 private struct SettingsTintedSymbol: View {
     let systemName: String
@@ -21,6 +35,7 @@ struct SettingsView: View {
     @Bindable var viewModel: HomeViewModel
     var onLaunchFeedbackCheckIn: () -> Void
 
+    @AppStorage(UserProfileStorage.displayNameKey) private var userDisplayName = ""
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
     @AppStorage("remindersEnabled") private var remindersEnabled = false
     @AppStorage("reminderMinutes") private var reminderMinutes = 10
@@ -37,6 +52,7 @@ struct SettingsView: View {
     private var heightUnit:  HeightUnit  { HeightUnit(rawValue: heightUnitRaw)   ?? .cm }
 
     @State private var showingResetConfirm = false
+    @State private var showingPopulateDummyConfirm = false
     @State private var testNotificationStatusMessage: String?
     @State private var showingTestNotificationStatus = false
     @State private var notificationPermissionDenied = false
@@ -70,6 +86,15 @@ struct SettingsView: View {
             VStack(spacing: 0) {
                 PinkWaveScreenHeader("Settings")
                 List {
+                Section {
+                    TextField("Your name", text: $userDisplayName)
+                        .textContentType(.name)
+                } header: {
+                    Text("Your profile")
+                } footer: {
+                    Text("Same name you chose when you joined PetLifeScheduler. You can change it anytime; it appears on logs so others know who did each task.")
+                }
+
                 Section("Notifications") {
                     Toggle(isOn: $remindersEnabled.animation()) {
                         HStack(spacing: 12) {
@@ -250,21 +275,15 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    Link(destination: URL(string: "https://support.apple.com/guide/iphone/add-widgets-iphb8ca0114/ios")!) {
-                        HStack(spacing: 12) {
-                            SettingsTintedSymbol(systemName: "square.grid.2x2.fill")
-                            Text("Widgets on Home Screen")
-                                .foregroundStyle(.primary)
-                            Spacer()
-                            Image(systemName: "arrow.up.right")
-                                .font(AppTypography.supportingText)
-                                .foregroundStyle(.tertiary)
-                        }
+                    VStack(alignment: .leading, spacing: 10) {
+                        widgetSetupStep(1, "Press and hold the Home Screen or Lock Screen.")
+                        widgetSetupStep(2, "Tap Edit in the top-left.")
+                        widgetSetupStep(3, "Tap Add Widget.")
+                        widgetSetupStep(4, "Search for PetLifeScheduler and choose a widget size you like.")
                     }
+                    .padding(.vertical, 4)
                 } header: {
                     Text("Widgets & shortcuts")
-                } footer: {
-                    Text("Press and hold the Home Screen or Lock Screen. Tap Edit in the top-left, tap Add Widget, search for PetLifeScheduler, then choose a widget size you like.")
                 }
 
                 Section("Units") {
@@ -307,10 +326,8 @@ struct SettingsView: View {
 
                 Section("Rate Us") {
                     Button {
-                        if let scene = UIApplication.shared.connectedScenes
-                            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
-                            AppStore.requestReview(in: scene)
-                        }
+                        AppRatingPrompt.presentReviewRequest()
+                        AppRatingPrompt.markReviewSubmitted()
                     } label: {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "star.fill")
@@ -318,6 +335,20 @@ struct SettingsView: View {
                                 .foregroundStyle(.primary)
                         }
                     }
+                }
+
+                Section {
+                    Button {
+                        SatisfactionCheckIn.openSupportMailComposer()
+                    } label: {
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "envelope.fill")
+                            Text("Click here to get in touch")
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                } header: {
+                    Text("Got a question")
                 }
 
                 Section("Legal") {
@@ -357,6 +388,22 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Button {
+                        showingPopulateDummyConfirm = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "pawprint.fill")
+                            Text("Load sample dog, cat & fish")
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                } header: {
+                    Text("Sample data")
+                } footer: {
+                    Text("Loads Max (dog), Luna (cat), and Nemo (fish) with schedules, logs, and history. Replaces your current pets and events.")
+                }
+
+                Section {
                     Button(role: .destructive) {
                         showingResetConfirm = true
                     } label: {
@@ -393,6 +440,18 @@ struct SettingsView: View {
                 Button("Cancel", role: .cancel) {}
             } message: {
                 Text("All pets and schedules will be deleted. This cannot be undone.")
+            }
+            .confirmationDialog(
+                "Load sample data?",
+                isPresented: $showingPopulateDummyConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Replace with sample data") {
+                    viewModel.populateWithDummyDogCatFishData()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Your current pets and schedule will be replaced with demo data for a dog, cat, and fish.")
             }
             .alert("Test notification", isPresented: $showingTestNotificationStatus, actions: {
                 Button("OK", role: .cancel) {}

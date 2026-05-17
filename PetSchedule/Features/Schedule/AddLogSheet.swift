@@ -169,8 +169,7 @@ struct AddLogSheet: View {
             }
             .navigationTitle("Log")
             .navigationBarTitleDisplayMode(.inline)
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
+            .detailEditorSheetStyle()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }
@@ -391,8 +390,7 @@ struct EditLogSheet: View {
             }
             .navigationTitle("Edit Log")
             .navigationBarTitleDisplayMode(.inline)
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
+            .detailEditorSheetStyle()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }

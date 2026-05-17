@@ -9,6 +9,8 @@ final class HomeViewModel {
     var selectedView: ViewMode = .list
     var selectedCalendarDate: Date = .now
     var selectedPet: Pet? = nil
+    /// Set when enough tasks are checked off; `HomeView` presents `AppRatingReviewSheet`.
+    var showAppRatingPrompt = false
 
     enum ViewMode: String, CaseIterable {
         case list = "Today"
@@ -412,7 +414,9 @@ final class HomeViewModel {
             {
                 scheduleItems[index].completedByDisplayName = profile
             }
-            AppRatingPrompt.recordTaskCompleted()
+            if AppRatingPrompt.recordTaskCompleted() {
+                showAppRatingPrompt = true
+            }
         } else {
             scheduleItems[index].isCompleted = false
             scheduleItems[index].completedByDisplayName = ""

@@ -200,8 +200,7 @@ struct EditEventSheet: View {
             }
             .navigationTitle("Edit Event")
             .navigationBarTitleDisplayMode(.inline)
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
+            .detailEditorSheetStyle()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Cancel") { dismiss() }

@@ -55,6 +55,7 @@
 		A93AAA43333333333333302 /* HouseholdCloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA43333333333333301 /* HouseholdCloudKitService.swift */; };
 		A93AAA44444444444444402 /* HouseholdSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */; };
 		A93AAA45555555555555502 /* LoggedByPersonSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA45555555555555501 /* LoggedByPersonSection.swift */; };
+		D3T41L5H33T5TYL3F02 /* DetailEditorSheetStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3T41L5H33T5TYL3F01 /* DetailEditorSheetStyle.swift */; };
 		A93AAA46666666666666602 /* CloudSharingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA46666666666666601 /* CloudSharingSheet.swift */; };
 		A93AAA47777777777777702 /* FamilySharingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA47777777777777701 /* FamilySharingSettingsView.swift */; };
 		A93AAA48888888888888802 /* PetScheduleAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */; };
@@ -113,6 +114,7 @@
 		A93AAA43333333333333301 /* HouseholdCloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdCloudKitService.swift; sourceTree = "<group>"; };
 		A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncCoordinator.swift; sourceTree = "<group>"; };
 		A93AAA45555555555555501 /* LoggedByPersonSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedByPersonSection.swift; sourceTree = "<group>"; };
+		D3T41L5H33T5TYL3F01 /* DetailEditorSheetStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailEditorSheetStyle.swift; sourceTree = "<group>"; };
 		A93AAA46666666666666601 /* CloudSharingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSharingSheet.swift; sourceTree = "<group>"; };
 		P1NKW4V354R3H341DR /* PinkWaveScreenHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinkWaveScreenHeader.swift; sourceTree = "<group>"; };
 		A93AAA47777777777777701 /* FamilySharingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilySharingSettingsView.swift; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 				P1NKW4V354R3H341DR /* PinkWaveScreenHeader.swift */,
 				5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */,
 				A93AAA45555555555555501 /* LoggedByPersonSection.swift */,
+				D3T41L5H33T5TYL3F01 /* DetailEditorSheetStyle.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -460,6 +463,7 @@
 				A93AAA42222222222222202 /* HouseholdLocalStore.swift in Sources */,
 				A93AAA44444444444444402 /* HouseholdSyncCoordinator.swift in Sources */,
 				A93AAA45555555555555502 /* LoggedByPersonSection.swift in Sources */,
+				D3T41L5H33T5TYL3F02 /* DetailEditorSheetStyle.swift in Sources */,
 				A93AAA41111111111111102 /* UserProfileStorage.swift in Sources */,
 				5E1B5C7E000000000000A001 /* SubscriptionEntitlementStore.swift in Sources */,
 				F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */,

@@ -4,8 +4,10 @@ import UIKit
 
 // MARK: - Configuration
 
-/// Recipient for the in-app “Request a feature” mailto link. Replace with your real support address before release.
-private let kSatisfactionFeedbackEmail = "support@example.com"
+/// Recipient for in-app support mailto links. Replace with your real support address before release.
+enum SupportContact {
+    static let email = "support@example.com"
+}
 
 // MARK: - Model
 
@@ -53,19 +55,41 @@ enum SatisfactionCheckIn {
 
     static func openFeatureRequestMailComposer() {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-        let subject = "PetLifeScheduler — feature idea"
-        let body =
-            """
-            Hi,
+        openMailComposer(
+            subject: "PetLifeScheduler — feature idea",
+            body:
+                """
+                Hi,
 
-            Here’s what I’m trying to do / would love to see:
+                Here’s what I’m trying to do / would love to see:
 
 
-            ---
-            App version \(version)
-            """
+                ---
+                App version \(version)
+                """
+        )
+    }
 
-        guard let url = Self.mailtoURL(to: kSatisfactionFeedbackEmail, subject: subject, body: body) else { return }
+    /// Opens the default mail app for a general support question (Settings › Got a question).
+    static func openSupportMailComposer() {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        openMailComposer(
+            subject: "PetLifeScheduler — question",
+            body:
+                """
+                Hi,
+
+                I have a question about:
+
+
+                ---
+                App version \(version)
+                """
+        )
+    }
+
+    private static func openMailComposer(subject: String, body: String) {
+        guard let url = mailtoURL(to: SupportContact.email, subject: subject, body: body) else { return }
         UIApplication.shared.open(url)
     }
 

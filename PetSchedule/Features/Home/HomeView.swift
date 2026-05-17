@@ -125,6 +125,9 @@ struct HomeView: View {
                     .zIndex(1)
                 }
             }
+            .sheet(isPresented: $viewModel.showAppRatingPrompt) {
+                AppRatingReviewSheet()
+            }
             .sheet(item: $satisfactionPresentation) { item in
                 SatisfactionCheckInSheet(
                     milestoneToPersistOnDismiss: item.milestoneToPersistOnDismiss,

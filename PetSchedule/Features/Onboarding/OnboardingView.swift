@@ -225,6 +225,7 @@ struct OnboardingView: View {
     @State private var paywallErrorMessage: String?
     @State private var notificationPermissionAlertMessage: String?
     @State private var showNotificationPermissionAlert = false
+    @State private var isRequestingNotificationPermission = false
 
     private let totalSteps = 11
 
@@ -322,7 +323,8 @@ struct OnboardingView: View {
 
                 Button(action: advance) {
                         Group {
-                            if step == 10 && paywallPurchaseState == .purchasing {
+                            if (step == 10 && paywallPurchaseState == .purchasing)
+                                || (step == 5 && isRequestingNotificationPermission) {
                                 ProgressView()
                                     .progressViewStyle(.circular)
                                     .tint(.white)
@@ -433,6 +435,8 @@ struct OnboardingView: View {
             return petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 9:
             return selectedFeatureInterest == nil
+        case 5:
+            return isRequestingNotificationPermission
         case 10:
             return paywallPurchaseState != .idle
                 || (products.monthlyProduct == nil && products.yearlyProduct == nil)
@@ -489,29 +493,8 @@ struct OnboardingView: View {
                 viewModel.syncWidgetSchedule()
             }
         case 5:
-            Task { @MainActor in
-                let center = UNUserNotificationCenter.current()
-                let settings = await center.notificationSettings()
-                let granted: Bool
-                switch settings.authorizationStatus {
-                case .authorized, .provisional, .ephemeral:
-                    granted = true
-                case .notDetermined:
-                    granted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
-                case .denied:
-                    granted = false
-                    notificationPermissionAlertMessage = "iOS notification permission was already denied, so Apple won't show the popup again. You can enable notifications in Settings."
-                    showNotificationPermissionAlert = true
-                @unknown default:
-                    granted = false
-                }
-                if settings.authorizationStatus == .notDetermined && !granted {
-                    notificationPermissionAlertMessage = "Notifications are off right now. You can enable them in Settings at any time."
-                    showNotificationPermissionAlert = true
-                }
-                remindersEnabled = granted
-                viewModel.syncWidgetSchedule()
-            }
+            requestNotificationPermissionThenAdvance()
+            return
         case 6:
             timeFormatRaw = timeFormatDraft
         case 7:
@@ -531,6 +514,38 @@ struct OnboardingView: View {
         withAnimation { step += 1 }
     }
 
+    /// Requests notification permission on the dedicated notifications step, then advances.
+    /// Must not advance until the system dialog is dismissed — otherwise the popup appears on a
+    /// later onboarding screen (e.g. the paywall carousel showing notification settings).
+    private func requestNotificationPermissionThenAdvance() {
+        guard !isRequestingNotificationPermission else { return }
+        isRequestingNotificationPermission = true
+        Task { @MainActor in
+            defer { isRequestingNotificationPermission = false }
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            let granted: Bool
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                granted = true
+            case .notDetermined:
+                granted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+            case .denied:
+                granted = false
+                notificationPermissionAlertMessage = "iOS notification permission was already denied, so Apple won't show the popup again. You can enable notifications in Settings."
+                showNotificationPermissionAlert = true
+            @unknown default:
+                granted = false
+            }
+            if settings.authorizationStatus == .notDetermined && !granted {
+                notificationPermissionAlertMessage = "Notifications are off right now. You can enable them in Settings at any time."
+                showNotificationPermissionAlert = true
+            }
+            remindersEnabled = granted
+            viewModel.syncWidgetSchedule()
+            withAnimation { step += 1 }
+        }
+    }
 
     private func addPetIfNeeded() {
         guard viewModel.pets.isEmpty else { return }
@@ -1406,7 +1421,7 @@ private struct PaywallContentBody: View {
     var reservesCloseButtonInset: Bool = false
 
     var body: some View {
-        VStack(alignment: .center, spacing: 24) {
+        VStack(alignment: .center, spacing: 16) {
             Text(headline)
                 .font(AppTypography.screenTitle)
                 .multilineTextAlignment(.center)
@@ -1416,7 +1431,6 @@ private struct PaywallContentBody: View {
                 .frame(maxWidth: .infinity)
 
             PaywallPreviewCarousel(slides: previewSlides, interval: 3.5)
-                .layoutPriority(1)
 
             Group {
                 if products.isLoading {
@@ -1442,7 +1456,7 @@ private struct PaywallContentBody: View {
                 }
             }
             .padding(.horizontal, 28)
-            .padding(.top, 18)
+            .padding(.top, 8)
 
             if let errorMessage {
                 Text(errorMessage)
@@ -1485,7 +1499,7 @@ private struct PaywallContentBody: View {
             .background(Color(.systemBackground))
         }
         .safeAreaPadding(.top, 12)
-        .padding(.top, 24)
+        .padding(.top, 12)
         .frame(maxWidth: .infinity, alignment: .top)
     }
 
@@ -1588,7 +1602,7 @@ private struct PaywallPreviewCarousel: View {
     var interval: TimeInterval = 3.5
 
     /// Vertical space for the scaled preview inside each page (caption + page dots sit below).
-    private let previewAreaHeight: CGFloat = 288
+    private let previewAreaHeight: CGFloat = 200
     /// Horizontal padding applied to each slide (`28` × 2 is subtracted from page width for fit math).
     private let slideHorizontalPadding: CGFloat = 28
 
@@ -1605,7 +1619,7 @@ private struct PaywallPreviewCarousel: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
                     ForEach(slides) { slide in
@@ -1631,19 +1645,16 @@ private struct PaywallPreviewCarousel: View {
             .frame(height: previewAreaHeight)
             .fixedSize(horizontal: false, vertical: true)
 
-            Group {
-                if let id = activeSlideID, let current = slides.first(where: { $0.id == id }) {
-                    Text(current.caption)
-                        .font(AppTypography.secondaryEmphasis)
-                        .multilineTextAlignment(.center)
-                        .foregroundStyle(.primary)
-                        .padding(.horizontal, 24)
-                }
+            if let id = activeSlideID, let current = slides.first(where: { $0.id == id }) {
+                Text(current.caption)
+                    .font(AppTypography.secondaryEmphasis)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 24)
+                    .frame(minHeight: 36)
+                    .id(id)
+                    .contentTransition(.opacity)
             }
-            .frame(minHeight: 36)
-            .id("caption-\(activeSlideID ?? "")")
-            .transition(.opacity)
-            .animation(.easeInOut(duration: 0.3), value: activeSlideID)
 
             HStack(spacing: 6) {
                 ForEach(slides) { slide in
@@ -1768,7 +1779,7 @@ private extension View {
                 .scaleEffect(scale, anchor: .topLeading)
                 .frame(width: scaledW, height: scaledH, alignment: .topLeading)
         }
-        .frame(width: aw, height: ah, alignment: .center)
+        .frame(width: aw, height: ah, alignment: .top)
     }
 }
 
@@ -1791,8 +1802,6 @@ private struct PaywallScheduleProductPreview: View {
 /// Notifications section matching **Settings › Notifications** (reminder timing UI).
 /// Implemented with static layout (no `List`) so UIKit table reuse never nests inside the paywall `TabView`.
 private struct PaywallSettingsNotificationsProductPreview: View {
-    @State private var remindersEnabled = true
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Notifications")
@@ -1804,10 +1813,22 @@ private struct PaywallSettingsNotificationsProductPreview: View {
                 .padding(.bottom, 6)
 
             VStack(spacing: 0) {
-                Toggle("Enable event reminders", isOn: $remindersEnabled)
-                    .tint(Color.appPink)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 11)
+                HStack {
+                    Text("Enable event reminders")
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.appPink)
+                        .frame(width: 51, height: 31)
+                        .overlay(alignment: .trailing) {
+                            Circle()
+                                .fill(.white)
+                                .frame(width: 27, height: 27)
+                                .padding(.trailing, 2)
+                        }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 11)
 
                 Divider().padding(.leading, 16)
 

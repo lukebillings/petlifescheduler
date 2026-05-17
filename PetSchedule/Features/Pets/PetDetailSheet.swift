@@ -717,6 +717,7 @@ struct PetDetailSheet: View {
             }
             .navigationTitle(isNew ? "New Pet" : name.trimmingCharacters(in: .whitespaces).isEmpty ? "Edit Pet" : name)
             .navigationBarTitleDisplayMode(.inline)
+            .detailEditorSheetStyle()
             .sheet(isPresented: $showingDocumentPicker) {
                 DocumentPickerView { docs in
                     documents.append(contentsOf: docs)
