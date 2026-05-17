@@ -1,4 +1,3 @@
-import Charts
 import Observation
 import PhotosUI
 import StoreKit
@@ -1312,13 +1311,6 @@ private struct Step5Paywall: View {
     var errorMessage: String?
     var onRestorePurchases: () -> Void
 
-    /// Preview slides for the paged carousel — ordered so the user's problem choice from
-    /// step 9 surfaces first. Falls back to schedule → reminder → weight chart for users who
-    /// haven't picked an interest.
-    private var previewSlides: [PaywallPreviewSlide] {
-        paywallPreviewSlides(petName: pet.name, animalType: pet.animalType, prioritized: featureInterest)
-    }
-
     private var paywallHeadline: String {
         if let featureInterest {
             return featureInterest.paywallHeadline(petName: pet.name, ownsMultiplePets: ownsMultiplePets)
@@ -1351,7 +1343,6 @@ private struct Step5Paywall: View {
         ScrollView(showsIndicators: false) {
             PaywallContentBody(
                 headline: paywallHeadline,
-                previewSlides: previewSlides,
                 personalizedBullets: paywallBullets,
                 yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
                 petCount: petCount,
@@ -1366,46 +1357,10 @@ private struct Step5Paywall: View {
     }
 }
 
-/// Builds the canonical preview-carousel slide list, optionally promoting one slide to the first
-/// position based on the user's onboarding problem choice. Both paywalls (onboarding and
-/// post-onboarding) call this so the ordering logic stays in one place.
-private func paywallPreviewSlides(
-    petName: String,
-    animalType: AnimalType,
-    prioritized featureInterest: OnboardingFeatureInterest?
-) -> [PaywallPreviewSlide] {
-    var slides: [PaywallPreviewSlide] = [
-        .scheduleTimeline(petName: petName, animalType: animalType),
-        .reminderPush(petName: petName, animalType: animalType),
-        .weightChart,
-    ]
-
-    guard let featureInterest else { return slides }
-
-    let priorityID: String
-    switch featureInterest {
-    case .weightLogging:
-        priorityID = "weight"
-    case .medicationCompliance, .feedingAndDailyCare, .walksAndActivities:
-        priorityID = "reminder"
-    case .petDetailsAndProfiles:
-        priorityID = "schedule"
-    }
-
-    if let priorityIdx = slides.firstIndex(where: { $0.stableSlideKind == priorityID }), priorityIdx != 0 {
-        let priority = slides.remove(at: priorityIdx)
-        slides.insert(priority, at: 0)
-    }
-    return slides
-}
-
-/// Headline + paged preview carousel + plan cards + error + footer. Shared between the
+/// Headline + feature bullets + plan cards + error + footer. Shared between the
 /// in-onboarding paywall and the post-onboarding hard paywall so both look and behave identically.
 private struct PaywallContentBody: View {
     let headline: String
-    /// Real in-app UI (scaled) in the auto-advancing carousel above the plan cards. The first slide
-    /// is what most users see, so callers should put the most relevant preview first.
-    let previewSlides: [PaywallPreviewSlide]
     /// 0–3 short personalized bullets shown above the plan cards. Empty array hides the section.
     var personalizedBullets: [String] = []
     /// Small caption shown under the "Yearly" label on the yearly plan card. `nil` to hide.
@@ -1430,7 +1385,10 @@ private struct PaywallContentBody: View {
                 .padding(.trailing, reservesCloseButtonInset ? 52 : 28)
                 .frame(maxWidth: .infinity)
 
-            PaywallPreviewCarousel(slides: previewSlides, interval: 3.5)
+            if !personalizedBullets.isEmpty {
+                personalizedBulletList
+                    .padding(.horizontal, 28)
+            }
 
             Group {
                 if products.isLoading {
@@ -1546,400 +1504,6 @@ private struct PaywallContentBody: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
-    }
-}
-
-// MARK: - Paywall preview carousel
-
-/// A single slide in the paywall preview carousel — each case shows real product UI (schedule list,
-/// Settings reminders, or Analytics-style weight chart), scaled to fit the carousel.
-private enum PaywallPreviewSlide: Equatable, Identifiable {
-    case scheduleTimeline(petName: String, animalType: AnimalType)
-    case reminderPush(petName: String, animalType: AnimalType)
-    case weightChart
-
-    /// Fixed kind for reordering the carousel (`paywallPreviewSlides`); not the same as `id`.
-    var stableSlideKind: String {
-        switch self {
-        case .scheduleTimeline: return "schedule"
-        case .reminderPush: return "reminder"
-        case .weightChart: return "weight"
-        }
-    }
-
-    /// Unique per slide *content* so SwiftUI does not reuse a `TabView` page host when the pet name
-    /// or type changes while the paywall is visible (that reuse produced “invalid reuse after initialization failure”).
-    var id: String {
-        switch self {
-        case .scheduleTimeline(let petName, let animalType):
-            return "schedule-\(animalType.rawValue)-\(petName)"
-        case .reminderPush(let petName, let animalType):
-            return "reminder-\(animalType.rawValue)-\(petName)"
-        case .weightChart:
-            return "weight"
-        }
-    }
-
-    var caption: String {
-        switch self {
-        case .scheduleTimeline: return "Every walk, meal, and med — at a glance"
-        case .reminderPush:     return "Reminders before what matters"
-        case .weightChart:      return "Track weight, spot changes early"
-        }
-    }
-}
-
-/// Swipeable, auto-advancing paged carousel of real in-app UI previews. Replaces the older text-only
-/// `PaywallRotatingBenefits` because image-led paywalls reliably outperform text-only paywalls.
-/// User swipes interrupt the auto-advance and continue cycling from the new position on the
-/// next tick.
-///
-/// Uses a paging `ScrollView` + `scrollPosition` instead of `TabView(.page)` so we never hit
-/// `UIPageViewController`’s aggressive child reuse (a frequent source of “invalid reuse after initialization failure”
-/// with heterogeneous pages like `ScheduleListView` vs charts).
-private struct PaywallPreviewCarousel: View {
-    let slides: [PaywallPreviewSlide]
-    var interval: TimeInterval = 3.5
-
-    /// Vertical space for the scaled preview inside each page (caption + page dots sit below).
-    private let previewAreaHeight: CGFloat = 200
-    /// Horizontal padding applied to each slide (`28` × 2 is subtracted from page width for fit math).
-    private let slideHorizontalPadding: CGFloat = 28
-
-    /// Scroll anchor id (matches each slide’s `id`, including pet name).
-    @State private var scrollPosition: String?
-    /// `Task`-based advance avoids Combine `Autoconnect` reuse issues; cancelled whenever the slide set changes.
-    @State private var autoAdvanceTask: Task<Void, Never>?
-
-    private var activeSlideID: String? {
-        guard let scrollPosition, slides.contains(where: { $0.id == scrollPosition }) else {
-            return slides.first?.id
-        }
-        return scrollPosition
-    }
-
-    var body: some View {
-        VStack(spacing: 8) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 0) {
-                    ForEach(slides) { slide in
-                        GeometryReader { geo in
-                            let contentWidth = max(geo.size.width - slideHorizontalPadding * 2, 1)
-                            slideView(
-                                slide,
-                                availableWidth: contentWidth,
-                                availableHeight: previewAreaHeight
-                            )
-                            .padding(.horizontal, slideHorizontalPadding)
-                            .frame(width: geo.size.width, height: previewAreaHeight, alignment: .center)
-                        }
-                        .containerRelativeFrame(.horizontal, count: 1, spacing: 0)
-                        .frame(height: previewAreaHeight)
-                        .id(slide.id)
-                    }
-                }
-                .scrollTargetLayout()
-            }
-            .scrollTargetBehavior(.paging)
-            .scrollPosition(id: $scrollPosition)
-            .frame(height: previewAreaHeight)
-            .fixedSize(horizontal: false, vertical: true)
-
-            if let id = activeSlideID, let current = slides.first(where: { $0.id == id }) {
-                Text(current.caption)
-                    .font(AppTypography.secondaryEmphasis)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.primary)
-                    .padding(.horizontal, 24)
-                    .frame(minHeight: 36)
-                    .id(id)
-                    .contentTransition(.opacity)
-            }
-
-            HStack(spacing: 6) {
-                ForEach(slides) { slide in
-                    let isCurrent = slide.id == activeSlideID
-                    Capsule()
-                        .fill(isCurrent ? Color.appPink : Color.gray.opacity(0.3))
-                        .frame(width: isCurrent ? 16 : 6, height: 6)
-                        .animation(.spring(duration: 0.3), value: activeSlideID)
-                }
-            }
-        }
-        .onAppear {
-            syncScrollPositionToSlides()
-            startAutoAdvanceIfNeeded()
-        }
-        .onDisappear {
-            autoAdvanceTask?.cancel()
-            autoAdvanceTask = nil
-        }
-        .onChange(of: slides.map(\.id)) { _, _ in
-            syncScrollPositionToSlides()
-            startAutoAdvanceIfNeeded()
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel(slides.first(where: { $0.id == activeSlideID })?.caption ?? "App preview")
-    }
-
-    private func syncScrollPositionToSlides() {
-        guard !slides.isEmpty else { return }
-        if scrollPosition == nil {
-            scrollPosition = slides[0].id
-            return
-        }
-        if slides.contains(where: { $0.id == scrollPosition }) { return }
-
-        // Pet name / type changed: keep the same slide *kind* (schedule / reminder / weight) if it still exists.
-        let prior = scrollPosition ?? ""
-        let kind: String? = {
-            if prior == "weight" { return "weight" }
-            if prior.hasPrefix("schedule-") { return "schedule" }
-            if prior.hasPrefix("reminder-") { return "reminder" }
-            return nil
-        }()
-        if let kind, let match = slides.first(where: { $0.stableSlideKind == kind }) {
-            scrollPosition = match.id
-        } else {
-            scrollPosition = slides[0].id
-        }
-    }
-
-    private func startAutoAdvanceIfNeeded() {
-        autoAdvanceTask?.cancel()
-        guard slides.count > 1 else { return }
-        let tickSeconds = interval
-        autoAdvanceTask = Task { @MainActor in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(tickSeconds))
-                guard !Task.isCancelled else { break }
-                guard slides.count > 1 else { break }
-                withAnimation(.easeInOut(duration: 0.45)) {
-                    let current = scrollPosition ?? slides[0].id
-                    guard let idx = slides.firstIndex(where: { $0.id == current }) else {
-                        scrollPosition = slides[0].id
-                        return
-                    }
-                    scrollPosition = slides[(idx + 1) % slides.count].id
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func slideView(_ slide: PaywallPreviewSlide, availableWidth: CGFloat, availableHeight: CGFloat) -> some View {
-        switch slide {
-        case .scheduleTimeline(let name, let type):
-            PaywallScheduleProductPreview(petName: name, animalType: type)
-                .paywallCarouselFit(
-                    designWidth: 410,
-                    designHeight: 640,
-                    availableWidth: availableWidth,
-                    availableHeight: availableHeight
-                )
-        case .reminderPush(_, _):
-            PaywallSettingsNotificationsProductPreview()
-                .paywallCarouselFit(
-                    designWidth: 400,
-                    designHeight: 340,
-                    availableWidth: availableWidth,
-                    availableHeight: availableHeight
-                )
-        case .weightChart:
-            PaywallWeightTrendProductPreview()
-                .paywallCarouselFit(
-                    designWidth: 400,
-                    designHeight: 200,
-                    availableWidth: availableWidth,
-                    availableHeight: availableHeight
-                )
-        }
-    }
-}
-
-// MARK: - Paywall carousel (real product UI)
-
-private extension View {
-    /// Lays out the preview at a fixed “design” size, then scales **uniformly** so the entire UI
-    /// fits inside the carousel cell without clipping.
-    func paywallCarouselFit(
-        designWidth: CGFloat,
-        designHeight: CGFloat,
-        availableWidth: CGFloat,
-        availableHeight: CGFloat
-    ) -> some View {
-        let aw = max(availableWidth, 1)
-        let ah = max(availableHeight, 1)
-        let scale = min(aw / designWidth, ah / designHeight)
-        let scaledW = designWidth * scale
-        let scaledH = designHeight * scale
-        return ZStack {
-            self
-                .frame(width: designWidth, height: designHeight, alignment: .topLeading)
-                .scaleEffect(scale, anchor: .topLeading)
-                .frame(width: scaledW, height: scaledH, alignment: .topLeading)
-        }
-        .frame(width: aw, height: ah, alignment: .top)
-    }
-}
-
-/// Same `ScheduleListView` as the Schedule tab, with sample today’s events for the user’s pet.
-private struct PaywallScheduleProductPreview: View {
-    @State private var viewModel: HomeViewModel
-
-    init(petName: String, animalType: AnimalType) {
-        _viewModel = State(initialValue: HomeViewModel.paywallCarouselSchedule(petName: petName, animalType: animalType))
-    }
-
-    var body: some View {
-        ScheduleListView(viewModel: viewModel, hideCompleted: .constant(false))
-            .background(Color(.systemGroupedBackground))
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-    }
-}
-
-/// Notifications section matching **Settings › Notifications** (reminder timing UI).
-/// Implemented with static layout (no `List`) so UIKit table reuse never nests inside the paywall `TabView`.
-private struct PaywallSettingsNotificationsProductPreview: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Notifications")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .padding(.horizontal, 16)
-                .padding(.top, 10)
-                .padding(.bottom, 6)
-
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Enable event reminders")
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.appPink)
-                        .frame(width: 51, height: 31)
-                        .overlay(alignment: .trailing) {
-                            Circle()
-                                .fill(.white)
-                                .frame(width: 27, height: 27)
-                                .padding(.trailing, 2)
-                        }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 11)
-
-                Divider().padding(.leading, 16)
-
-                HStack {
-                    Text("10 minutes before")
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(Color.appPink)
-                        .fontWeight(.semibold)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 11)
-            }
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        }
-        .frame(maxWidth: 360)
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-    }
-}
-
-/// Weight trends card using the same chart styling as **Analytics › Weight Trends** (sample data).
-private struct PaywallWeightTrendProductPreview: View {
-    @AppStorage("weightUnit") private var weightUnitRaw = "kg"
-    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .kg }
-
-    private var sortedEntries: [WeightEntry] {
-        let cal = Calendar.current
-        let now = Date.now
-        let daysAgo: (Int) -> Date = { cal.date(byAdding: .day, value: -$0, to: now) ?? now }
-        return [
-            WeightEntry(date: daysAgo(28), kg: 11.8),
-            WeightEntry(date: daysAgo(21), kg: 12.0),
-            WeightEntry(date: daysAgo(14), kg: 12.2),
-            WeightEntry(date: daysAgo(7), kg: 12.4),
-            WeightEntry(date: daysAgo(0), kg: 12.6),
-        ].sorted { $0.date < $1.date }
-    }
-
-    var body: some View {
-        let sorted = sortedEntries
-        let diffKg = sorted.last!.kg - sorted[sorted.count - 2].kg
-        let displayValues = sorted.map { weightUnit.displayValue(fromKg: $0.kg) }
-        let minY = (displayValues.min() ?? 0) * 0.92
-        let maxY = (displayValues.max() ?? 1) * 1.08
-        let color = Color.appPink
-        let dateDomain = sorted.first!.date ... sorted.last!.date
-
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("Weight Trends")
-                    .font(AppTypography.groupTitle)
-                Spacer()
-                HStack(spacing: 4) {
-                    Image(systemName: diffKg >= 0 ? "arrow.up.right" : "arrow.down.right")
-                        .foregroundStyle(diffKg >= 0 ? .orange : .green)
-                    Text(weightUnit.formatChange(diffKg))
-                        .foregroundStyle(diffKg >= 0 ? .orange : .green)
-                    Text("·")
-                        .foregroundStyle(.secondary)
-                    Text("\(weightUnit.formatValue(sorted.last!.kg)) now")
-                        .foregroundStyle(.secondary)
-                }
-                .font(AppTypography.compactControl)
-            }
-
-            Chart(sorted) { e in
-                let y = weightUnit.displayValue(fromKg: e.kg)
-                LineMark(x: .value("Date", e.date), y: .value(weightUnit.label, y))
-                    .foregroundStyle(color)
-                    .interpolationMethod(.linear)
-                AreaMark(
-                    x: .value("Date", e.date),
-                    yStart: .value("Min", minY),
-                    yEnd: .value(weightUnit.label, y)
-                )
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [color.opacity(0.25), color.opacity(0.02)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .interpolationMethod(.linear)
-                PointMark(x: .value("Date", e.date), y: .value(weightUnit.label, y))
-                    .foregroundStyle(color)
-                    .symbolSize(24)
-            }
-            .chartYScale(domain: minY...maxY)
-            .chartXScale(domain: dateDomain)
-            .chartXAxis(.hidden)
-            .chartYAxis {
-                AxisMarks(position: .leading, values: .automatic(desiredCount: 3)) { v in
-                    AxisGridLine().foregroundStyle(Color(.separator).opacity(0.5))
-                    AxisValueLabel(centered: false) {
-                        if let v = v.as(Double.self) {
-                            Text(String(format: "%.1f", v))
-                                .font(.caption2)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.75)
-                        }
-                    }
-                }
-            }
-            .frame(height: 96)
-        }
-        .padding(12)
-        .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
     }
 }
 
@@ -2326,14 +1890,6 @@ struct PostOnboardingPaywallView: View {
         return "Keep \(name) on schedule"
     }
 
-    private var previewSlides: [PaywallPreviewSlide] {
-        paywallPreviewSlides(
-            petName: petName,
-            animalType: firstPet?.animalType ?? .dog,
-            prioritized: featureInterest
-        )
-    }
-
     private var bullets: [String] {
         featureInterest?.paywallBullets(petName: petName, ownsMultiplePets: ownsMultiplePets)
             ?? Self.defaultPaywallBullets
@@ -2370,7 +1926,6 @@ struct PostOnboardingPaywallView: View {
                 ScrollView(showsIndicators: false) {
                     PaywallContentBody(
                         headline: headline,
-                        previewSlides: previewSlides,
                         personalizedBullets: bullets,
                         petCount: petCountForPricing,
                         products: products,

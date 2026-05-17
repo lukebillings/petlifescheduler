@@ -270,6 +270,8 @@ struct SettingsView: View {
                                 .foregroundStyle(.primary)
                         }
                     }
+                } header: {
+                    Text("Sharing")
                 } footer: {
                     Text("Open Household, then Invite someone, so partners or family see the same pets and schedule over iCloud.")
                 }
@@ -283,7 +285,7 @@ struct SettingsView: View {
                     }
                     .padding(.vertical, 4)
                 } header: {
-                    Text("Widgets & shortcuts")
+                    Text("Widgets")
                 }
 
                 Section("Units") {
