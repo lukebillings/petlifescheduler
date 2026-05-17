@@ -207,7 +207,7 @@ struct OnboardingView: View {
     // Paywall (final onboarding step) state
     @State private var entitlementStore = SubscriptionEntitlementStore.shared
     @State private var products = SubscriptionProductLoader()
-    @State private var paywallSelectedPlan: PaywallPlan = .monthly
+    @State private var paywallSelectedPlan: PaywallPlan = .yearly
     @State private var paywallPurchaseState: PaywallPurchaseState = .idle
     @State private var paywallErrorMessage: String?
     @State private var notificationPermissionAlertMessage: String?
@@ -1299,6 +1299,15 @@ private enum PaywallPerDayPrice {
     }
 }
 
+/// Generic paywall bullets when no onboarding feature interest was selected.
+private enum PaywallDefaultBullets {
+    static let values: [String] = [
+        "Every walk, meal, and med — in one timeline per pet",
+        "Reminders before what matters, so nothing slips",
+        "iCloud household sync, Home Screen widget, and PDF export",
+    ]
+}
+
 private struct Step5Paywall: View {
     let pet: Pet
     var ownsMultiplePets: Bool
@@ -1326,16 +1335,8 @@ private struct Step5Paywall: View {
     /// Three short check-mark bullets — interest-specific when the user picked one in step 9.
     private var paywallBullets: [String] {
         featureInterest?.paywallBullets(petName: pet.name, ownsMultiplePets: ownsMultiplePets)
-            ?? Self.defaultPaywallBullets
+            ?? PaywallDefaultBullets.values
     }
-
-    /// Generic 3-bullet fallback for users who somehow reach the paywall without selecting an
-    /// interest (e.g. a future flow that skips step 9).
-    private static let defaultPaywallBullets: [String] = [
-        "Every walk, meal, and med — in one timeline per pet",
-        "Reminders before what matters, so nothing slips",
-        "Premium experience — no ads, just easier pet care",
-    ]
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -1809,7 +1810,7 @@ struct PostOnboardingPaywallView: View {
 
     @State private var products = SubscriptionProductLoader()
     @State private var entitlementStore = SubscriptionEntitlementStore.shared
-    @State private var selectedPlan: PaywallPlan = .monthly
+    @State private var selectedPlan: PaywallPlan = .yearly
     @State private var purchaseState: PaywallPurchaseState = .idle
     @State private var errorMessage: String?
     /// The user's problem choice from onboarding step 9 (persisted to `UserDefaults`).
@@ -1841,14 +1842,8 @@ struct PostOnboardingPaywallView: View {
 
     private var bullets: [String] {
         featureInterest?.paywallBullets(petName: petName, ownsMultiplePets: ownsMultiplePets)
-            ?? Self.defaultPaywallBullets
+            ?? PaywallDefaultBullets.values
     }
-
-    private static let defaultPaywallBullets: [String] = [
-        "Every walk, meal, and med — in one timeline per pet",
-        "Reminders before what matters, so nothing slips",
-        "Premium experience — no ads, just easier pet care",
-    ]
 
     private var selectedProduct: Product? {
         switch selectedPlan {
