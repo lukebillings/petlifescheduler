@@ -95,18 +95,6 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Short caption shown under the "Yearly" label on the yearly plan card — anchors the value
-    /// of the higher-AOV plan to the user's stated reason for downloading.
-    var paywallYearlyCardCaption: String {
-        switch self {
-        case .medicationCompliance:  return "Best for medication routines"
-        case .petDetailsAndProfiles: return "Best for vet visits & emergencies"
-        case .weightLogging:         return "Best for long-term health tracking"
-        case .walksAndActivities:    return "Best for active households"
-        case .feedingAndDailyCare:   return "Best for daily routines"
-        }
-    }
-
     /// Three concise check-mark bullets reinforcing the user's chosen interest — sit between the
     /// rotating benefits and the plan cards so the value prop is visible without scrolling.
     func paywallBullets(petName: String, ownsMultiplePets: Bool) -> [String] {
@@ -276,7 +264,6 @@ struct OnboardingView: View {
                     Step5Paywall(
                         pet: previewPet,
                         ownsMultiplePets: householdPetCount != .one,
-                        petCount: petCountForPaywall,
                         featureInterest: selectedFeatureInterest,
                         products: products,
                         selectedPlan: $paywallSelectedPlan,
@@ -441,14 +428,6 @@ struct OnboardingView: View {
                 || (products.monthlyProduct == nil && products.yearlyProduct == nil)
         default:
             return false
-        }
-    }
-
-    private var petCountForPaywall: Int {
-        switch householdPetCount {
-        case .one, .unspecified: return 1
-        case .two: return 2
-        case .threePlus: return 3
         }
     }
 
@@ -1298,12 +1277,31 @@ private struct StepFeatureInterest: View {
 
 // MARK: - Paywall
 
+/// Rounds subscription prices **up** for honest "~ per day" copy on plan cards.
+private enum PaywallPerDayPrice {
+    private static func ceilingCurrencyFormatter(for product: Product) -> NumberFormatter {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = product.priceFormatStyle.locale
+        formatter.roundingMode = .up
+        return formatter
+    }
+
+    static func formattedCeiling(product: Product, daysInPeriod: Decimal) -> String {
+        let perDay = product.price / daysInPeriod
+        let formatter = ceilingCurrencyFormatter(for: product)
+        return formatter.string(from: NSDecimalNumber(decimal: perDay))
+            ?? perDay.formatted(product.priceFormatStyle)
+    }
+
+    static func subtitle(for product: Product, daysInPeriod: Decimal) -> String {
+        "~\(formattedCeiling(product: product, daysInPeriod: daysInPeriod)) per day"
+    }
+}
+
 private struct Step5Paywall: View {
     let pet: Pet
     var ownsMultiplePets: Bool
-    /// Number of pets in the household (1, 2, or 3 — `3` is used for "3+" so per-pet/month
-    /// framing stays honest for households with more than three pets).
-    var petCount: Int
     var featureInterest: OnboardingFeatureInterest?
     var products: SubscriptionProductLoader
     @Binding var selectedPlan: PaywallPlan
@@ -1344,8 +1342,6 @@ private struct Step5Paywall: View {
             PaywallContentBody(
                 headline: paywallHeadline,
                 personalizedBullets: paywallBullets,
-                yearlyCardCaption: featureInterest?.paywallYearlyCardCaption,
-                petCount: petCount,
                 products: products,
                 selectedPlan: $selectedPlan,
                 purchaseState: purchaseState,
@@ -1363,10 +1359,6 @@ private struct PaywallContentBody: View {
     let headline: String
     /// 0–3 short personalized bullets shown above the plan cards. Empty array hides the section.
     var personalizedBullets: [String] = []
-    /// Small caption shown under the "Yearly" label on the yearly plan card. `nil` to hide.
-    var yearlyCardCaption: String? = nil
-    /// Number of pets in the household — drives per-day vs. per-pet/month framing on the yearly card.
-    var petCount: Int = 1
     let products: SubscriptionProductLoader
     @Binding var selectedPlan: PaywallPlan
     let purchaseState: PaywallPurchaseState
@@ -1464,20 +1456,18 @@ private struct PaywallContentBody: View {
     @ViewBuilder
     private var planCards: some View {
         VStack(spacing: 8) {
-            if let m = products.monthlyProduct {
-                PaywallMonthlyCard(
-                    displayPrice: m.displayPrice,
-                    isSelected: selectedPlan == .monthly
-                ) { selectedPlan = .monthly }
-            }
             if let y = products.yearlyProduct {
                 PaywallYearlyCard(
                     yearly: y,
                     monthly: products.monthlyProduct,
-                    topCaption: yearlyCardCaption,
-                    petCount: petCount,
                     isSelected: selectedPlan == .yearly
                 ) { selectedPlan = .yearly }
+            }
+            if let m = products.monthlyProduct {
+                PaywallMonthlyCard(
+                    monthly: m,
+                    isSelected: selectedPlan == .monthly
+                ) { selectedPlan = .monthly }
             }
         }
         // Extra space so the selected plan’s stroke isn't clipped against the footer region.
@@ -1512,48 +1502,11 @@ private struct PaywallYearlyCard: View {
     let yearly: Product
     /// Compared to \(monthly.price × 12) for savings copy; omit if unavailable.
     var monthly: Product?
-    /// Optional tagline shown under "Yearly" — used to anchor the yearly plan to the user's
-    /// stated reason for downloading (e.g. "Best for medication routines").
-    var topCaption: String? = nil
-    /// Number of pets in the household. `1` shows per-day framing; `>1` shows per-pet/month
-    /// framing. Per-day pricing converts higher because the number feels trivially small.
-    var petCount: Int = 1
     var isSelected: Bool
     var onSelect: () -> Void
 
-    private var effectivePerMonthFormatted: String {
-        let perMonth = yearly.price / Decimal(12)
-        return perMonth.formatted(yearly.priceFormatStyle)
-    }
-
-    /// Currency formatter that rounds **up** to the storefront currency's natural precision so
-    /// "Less than $X/day" wording is always honest (we never claim a price lower than reality).
-    private var ceilingCurrencyFormatter: NumberFormatter {
-        let f = NumberFormatter()
-        f.numberStyle = .currency
-        f.locale = yearly.priceFormatStyle.locale
-        f.roundingMode = .up
-        return f
-    }
-
-    private func formatCeiling(_ value: Decimal) -> String {
-        ceilingCurrencyFormatter.string(from: NSDecimalNumber(decimal: value)) ?? value.formatted(yearly.priceFormatStyle)
-    }
-
-    /// Per-day price, ceiled. e.g. $99/year → "$0.27".
-    private var perDayCeilingFormatted: String {
-        formatCeiling(yearly.price / Decimal(365))
-    }
-
-    /// Per-pet, per-month price, ceiled. e.g. $99/year ÷ 12 ÷ 3 pets → "$2.75".
-    private var perPetPerMonthCeilingFormatted: String {
-        let perPetMonth = yearly.price / Decimal(12) / Decimal(max(petCount, 1))
-        return formatCeiling(perPetMonth)
-    }
-
-    /// Subtitle under the per-year price — always shows the effective per-month cost.
     private var pricingSubtitleText: String {
-        return "~\(effectivePerMonthFormatted) per month"
+        PaywallPerDayPrice.subtitle(for: yearly, daysInPeriod: 365)
     }
 
     /// Rounded percent off 12× monthly (`nil` if not cheaper / no monthly product).
@@ -1575,10 +1528,7 @@ private struct PaywallYearlyCard: View {
     }
 
     private var accessibilitySubtitle: String {
-        var parts: [String] = []
-        if let topCaption { parts.append(topCaption) }
-        parts.append("\(yearly.displayPrice) per year.")
-        parts.append("\(pricingSubtitleText).")
+        var parts: [String] = ["\(yearly.displayPrice) per year.", "\(pricingSubtitleText)."]
         if let yearlySavingsPercent {
             parts.append("Save \(yearlySavingsPercent) percent versus twelve months billed monthly.")
         }
@@ -1589,18 +1539,9 @@ private struct PaywallYearlyCard: View {
         Button(action: onSelect) {
             ZStack(alignment: .top) {
                 HStack(alignment: .center, spacing: 8) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Yearly")
-                            .font(AppTypography.secondaryEmphasis)
-                            .multilineTextAlignment(.leading)
-                        if let topCaption {
-                            Text(topCaption)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.leading)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
+                    Text("Yearly")
+                        .font(AppTypography.secondaryEmphasis)
+                        .multilineTextAlignment(.leading)
                     Spacer(minLength: 8)
                     VStack(alignment: .trailing, spacing: 4) {
                         Text("\(yearly.displayPrice) per year")
@@ -1650,20 +1591,30 @@ private struct PaywallYearlyCard: View {
 
 /// Simple monthly row: label left, price right; subtle highlight when selected.
 private struct PaywallMonthlyCard: View {
-    let displayPrice: String
+    let monthly: Product
     var isSelected: Bool
     var onSelect: () -> Void
 
+    private var pricingSubtitleText: String {
+        PaywallPerDayPrice.subtitle(for: monthly, daysInPeriod: 30)
+    }
+
     var body: some View {
         Button(action: onSelect) {
-            HStack(alignment: .firstTextBaseline) {
+            HStack(alignment: .center, spacing: 8) {
                 Text("Monthly")
                     .font(AppTypography.secondaryEmphasis)
+                    .multilineTextAlignment(.leading)
                 Spacer(minLength: 8)
-                Text("\(displayPrice) per month")
-                    .font(.footnote)
-                    .fontWeight(.regular)
-                    .foregroundStyle(.primary)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(monthly.displayPrice) per month")
+                        .font(.footnote)
+                        .fontWeight(.regular)
+                        .foregroundStyle(.primary)
+                    Text(pricingSubtitleText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
@@ -1677,7 +1628,7 @@ private struct PaywallMonthlyCard: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Monthly, \(displayPrice) per month")
+        .accessibilityLabel("Monthly. \(monthly.displayPrice) per month. \(pricingSubtitleText).")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
@@ -1874,8 +1825,6 @@ struct PostOnboardingPaywallView: View {
     private var petName: String { firstPet?.name ?? "" }
     /// Real household size (clamped to >= 1 so the per-pet/month divisor never hits zero on a
     /// fresh install with no pets yet).
-    private var petCountForPricing: Int { max(viewModel.pets.count, 1) }
-
     private var headline: String {
         if let featureInterest {
             return featureInterest.paywallHeadline(petName: petName, ownsMultiplePets: ownsMultiplePets)
@@ -1927,7 +1876,6 @@ struct PostOnboardingPaywallView: View {
                     PaywallContentBody(
                         headline: headline,
                         personalizedBullets: bullets,
-                        petCount: petCountForPricing,
                         products: products,
                         selectedPlan: $selectedPlan,
                         purchaseState: purchaseState,
