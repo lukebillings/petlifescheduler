@@ -1634,11 +1634,11 @@ private struct PaywallMonthlyCard: View {
     }
 }
 
-/// Centralized legal URLs used by the paywall footer. Must stay in sync with the links in `SettingsView`.
+/// Paywall footer legal links — uses `LegalPageURLs` (same as Settings).
 private enum PaywallLegalURLs {
-    static let privacy = URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy/")!
-    static let terms = URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!
-    static let tos = URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!
+    static let privacy = LegalPageURLs.privacy
+    static let terms = LegalPageURLs.termsAndConditions
+    static let tos = LegalPageURLs.termsOfService
 }
 
 private struct PaywallSubscriptionFooter: View {

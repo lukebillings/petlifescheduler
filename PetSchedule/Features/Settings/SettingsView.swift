@@ -354,7 +354,7 @@ struct SettingsView: View {
                 }
 
                 Section("Legal") {
-                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/privacypolicy/")!) {
+                    Link(destination: LegalPageURLs.privacy) {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "hand.raised.fill")
                             Text("Privacy Policy")
@@ -365,7 +365,7 @@ struct SettingsView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!) {
+                    Link(destination: LegalPageURLs.termsAndConditions) {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "doc.text.fill")
                             Text("Terms & Conditions")
@@ -376,7 +376,7 @@ struct SettingsView: View {
                                 .foregroundStyle(.tertiary)
                         }
                     }
-                    Link(destination: URL(string: "https://lukebillings.github.io/PetSchedule/termsandconditions/")!) {
+                    Link(destination: LegalPageURLs.termsOfService) {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "checkmark.seal.fill")
                             Text("Terms of Service")

@@ -34,6 +34,7 @@
 		F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */; };
 		AA11B22C3D4E5F60718293A1 /* AppStoreScreenshotHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11B22C3D4E5F60718293A0 /* AppStoreScreenshotHarness.swift */; };
 		B1E2E3F40506070809101112 /* SatisfactionCheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */; };
+		6C4A2155472169018637F7C0 /* LegalPageURLs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500473BCE09190503B0385CF /* LegalPageURLs.swift */; };
 		D0E1F203040506070809010A /* PostTutorialHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E1F203040506070809010B /* PostTutorialHints.swift */; };
 		E1E2E303040506070809020A /* PostTutorialHintPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */; };
 		C7D8E9F01234567890123457 /* ScheduleReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */; };
@@ -70,6 +71,7 @@
 		F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPrompt.swift; sourceTree = "<group>"; };
 		AA11B22C3D4E5F60718293A0 /* AppStoreScreenshotHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotHarness.swift; sourceTree = "<group>"; };
 		B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SatisfactionCheckIn.swift; sourceTree = "<group>"; };
+		500473BCE09190503B0385CF /* LegalPageURLs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalPageURLs.swift; sourceTree = "<group>"; };
 		D0E1F203040506070809010B /* PostTutorialHints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHints.swift; sourceTree = "<group>"; };
 		E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHintPersistence.swift; sourceTree = "<group>"; };
 		C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleReminderScheduler.swift; sourceTree = "<group>"; };
@@ -194,6 +196,7 @@
 				E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */,
 				D0E1F203040506070809010B /* PostTutorialHints.swift */,
 				B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */,
+				500473BCE09190503B0385CF /* LegalPageURLs.swift */,
 				1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */,
 				4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */,
 				217BD314318A028856956D09 /* PetPDFGenerator.swift */,
@@ -456,6 +459,7 @@
 				2BFEE6C53A95BA2B09F2D732 /* ScheduleRowView.swift in Sources */,
 				2E00AC531EA5D3BC68C52653 /* ScheduleView.swift in Sources */,
 				B1E2E3F40506070809101112 /* SatisfactionCheckIn.swift in Sources */,
+				6C4A2155472169018637F7C0 /* LegalPageURLs.swift in Sources */,
 				E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */,
 				A93AAA46666666666666602 /* CloudSharingSheet.swift in Sources */,
 				A93AAA47777777777777702 /* FamilySharingSettingsView.swift in Sources */,
