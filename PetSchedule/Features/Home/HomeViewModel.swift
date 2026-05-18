@@ -112,7 +112,8 @@ final class HomeViewModel {
                 address: "Your Vet's Address",
                 email: "yourvetsname@yourvetsname.com",
                 phone: "0123456789"
-            )
+            ),
+            documents: PetDocument.samplePack(for: .dog, petName: "Max", reference: now, calendar: cal)
         )
         let luna = Pet(
             name: "Luna", animalType: .cat,
@@ -124,13 +125,15 @@ final class HomeViewModel {
                 address: "Your Vet's Address",
                 email: "yourvetsname@yourvetsname.com",
                 phone: "0123456789"
-            )
+            ),
+            documents: PetDocument.samplePack(for: .cat, petName: "Luna", reference: now, calendar: cal)
         )
         let jill = Pet(
             name: "Jill", animalType: .fish,
             dateOfBirth: cal.date(from: DateComponents(year: 2023, month: 1, day: 10)),
             weightHistory: jillWeights, heightHistory: jillHeights,
-            notes: "Betta fish. Treated with API Fin & Body Cure every 5 days for minor fin rot."
+            notes: "Betta fish. Treated with API Fin & Body Cure every 5 days for minor fin rot.",
+            documents: PetDocument.samplePack(for: .fish, petName: "Jill", reference: now, calendar: cal)
         )
         vm.pets = [max, luna, jill]
 

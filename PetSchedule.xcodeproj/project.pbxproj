@@ -11,6 +11,7 @@
 		11B47882BF4C76FA955FA604 /* PetPDFGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217BD314318A028856956D09 /* PetPDFGenerator.swift */; };
 		13B3F254B52D23745C8D53FF /* MeasurementSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */; };
 		173431B9CD75A007C1033DF0 /* PetDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D7C7CA23C1B382C04FEADEF /* PetDocument.swift */; };
+		B4C5D6E7F8091A2B3C4D5E6F /* PetDocument+SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* PetDocument+SampleData.swift */; };
 		1862AADE2B4859F822063446 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3FD342A675248F7267C680 /* Pet.swift */; };
 		19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */; };
 		223A36163E699597848BCD3A /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91838FB176EEFF031E2CD16 /* ConfettiView.swift */; };
@@ -90,6 +91,7 @@
 		65728BE60D7A10B782998709 /* PetScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleApp.swift; sourceTree = "<group>"; };
 		A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleAppDelegate.swift; sourceTree = "<group>"; };
 		6D7C7CA23C1B382C04FEADEF /* PetDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDocument.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* PetDocument+SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PetDocument+SampleData.swift"; sourceTree = "<group>"; };
 		870B6B2E15C92C0C03ADDEF6 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsView.swift; sourceTree = "<group>"; };
 		8C629F5BF9352863F3F86CEF /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -273,6 +275,7 @@
 				E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */,
 				DD3FD342A675248F7267C680 /* Pet.swift */,
 				6D7C7CA23C1B382C04FEADEF /* PetDocument.swift */,
+				A1B2C3D4E5F60718293A4B5C /* PetDocument+SampleData.swift */,
 				CED9087F17B21DC83D342723 /* ScheduleItem.swift */,
 				EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */,
 			);
@@ -448,6 +451,7 @@
 				6E04C1751D6C0A38AAA95B08 /* PetAvatarView.swift in Sources */,
 				0CE83C345B35DF235C3FC674 /* PetDetailSheet.swift in Sources */,
 				173431B9CD75A007C1033DF0 /* PetDocument.swift in Sources */,
+				B4C5D6E7F8091A2B3C4D5E6F /* PetDocument+SampleData.swift in Sources */,
 				11B47882BF4C76FA955FA604 /* PetPDFGenerator.swift in Sources */,
 				627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */,
 				A93AAA48888888888888802 /* PetScheduleAppDelegate.swift in Sources */,
