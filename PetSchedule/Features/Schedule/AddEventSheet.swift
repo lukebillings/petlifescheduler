@@ -25,7 +25,7 @@ struct AddEventSheet: View {
     @State private var completedBy: String = ""
     @State private var assigneeAccent: ScheduleAssigneeAccent = .pink
 
-    private let commonActivities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Vet", "Groom", "Give Medication"]
+    private let commonActivities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Vet", "Groom", "Medication"]
 
     var body: some View {
         NavigationStack {

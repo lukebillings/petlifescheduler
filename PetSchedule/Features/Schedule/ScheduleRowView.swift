@@ -203,9 +203,9 @@ private struct CareCompliancePill: View {
     VStack(spacing: 12) {
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Walk", pet: pet, isCompleted: true)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Walk", pet: pet, assignedToDisplayName: "Bob")) {}
-        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet)) {}
-        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet, medicineAccepted: true)) {}
-        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give Medication", pet: pet, medicineAccepted: false)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medication", pet: pet)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medication", pet: pet, medicineAccepted: true)) {}
+        ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Medication", pet: pet, medicineAccepted: false)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Feed", pet: pet)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Give water", pet: pet, medicineAccepted: true)) {}
         ScheduleRowView(item: ScheduleItem(time: .now, activityName: "Poo", pet: pet, isCompleted: true, quickLogKind: .poo)) {}

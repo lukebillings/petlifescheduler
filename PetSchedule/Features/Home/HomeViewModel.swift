@@ -31,9 +31,9 @@ final class HomeViewModel {
 
         let max  = Pet(name: "Max",  animalType: .dog)
         let luna = Pet(name: "Luna", animalType: .cat)
-        let nemo = Pet(name: "Nemo", animalType: .fish)
+        let jill = Pet(name: "Jill", animalType: .fish)
 
-        vm.pets = [max, luna, nemo]
+        vm.pets = [max, luna, jill]
 
         func time(hour: Int) -> Date {
             calendar.date(bySettingHour: hour, minute: 0, second: 0, of: now) ?? now
@@ -43,7 +43,7 @@ final class HomeViewModel {
             ScheduleItem(time: time(hour: 8),  activityName: "Walk",  pet: max,  isCompleted: true),
             ScheduleItem(time: time(hour: 14), activityName: "Feed",  pet: luna, isCompleted: true),
             ScheduleItem(time: time(hour: 22), activityName: "Put to Bed", pet: max),
-            ScheduleItem(time: time(hour: 22), activityName: "Put to Bed", pet: nemo),
+            ScheduleItem(time: time(hour: 22), activityName: "Put to Bed", pet: jill),
         ]
         return vm
     }
@@ -80,7 +80,7 @@ final class HomeViewModel {
             WeightEntry(date: daysAgo(6),  kg: 4.1),
             WeightEntry(date: daysAgo(1),  kg: 4.0),
         ]
-        let nemoWeights: [WeightEntry] = [
+        let jillWeights: [WeightEntry] = [
             WeightEntry(date: daysAgo(20), kg: 0.08),
             WeightEntry(date: daysAgo(10), kg: 0.09),
             WeightEntry(date: daysAgo(0),  kg: 0.10),
@@ -96,7 +96,7 @@ final class HomeViewModel {
             HeightEntry(date: daysAgo(12), cm: 24.0),
             HeightEntry(date: daysAgo(4),  cm: 24.2),
         ]
-        let nemoHeights: [HeightEntry] = [
+        let jillHeights: [HeightEntry] = [
             HeightEntry(date: daysAgo(20), cm: 7.5),
             HeightEntry(date: daysAgo(10), cm: 8.0),
             HeightEntry(date: daysAgo(0),  cm: 8.5),
@@ -107,22 +107,32 @@ final class HomeViewModel {
             dateOfBirth: cal.date(from: DateComponents(year: 2021, month: 3, day: 15)),
             weightHistory: maxWeights, heightHistory: maxHeights,
             notes: "Neutered. Allergic to chicken. Currently on Metacam for joint pain.",
-            vetDetails: VetDetails(organisation: "Riverside Vets", address: "12 River Lane, London", email: "info@riversidevets.co.uk", phone: "020 7946 0123")
+            vetDetails: VetDetails(
+                organisation: "Your Vet's Name",
+                address: "Your Vet's Address",
+                email: "yourvetsname@yourvetsname.com",
+                phone: "0123456789"
+            )
         )
         let luna = Pet(
             name: "Luna", animalType: .cat,
             dateOfBirth: cal.date(from: DateComponents(year: 2020, month: 8, day: 22)),
             weightHistory: lunaWeights, heightHistory: lunaHeights,
             notes: "Indoor cat. On Prednisolone for mild asthma. Needs inhaler twice daily.",
-            vetDetails: VetDetails(organisation: "City Cat Clinic", address: "7 Park Street, Manchester", email: "hello@citycatclinic.co.uk", phone: "0161 234 5678")
+            vetDetails: VetDetails(
+                organisation: "Your Vet's Name",
+                address: "Your Vet's Address",
+                email: "yourvetsname@yourvetsname.com",
+                phone: "0123456789"
+            )
         )
-        let nemo = Pet(
-            name: "Nemo", animalType: .fish,
+        let jill = Pet(
+            name: "Jill", animalType: .fish,
             dateOfBirth: cal.date(from: DateComponents(year: 2023, month: 1, day: 10)),
-            weightHistory: nemoWeights, heightHistory: nemoHeights,
+            weightHistory: jillWeights, heightHistory: jillHeights,
             notes: "Betta fish. Treated with API Fin & Body Cure every 5 days for minor fin rot."
         )
-        vm.pets = [max, luna, nemo]
+        vm.pets = [max, luna, jill]
 
         var items: [ScheduleItem] = []
 
@@ -136,6 +146,16 @@ final class HomeViewModel {
                 time: at(d, hour: 8), activityName: "Feed", pet: max,
                 isCompleted: maxFed != nil, medicineAccepted: maxFed
             ))
+            if d == 0 {
+                items.append(ScheduleItem(
+                    time: cal.date(bySettingHour: 8, minute: 10, second: 0, of: startOf(0)) ?? now,
+                    activityName: "Mood",
+                    pet: max,
+                    isCompleted: true,
+                    quickLogKind: .mood,
+                    petMood: .great
+                ))
+            }
             items.append(ScheduleItem(
                 time: at(d, hour: 18), activityName: "Feed", pet: max,
                 isCompleted: maxFed != nil, medicineAccepted: maxFed
@@ -145,10 +165,10 @@ final class HomeViewModel {
                 time: at(d, hour: 12), activityName: "Give water", pet: max,
                 isCompleted: maxWater != nil, medicineAccepted: maxWater
             ))
-            // Max — Metacam daily
+            // Max — daily medication (preset activity name)
             let maxAccepted: Bool? = past ? ((29 + d) % 7 != 0 ? true : false) : nil
             items.append(ScheduleItem(
-                time: at(d, hour: 9), activityName: "Metacam (medicine)", pet: max,
+                time: at(d, hour: 9), activityName: "Medication", pet: max,
                 isCompleted: maxAccepted != nil, medicineAccepted: maxAccepted
             ))
 
@@ -169,38 +189,41 @@ final class HomeViewModel {
             if (29 + d) % 7 == 0 {
                 items.append(ScheduleItem(time: at(d, hour: 14), activityName: "Grooming", pet: luna, isCompleted: past))
             }
-            // Luna — Prednisolone inhaler twice daily
+            // Luna — twice-daily medication (preset activity name)
             let lunaInhalerTaken: Bool? = past ? ((29 + d) % 5 != 2 ? true : false) : nil
+            let lunaMorningMedTime = d == 0
+                ? (cal.date(bySettingHour: 8, minute: 20, second: 0, of: startOf(0)) ?? now)
+                : at(d, hour: 8)
             items.append(ScheduleItem(
-                time: at(d, hour: 8), activityName: "Prednisolone (medicine)", pet: luna,
+                time: lunaMorningMedTime, activityName: "Medication", pet: luna,
                 isCompleted: lunaInhalerTaken != nil, medicineAccepted: lunaInhalerTaken
             ))
             items.append(ScheduleItem(
-                time: at(d, hour: 20), activityName: "Prednisolone (medicine)", pet: luna,
+                time: at(d, hour: 20), activityName: "Medication", pet: luna,
                 isCompleted: lunaInhalerTaken != nil, medicineAccepted: lunaInhalerTaken
             ))
 
-            // Nemo — feeding always done; medication every 3 days
+            // Jill — feeding always done; medication every 3 days
             items.append(ScheduleItem(
-                time: at(d, hour: 9), activityName: "Feed Nemo", pet: nemo,
+                time: at(d, hour: 9), activityName: "Feed Jill", pet: jill,
                 isCompleted: past, medicineAccepted: past ? true : nil
             ))
             items.append(ScheduleItem(
-                time: at(d, hour: 16), activityName: "Give water", pet: nemo,
+                time: at(d, hour: 16), activityName: "Give water", pet: jill,
                 isCompleted: past, medicineAccepted: past ? true : nil
             ))
             if (29 + d) % 3 == 0 {
-                let nemoAccepted: Bool? = past ? true : nil
+                let jillAccepted: Bool? = past ? true : nil
                 items.append(ScheduleItem(
-                    time: at(d, hour: 10), activityName: "Fin & Body medicine", pet: nemo,
-                    isCompleted: nemoAccepted != nil, medicineAccepted: nemoAccepted
+                    time: at(d, hour: 10), activityName: "Medication", pet: jill,
+                    isCompleted: jillAccepted != nil, medicineAccepted: jillAccepted
                 ))
             }
         }
 
         // Mood quick logs (Analytics → Mood Over Time; dates within default Week window)
-        let maxMoodDays = [0, 2, 4]
-        let maxMoodSeries: [PetMood] = [.okay, .good, .great]
+        let maxMoodDays = [2, 4]
+        let maxMoodSeries: [PetMood] = [.good, .okay]
         for (idx, day) in maxMoodDays.enumerated() {
             items.append(ScheduleItem(
                 time: daysAgo(day),
@@ -224,7 +247,7 @@ final class HomeViewModel {
             ))
         }
 
-        // Spread two made-up household members — Bob and Jill — across the dummy schedule so
+        // Spread two made-up household members — Bob and Wendy — across the dummy schedule so
         // demos and App Store screenshots show a realistic shared household. Assignment is
         // deterministic per activity so a recurring task keeps the same owner over the 30 days,
         // while medicine alternates day-by-day to demonstrate hand-offs.
@@ -232,9 +255,6 @@ final class HomeViewModel {
         for i in items.indices {
             let lower = items[i].activityName.lowercased()
             let isMedicine = lower.contains("medic")
-                || lower.contains("metacam")
-                || lower.contains("predni")
-                || lower.contains("fin & body")
                 || lower.contains("tablet")
                 || lower.contains("pill")
             let isOutdoorOrWater = lower.contains("walk")
@@ -249,12 +269,12 @@ final class HomeViewModel {
             } else if isOutdoorOrWater {
                 assignedIsBob = true
             } else {
-                // Feeding, grooming, mood logs, and anything else default to Jill.
+                // Feeding, grooming, mood logs, and anything else default to Wendy.
                 assignedIsBob = false
             }
-            let assigned = assignedIsBob ? "Bob" : "Jill"
+            let assigned = assignedIsBob ? "Bob" : "Wendy"
             // Created by the *other* member so both names appear as event authors.
-            let creator = assignedIsBob ? "Jill" : "Bob"
+            let creator = assignedIsBob ? "Wendy" : "Bob"
             items[i].assignedToDisplayName = assigned
             items[i].createdByDisplayName = creator
             items[i].assigneeAccent = assignedIsBob ? .blue : .pink

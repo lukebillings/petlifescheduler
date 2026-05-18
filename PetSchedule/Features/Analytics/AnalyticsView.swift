@@ -1180,7 +1180,7 @@ struct AnalyticsView: View {
 
     private static func compliancePresetActivity(_ kind: ScheduleComplianceKind) -> String {
         switch kind {
-        case .medicine: return "Give Medication"
+        case .medicine: return "Medication"
         case .feed: return "Feed"
         case .water: return "Give water"
         }

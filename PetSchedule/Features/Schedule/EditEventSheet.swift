@@ -24,7 +24,7 @@ struct EditEventSheet: View {
     @State private var completedBy: String
     @State private var assigneeAccent: ScheduleAssigneeAccent
 
-    private let commonActivities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Vet", "Groom", "Give Medication"]
+    private let commonActivities = ["Walk", "Feed", "Give water", "Put to Bed", "Play", "Vet", "Groom", "Medication"]
     private static let legacyPresetNames: Set<String> = ["Eat", "Medicine"]
 
     init(viewModel: HomeViewModel, item: ScheduleItem) {
