@@ -4,9 +4,9 @@ import UIKit
 
 // MARK: - Configuration
 
-/// Recipient for in-app support mailto links. Replace with your real support address before release.
+/// Recipient for in-app support mailto links (check-in quiz, Settings contact).
 enum SupportContact {
-    static let email = "support@example.com"
+    static let email = "petlifescheduler@outlook.com"
 }
 
 // MARK: - Model
