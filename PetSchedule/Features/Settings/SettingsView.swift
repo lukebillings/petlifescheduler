@@ -402,7 +402,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Sample data")
                 } footer: {
-                    Text("Loads Max (dog), Luna (cat), and Nemo (fish) with schedules, logs, and history. Replaces your current pets and events.")
+                    Text("Loads Max (dog), Luna (cat), and Jill (fish) with schedules, logs, and history. Replaces your current pets and events.")
                 }
 
                 Section {

@@ -32,7 +32,7 @@ struct PetAvatarView: View {
     HStack(spacing: 12) {
         PetAvatarView(pet: Pet(name: "Max",  animalType: .dog),  size: 56)
         PetAvatarView(pet: Pet(name: "Luna", animalType: .cat),  size: 56)
-        PetAvatarView(pet: Pet(name: "Nemo", animalType: .fish), size: 56)
+        PetAvatarView(pet: Pet(name: "Jill", animalType: .fish), size: 56)
     }
     .padding()
 }

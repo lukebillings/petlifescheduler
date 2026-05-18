@@ -113,11 +113,9 @@ private enum AnalyticsSwipeLayout {
     static let dotsSpacingFromPager: CGFloat = 8
 }
 
-/// Week / Month / Year control on liquid glass (replaces segmented control under the Analytics header).
+/// Week / Month / Year control below the pink wave (same band as Schedule’s pet strip / mode capsule).
 private struct AnalyticsTimeRangeControl: View {
     @Binding var selection: AnalyticsRange
-    /// When the pink header is on, text uses light colors so it stays legible on the tint.
-    var lightOnPinkHeader: Bool
 
     var body: some View {
         HStack(spacing: 4) {
@@ -129,17 +127,11 @@ private struct AnalyticsTimeRangeControl: View {
                 } label: {
                     Text(range.rawValue)
                         .font(AppTypography.secondaryEmphasis)
-                        .foregroundStyle(
-                            lightOnPinkHeader
-                            ? (on ? Color.white : Color.white.opacity(0.78))
-                            : (on ? Color.white : Color.primary)
-                        )
+                        .foregroundStyle(on ? Color.white : Color.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(
-                            on
-                            ? (lightOnPinkHeader ? Color.white.opacity(0.22) : Color.appPink)
-                            : Color.clear,
+                            on ? Color.appPink : Color.clear,
                             in: RoundedRectangle(cornerRadius: 10, style: .continuous)
                         )
                 }
@@ -201,7 +193,8 @@ private enum AnalyticsJumpSection: String, CaseIterable, Hashable {
 struct AnalyticsView: View {
     @Bindable var viewModel: HomeViewModel
 
-    @AppStorage("pinkWaveHeaderEnabled") private var pinkWaveHeaderEnabled = true
+    /// Simulator screenshot harness: scroll to this jump section once (matches `AnalyticsJumpSection` raw values).
+    var screenshotHarnessScrollToJumpRaw: String? = nil
 
     @State private var selectedRange: AnalyticsRange = .week
     @State private var selectedPetID: UUID? = nil
@@ -306,19 +299,33 @@ struct AnalyticsView: View {
         return list
     }
 
+    private var screenshotHarnessScrollTarget: AnalyticsJumpSection? {
+        guard let raw = screenshotHarnessScrollToJumpRaw else { return nil }
+        return AnalyticsJumpSection(rawValue: raw)
+    }
+
     // MARK: - Body
 
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
                 VStack(spacing: 0) {
-                    PinkWaveScreenHeader("Analytics", accessory: {
-                        AnalyticsTimeRangeControl(
-                            selection: $selectedRange,
-                            lightOnPinkHeader: pinkWaveHeaderEnabled
-                        )
-                    })
-                    analyticsJumpPillBar(proxy: proxy)
+                    VStack(alignment: .leading, spacing: 0) {
+                        PinkWaveScreenHeader("Analytics")
+
+                        if viewModel.pets.count > 1 {
+                            petFilterBar
+                                .id(AnalyticsJumpSection.summary.rawValue)
+                        }
+
+                        AnalyticsTimeRangeControl(selection: $selectedRange)
+                            .padding(.top, 12)
+                            .padding(.bottom, 4)
+
+                        analyticsJumpPillBar(proxy: proxy)
+                    }
+                    .background(Color(.systemGroupedBackground))
+                    .modifier(InterfaceContentEntranceModifier(delay: 0))
 
                     ScrollView {
                         VStack(alignment: .leading, spacing: 24) {
@@ -329,11 +336,6 @@ struct AnalyticsView: View {
                                 )
                                 .padding(.horizontal)
                             } else {
-                                if viewModel.pets.count > 1 {
-                                    petFilterBar
-                                        .id(AnalyticsJumpSection.summary.rawValue)
-                                }
-
                                 weightSection
                                     .padding(.horizontal)
 
@@ -353,8 +355,19 @@ struct AnalyticsView: View {
                         .modifier(InterfaceContentEntranceModifier(delay: 0.06))
                     }
                     .scrollEdgeEffectStyle(.soft, for: .top)
+                    .onAppear {
+                        guard let target = screenshotHarnessScrollTarget,
+                              visibleAnalyticsJumpSections.contains(target) else { return }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
+                            selectedAnalyticsJumpSection = target
+                            withAnimation(.easeInOut(duration: 0.32)) {
+                                proxy.scrollTo(target.rawValue, anchor: .top)
+                            }
+                        }
+                    }
                 }
             }
+            .background(Color(.systemGroupedBackground))
             .toolbar(.hidden, for: .navigationBar)
             .onChange(of: selectedPetID) { _, _ in
                 resetAnalyticsSwipePages()
@@ -432,28 +445,32 @@ struct AnalyticsView: View {
 
     // MARK: - Pet filter bar
 
+    /// Pet avatars directly under the pink wave — same placement and sizing as `ScheduleView`.
     private var petFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 14) {
+            HStack(spacing: 12) {
                 Button {
                     HapticManager.impact(.light)
                     withAnimation(.spring(duration: 0.25)) { selectedPetID = nil }
                 } label: {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 5) {
                         ZStack {
                             Circle()
                                 .fill(selectedPetID == nil
                                       ? Color.appPink.opacity(0.15)
                                       : Color(.secondarySystemBackground))
-                                .frame(width: 60, height: 60)
+                                .frame(width: 52, height: 52)
                             Image(systemName: "pawprint.fill")
-                                .font(AppTypography.sectionHeading)
+                                .font(.title3.weight(.semibold))
                                 .foregroundStyle(selectedPetID == nil ? Color.appPink : .secondary)
                         }
                         .overlay {
                             if selectedPetID == nil {
                                 Circle()
-                                    .strokeBorder(Color.appPink, lineWidth: 3)
+                                    .strokeBorder(Color.appPink, lineWidth: 2.5)
+                            } else {
+                                Circle()
+                                    .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                             }
                         }
                         Text("All")
@@ -471,15 +488,18 @@ struct AnalyticsView: View {
                             selectedPetID = sel ? nil : pet.id
                         }
                     } label: {
-                        VStack(spacing: 6) {
-                            PetAvatarView(pet: pet, size: 60)
+                        VStack(spacing: 5) {
+                            PetAvatarView(pet: pet, size: 52)
                                 .overlay {
                                     if sel {
                                         Circle()
-                                            .strokeBorder(Color.appPink, lineWidth: 3)
+                                            .strokeBorder(Color.appPink, lineWidth: 2.5)
+                                    } else {
+                                        Circle()
+                                            .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
                                     }
                                 }
-                                .scaleEffect(sel ? 1.05 : 1.0)
+                                .scaleEffect(sel ? 1.04 : 1.0)
                             Text(pet.name)
                                 .font(AppTypography.compactControl)
                                 .foregroundStyle(sel ? Color.appPink : .secondary)
@@ -489,9 +509,22 @@ struct AnalyticsView: View {
                 }
             }
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
         }
-        .scrollClipDisabled()
+        .mask {
+            LinearGradient(
+                stops: [
+                    .init(color: .black.opacity(0), location: 0),
+                    .init(color: .black, location: 0.05),
+                    .init(color: .black, location: 0.95),
+                    .init(color: .black.opacity(0), location: 1),
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        }
+        .background(Color(.systemGroupedBackground))
     }
 
     // MARK: - Weight trends

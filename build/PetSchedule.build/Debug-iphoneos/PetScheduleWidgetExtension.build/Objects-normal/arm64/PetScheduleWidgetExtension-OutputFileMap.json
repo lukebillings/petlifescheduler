@@ -1,0 +1,59 @@
+{
+  "" : {
+    "diagnostics" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidgetExtension-primary.dia",
+    "emit-module-dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidgetExtension-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidgetExtension-primary-emit-module.dia",
+    "pch" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidgetExtension-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidgetExtension-primary.swiftdeps"
+  },
+  "/Users/lukebillings/code/lukebillings/PetSchedule/PetSchedule/Shared/AppColors.swift" : {
+    "const-values" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppColors.swiftconstvalues",
+    "dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppColors.d",
+    "diagnostics" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppColors.dia",
+    "index-unit-output-path" : "/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppColors.o",
+    "llvm-bc" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppColors.bc",
+    "object" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppColors.o",
+    "swift-dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppColors.swiftdeps",
+    "swiftmodule" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppColors~partial.swiftmodule"
+  },
+  "/Users/lukebillings/code/lukebillings/PetSchedule/PetSchedule/Shared/AppTypography.swift" : {
+    "const-values" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppTypography.swiftconstvalues",
+    "dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppTypography.d",
+    "diagnostics" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppTypography.dia",
+    "index-unit-output-path" : "/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppTypography.o",
+    "llvm-bc" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppTypography.bc",
+    "object" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppTypography.o",
+    "swift-dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppTypography.swiftdeps",
+    "swiftmodule" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/AppTypography~partial.swiftmodule"
+  },
+  "/Users/lukebillings/code/lukebillings/PetSchedule/PetSchedule/Shared/ScheduleWidgetShared.swift" : {
+    "const-values" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/ScheduleWidgetShared.swiftconstvalues",
+    "dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/ScheduleWidgetShared.d",
+    "diagnostics" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/ScheduleWidgetShared.dia",
+    "index-unit-output-path" : "/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/ScheduleWidgetShared.o",
+    "llvm-bc" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/ScheduleWidgetShared.bc",
+    "object" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/ScheduleWidgetShared.o",
+    "swift-dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/ScheduleWidgetShared.swiftdeps",
+    "swiftmodule" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/ScheduleWidgetShared~partial.swiftmodule"
+  },
+  "/Users/lukebillings/code/lukebillings/PetSchedule/PetScheduleWidget/PetScheduleWidget.swift" : {
+    "const-values" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidget.swiftconstvalues",
+    "dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidget.d",
+    "diagnostics" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidget.dia",
+    "index-unit-output-path" : "/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidget.o",
+    "llvm-bc" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidget.bc",
+    "object" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidget.o",
+    "swift-dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidget.swiftdeps",
+    "swiftmodule" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/PetScheduleWidget~partial.swiftmodule"
+  },
+  "/Users/lukebillings/code/lukebillings/PetSchedule/PetScheduleWidget/TodayEventsWidget.swift" : {
+    "const-values" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/TodayEventsWidget.swiftconstvalues",
+    "dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/TodayEventsWidget.d",
+    "diagnostics" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/TodayEventsWidget.dia",
+    "index-unit-output-path" : "/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/TodayEventsWidget.o",
+    "llvm-bc" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/TodayEventsWidget.bc",
+    "object" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/TodayEventsWidget.o",
+    "swift-dependencies" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/TodayEventsWidget.swiftdeps",
+    "swiftmodule" : "/Users/lukebillings/code/lukebillings/PetSchedule/build/PetSchedule.build/Debug-iphoneos/PetScheduleWidgetExtension.build/Objects-normal/arm64/TodayEventsWidget~partial.swiftmodule"
+  }
+}

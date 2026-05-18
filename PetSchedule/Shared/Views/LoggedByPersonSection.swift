@@ -1,15 +1,11 @@
 import SwiftUI
 
-/// Names suggested for household pickers; combines profile, extras from Settings, and names seen on existing rows.
+/// Names suggested for household pickers; combines the profile name from onboarding (editable in Settings) and names seen on existing rows.
 enum HouseholdPersonOptions {
     static func sortedNames(viewModel: HomeViewModel) -> [String] {
         var set = Set<String>()
         let mine = UserProfileStorage.trimmedDisplayName()
         if !mine.isEmpty { set.insert(mine) }
-        for n in UserProfileStorage.rosterExtraNames() {
-            let t = n.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !t.isEmpty { set.insert(t) }
-        }
         for item in viewModel.scheduleItems {
             for n in [
                 item.createdByDisplayName,
