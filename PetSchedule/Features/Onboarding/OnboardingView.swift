@@ -2021,8 +2021,8 @@ private struct PaywallSubscriptionFooter: View {
 // MARK: - App Store subscription products (StoreKit 2)
 
 enum PetScheduleSubscriptionProductID {
-    static let monthly = "com.petschedule.premium.monthly"
-    static let yearly = "com.petschedule.premium.yearly"
+    static let monthly = "com.petlifescheduler.premium.monthly"
+    static let yearly = "com.petlifescheduler.premium.yearly"
 }
 
 @Observable
