@@ -1990,7 +1990,7 @@ private struct PaywallSubscriptionFooter: View {
             middotDivider(font: captionFont)
             footerLinkURL(title: "Terms and Conditions", url: PaywallLegalURLs.terms, font: captionFont, minScale: minScale)
             middotDivider(font: captionFont)
-            footerLinkURL(title: "Terms of Use (EULA)", url: PaywallLegalURLs.tos, font: captionFont, minScale: minScale)
+            footerLinkURL(title: "Terms of Use", url: PaywallLegalURLs.tos, font: captionFont, minScale: minScale)
         }
     }
 

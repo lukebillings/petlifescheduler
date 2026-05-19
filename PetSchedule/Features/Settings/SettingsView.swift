@@ -379,7 +379,7 @@ struct SettingsView: View {
                     Link(destination: LegalPageURLs.termsOfService) {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "checkmark.seal.fill")
-                            Text("Terms of Service")
+                            Text("Terms of Use")
                                 .foregroundStyle(.primary)
                             Spacer()
                             Image(systemName: "arrow.up.right")

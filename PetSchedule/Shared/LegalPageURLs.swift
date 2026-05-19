@@ -6,6 +6,6 @@ enum LegalPageURLs {
 
     static let privacy = URL(string: "\(base)/privacypolicy/")!
     static let termsAndConditions = URL(string: "\(base)/termsandconditions/")!
-    /// App Store EULA link; same document as terms today.
-    static let termsOfService = termsAndConditions
+    /// Apple Standard Licensed Application End User License Agreement.
+    static let termsOfService = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
 }
