@@ -279,14 +279,14 @@ struct SettingsView: View {
                     } label: {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "person.3.fill")
-                            Text("Household")
+                            Text("Share with family")
                                 .foregroundStyle(.primary)
                         }
                     }
                 } header: {
                     Text("Sharing")
                 } footer: {
-                    Text("Open Household, then Invite someone, so partners or family see the same pets and schedule over iCloud.")
+                    Text("Step 1: add them to your Apple Family for free Premium. Step 2: share your pets & schedule link.")
                 }
 
                 Section {

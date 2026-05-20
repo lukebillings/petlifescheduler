@@ -421,6 +421,56 @@ final class HouseholdCloudKitService {
         }
     }
 
+    /// People invited to the CloudKit household (not Apple Family — Apple does not expose that list to apps).
+    func fetchHouseholdShareParticipants() async -> [HouseholdShareParticipantRow] {
+        guard await accountAvailable() else { return [] }
+        let privateDB = container.privateCloudDatabase
+        let zone = CKRecordZone(zoneName: Constants.zoneName)
+        do {
+            _ = try await privateDB.recordZone(for: zone.zoneID)
+        } catch {
+            return []
+        }
+        guard let share = await fetchExistingShareIfPossible(database: privateDB, zoneID: zone.zoneID) else {
+            return []
+        }
+        return Self.participantRows(from: share)
+    }
+
+    private static func participantRows(from share: CKShare) -> [HouseholdShareParticipantRow] {
+        share.participants.compactMap { participant in
+            guard participant.role != .owner else { return nil }
+            let name = displayName(for: participant)
+            let status: String
+            switch participant.acceptanceStatus {
+            case .accepted:
+                status = "Joined"
+            case .pending:
+                status = "Waiting to accept"
+            case .unknown:
+                status = "Invite sent"
+            @unknown default:
+                status = "Invite sent"
+            }
+            return HouseholdShareParticipantRow(
+                id: participant.userIdentity.lookupInfo?.userRecordID?.recordName ?? name,
+                displayName: name,
+                status: status
+            )
+        }
+    }
+
+    private static func displayName(for participant: CKShare.Participant) -> String {
+        if let components = participant.userIdentity.nameComponents {
+            let formatted = PersonNameComponentsFormatter.localizedString(from: components, style: .default, options: [])
+            if !formatted.isEmpty { return formatted }
+        }
+        if let email = participant.userIdentity.lookupInfo?.emailAddress, !email.isEmpty {
+            return email
+        }
+        return "Family member"
+    }
+
     // MARK: Decode
 
     private func decodePet(record: CKRecord) -> Pet? {
@@ -437,6 +487,12 @@ final class HouseholdCloudKitService {
     }
 }
 
+
+struct HouseholdShareParticipantRow: Identifiable, Equatable {
+    let id: String
+    let displayName: String
+    let status: String
+}
 
 enum UserDefaultsKeys {
     static let prefersSharedDatabase = "petschedule.cloud.prefersSharedDatabase"
