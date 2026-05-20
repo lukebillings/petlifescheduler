@@ -697,20 +697,12 @@ private struct Step1AddPet: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 32) {
-                ZStack {
-                    Circle()
-                        .fill(Color(.secondarySystemFill))
-                        .frame(width: 140, height: 140)
-                    Image(animalType.placeholderImage)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
-                        .padding(28)
-                        .frame(width: 140, height: 140)
-                }
-                .id(animalType)
-                .animation(.spring(duration: 0.3), value: animalType)
-                .padding(.top, 48)
+                AnimalTypeDefaultAvatar(animalType: animalType)
+                    .frame(width: 140, height: 140)
+                    .clipShape(Circle())
+                    .id(animalType)
+                    .animation(.spring(duration: 0.3), value: animalType)
+                    .padding(.top, 48)
 
                 VStack(spacing: 10) {
                     Text(addPetHeadline)
@@ -802,22 +794,21 @@ private struct Step2AddPhoto: View {
             PhotosPicker(selection: $photoItem, matching: .images) {
                 ZStack(alignment: .bottomTrailing) {
                     // Photo or default avatar
-                    ZStack {
+                    Group {
                         if let data = photoData, let uiImage = UIImage(data: data) {
                             Image(uiImage: uiImage)
                                 .resizable()
                                 .interpolation(.high)
                                 .scaledToFill()
+                                .frame(width: 180, height: 180)
+                                .scaleEffect(1.14)
+                                .clipShape(Circle())
                         } else {
-                            Image(animalType.placeholderImage)
-                                .resizable()
-                                .interpolation(.high)
-                                .scaledToFill()
+                            AnimalTypeDefaultAvatar(animalType: animalType)
+                                .frame(width: 180, height: 180)
+                                .clipShape(Circle())
                         }
                     }
-                    .frame(width: 180, height: 180)
-                    .scaleEffect(1.14)
-                    .clipShape(Circle())
                     .shadow(color: animalType.color.opacity(0.4), radius: 12, y: 6)
 
                     // Camera badge
@@ -963,7 +954,7 @@ private struct Step4Notifications: View {
                 Text("Never miss a moment")
                     .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
-                Text("Get timely reminders for walks, meals,\nand more after each meal.")
+                Text("Get timely reminders for walks, meals,\nand more.")
                     .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -1541,7 +1532,6 @@ private struct PaywallFeatureScreenshotPreview: View {
             .interpolation(.high)
             .scaledToFit()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .accessibilityHidden(true)
     }
 }

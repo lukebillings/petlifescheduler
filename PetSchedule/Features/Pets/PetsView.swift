@@ -79,22 +79,7 @@ private struct PetCard: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Group {
-                if let data = pet.photoData, let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFill()
-                } else {
-                    Image(pet.animalType.placeholderImage)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFill()
-                }
-            }
-            .frame(width: 78, height: 78)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            PetAvatarView(pet: pet, size: 78, cornerRadius: 20)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(pet.name)

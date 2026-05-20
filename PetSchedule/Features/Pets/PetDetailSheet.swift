@@ -953,14 +953,7 @@ struct PetDetailSheet: View {
                         .clipped()
                 }
             } else {
-                ZStack {
-                    Color(.secondarySystemFill)
-                    Image(animalType.placeholderImage)
-                        .resizable()
-                        .interpolation(.high)
-                        .scaledToFit()
-                        .padding(20)
-                }
+                AnimalTypeDefaultAvatar(animalType: animalType, cornerRadius: 20)
             }
         }
         .frame(maxWidth: .infinity)
