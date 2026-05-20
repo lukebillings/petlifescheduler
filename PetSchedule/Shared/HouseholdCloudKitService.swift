@@ -393,6 +393,23 @@ final class HouseholdCloudKitService {
         return ckShare
     }
 
+    /// Returns the shareable iCloud URL for the household, creating the share if needed. Only
+    /// owners can run this — participants don't own the share and can't generate invite links.
+    /// Used by the "Copy invite link" shortcut to skip Apple's full share sheet.
+    func prepareInviteShareURL() async throws -> URL? {
+        guard await accountAvailable() else { throw HouseholdCloudError.iCloudUnavailable }
+        let privateDB = container.privateCloudDatabase
+        let zone = CKRecordZone(zoneName: Constants.zoneName)
+        do {
+            _ = try await privateDB.recordZone(for: zone.zoneID)
+        } catch {
+            _ = try await privateDB.save(zone)
+        }
+        let root = try await ensureRoot(database: privateDB, zoneID: zone.zoneID)
+        let share = try await loadOrCreateShare(database: privateDB, root: root, zoneID: zone.zoneID)
+        return share.url
+    }
+
     func fetchExistingShareIfPossible(database: CKDatabase, zoneID: CKRecordZone.ID) async -> CKShare? {
         guard let name = UserDefaults.standard.string(forKey: Constants.shareRecordNameKey) else { return nil }
         let sid = CKRecord.ID(recordName: name, zoneID: zoneID)

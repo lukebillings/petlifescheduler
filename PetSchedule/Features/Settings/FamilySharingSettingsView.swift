@@ -1,10 +1,13 @@
 import SwiftUI
+import UIKit
 
 struct FamilySharingSettingsView: View {
     @Bindable var viewModel: HomeViewModel
     @ObservedObject private var sync = HouseholdSyncCoordinator.shared
 
     @State private var showInviteSheet = false
+    @State private var isPreparingInviteLink = false
+    @State private var showLinkCopiedToast = false
 
     private var usesSharedDatabase: Bool {
         UserDefaults.standard.bool(forKey: UserDefaultsKeys.prefersSharedDatabase)
@@ -40,9 +43,25 @@ struct FamilySharingSettingsView: View {
 
             Section {
                 Button {
+                    Task { await copyInviteLink() }
+                } label: {
+                    HStack {
+                        Label(
+                            isPreparingInviteLink ? "Preparing link…" : "Copy invite link",
+                            systemImage: "link"
+                        )
+                        Spacer()
+                        if isPreparingInviteLink {
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(!canInviteAsOwner || isPreparingInviteLink)
+
+                Button {
                     showInviteSheet = true
                 } label: {
-                    Label("Invite someone", systemImage: "person.badge.plus")
+                    Label("More sharing options…", systemImage: "person.badge.plus")
                 }
                 .disabled(!canInviteAsOwner)
 
@@ -76,6 +95,27 @@ struct FamilySharingSettingsView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
         }
+        .overlay(alignment: .bottom) {
+            if showLinkCopiedToast {
+                HStack(spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.white)
+                    Text("Invite link copied. Paste it anywhere.")
+                        .font(AppTypography.secondaryEmphasis)
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    Capsule()
+                        .fill(Color.appPink)
+                        .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 4)
+                )
+                .padding(.bottom, 32)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(duration: 0.35), value: showLinkCopiedToast)
     }
 
     private var canInviteAsOwner: Bool {
@@ -84,8 +124,31 @@ struct FamilySharingSettingsView: View {
 
     private var sharingFooter: String {
         if canInviteAsOwner {
-            return "Each person needs iCloud turned on with their own Apple ID. After they accept, you all see the same pets and calendar. Tap Invite again anytime to see who is already in. To share your PetLifeScheduler Premium subscription with them, add them to your Apple Family in iOS Settings (Family Sharing must be on for the subscription)."
+            return "Tap Copy invite link, then paste into Messages, WhatsApp, email, or anywhere else. Or tap More sharing options for AirDrop / Mail / Messages. To share your PetLifeScheduler Premium subscription with them, add them to your Apple Family in iOS Settings (Family Sharing must be on for the subscription)."
         }
         return "Each person needs iCloud on. The person who invited you can add more people from their own phone. If they're in your Apple Family, their Premium subscription covers you too."
+    }
+
+    @MainActor
+    private func copyInviteLink() async {
+        guard !isPreparingInviteLink else { return }
+        isPreparingInviteLink = true
+        defer { isPreparingInviteLink = false }
+
+        do {
+            guard let url = try await HouseholdCloudKitService.shared.prepareInviteShareURL() else {
+                sync.lastErrorMessage = "Couldn't create an invite link. Please try again in a moment."
+                return
+            }
+            UIPasteboard.general.url = url
+            HapticManager.notification(.success)
+            sync.lastErrorMessage = nil
+
+            showLinkCopiedToast = true
+            try? await Task.sleep(nanoseconds: 2_400_000_000)
+            showLinkCopiedToast = false
+        } catch {
+            sync.lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
     }
 }
