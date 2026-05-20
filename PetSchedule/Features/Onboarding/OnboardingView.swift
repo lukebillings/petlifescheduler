@@ -78,20 +78,19 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
 
         switch self {
         case .medicationCompliance:
-            if ownsMultiplePets { return "Medication reminders for every pet" }
-            return hasName ? "Medication reminders for \(trimmed)" : "Medication reminders & dose logging"
+            if ownsMultiplePets { return "Never miss a dose for any pet" }
+            return hasName ? "Never miss a dose for \(trimmed)" : "Never miss a dose"
         case .petDetailsAndProfiles:
-            if ownsMultiplePets { return "Pet profiles & documents for every pet" }
-            return hasName ? "Pet profiles & documents for \(trimmed)" : "Pet profiles & documents in one place"
+            return "Never lose a document with PetLifeScheduler"
         case .weightLogging:
-            if ownsMultiplePets { return "Weight logging for every pet" }
-            return hasName ? "Weight logging for \(trimmed)" : "Weight logging & health charts"
+            if ownsMultiplePets { return "Never lose track of your pets' weight" }
+            return hasName ? "Never lose track of \(trimmed)'s weight" : "Never lose track of weight"
         case .walksAndActivities:
-            if ownsMultiplePets { return "Walk & activity scheduling for every pet" }
-            return hasName ? "Walk & activity scheduling for \(trimmed)" : "Walk & activity scheduling"
+            if ownsMultiplePets { return "Never miss a walk or activity" }
+            return hasName ? "Never miss a walk for \(trimmed)" : "Never miss a walk"
         case .feedingAndDailyCare:
-            if ownsMultiplePets { return "Feeding logs & care reminders for every pet" }
-            return hasName ? "Feeding logs & care reminders for \(trimmed)" : "Feeding logs & daily care reminders"
+            if ownsMultiplePets { return "Never miss a meal for any pet" }
+            return hasName ? "Never miss a meal for \(trimmed)" : "Never miss a meal"
         }
     }
 
@@ -114,7 +113,7 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
         case .walksAndActivities:
             return "Schedule walks and play for \(nominative) with reminders that won't slip."
         case .feedingAndDailyCare:
-            return "Meals, water, and treats for \(nominative) on one timeline your household shares."
+            return "Log meals, mood, and more for \(nominative) on one timeline your household shares."
         }
     }
 
@@ -123,6 +122,17 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
         let all = Array(allCases)
         guard let primary else { return all }
         return [primary] + all.filter { $0 != primary }
+    }
+
+    /// Product screenshot shown in the paywall feature carousel for this interest.
+    var paywallPreviewAssetName: String {
+        switch self {
+        case .medicationCompliance: return "paywall_preview_logs"
+        case .petDetailsAndProfiles: return "paywall_preview_documents"
+        case .weightLogging: return "paywall_preview_weight"
+        case .walksAndActivities: return "paywall_preview_schedule"
+        case .feedingAndDailyCare: return "paywall_preview_schedule"
+        }
     }
 
 }
@@ -622,11 +632,6 @@ private struct Step0HouseholdPetCount: View {
                     .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
 
-                Text("We'll personalize your setup.")
-                    .font(AppTypography.secondaryLabel)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-
                 VStack(spacing: 12) {
                     householdPetCountChip(
                         title: "1",
@@ -693,12 +698,17 @@ private struct Step1AddPet: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 32) {
                 ZStack {
+                    Circle()
+                        .fill(Color(.secondarySystemFill))
+                        .frame(width: 140, height: 140)
                     Image(animalType.placeholderImage)
                         .resizable()
-                        .scaledToFill()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .padding(28)
                         .frame(width: 140, height: 140)
-                        .clipShape(Circle())
                 }
+                .id(animalType)
                 .animation(.spring(duration: 0.3), value: animalType)
                 .padding(.top, 48)
 
@@ -953,7 +963,7 @@ private struct Step4Notifications: View {
                 Text("Never miss a moment")
                     .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
-                Text("Get timely reminders for walks, meals,\nand every moment that matters.")
+                Text("Get timely reminders for walks, meals,\nand more after each meal.")
                     .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -1222,11 +1232,6 @@ private struct StepFeatureInterest: View {
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity)
-                    Text("Pick what sounds most like you — we'll tailor reminders and your setup.")
-                        .font(AppTypography.secondaryLabel)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .padding(.horizontal, 28)
@@ -1311,20 +1316,18 @@ private struct Step5Paywall: View {
     }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            PaywallContentBody(
-                headline: paywallHeadline,
-                featureInterest: featureInterest,
-                petName: pet.name,
-                ownsMultiplePets: ownsMultiplePets,
-                products: products,
-                selectedPlan: $selectedPlan,
-                purchaseState: purchaseState,
-                errorMessage: errorMessage,
-                onRestorePurchases: onRestorePurchases,
-                reservesCloseButtonInset: true
-            )
-        }
+        PaywallContentBody(
+            headline: paywallHeadline,
+            featureInterest: featureInterest,
+            petName: pet.name,
+            ownsMultiplePets: ownsMultiplePets,
+            products: products,
+            selectedPlan: $selectedPlan,
+            purchaseState: purchaseState,
+            errorMessage: errorMessage,
+            onRestorePurchases: onRestorePurchases,
+            reservesCloseButtonInset: true
+        )
     }
 }
 
@@ -1344,10 +1347,12 @@ private struct PaywallContentBody: View {
     var reservesCloseButtonInset: Bool = false
 
     var body: some View {
-        VStack(alignment: .center, spacing: 16) {
+        VStack(alignment: .center, spacing: 10) {
             Text(headline)
-                .font(AppTypography.screenTitle)
+                .font(.title2.weight(.bold))
                 .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.82)
+                .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.leading, 28)
                 .padding(.trailing, reservesCloseButtonInset ? 52 : 28)
@@ -1358,7 +1363,7 @@ private struct PaywallContentBody: View {
                 petName: petName,
                 ownsMultiplePets: ownsMultiplePets
             )
-            .padding(.horizontal, 28)
+            .padding(.horizontal, 24)
 
             Group {
                 if products.isLoading {
@@ -1384,15 +1389,17 @@ private struct PaywallContentBody: View {
                 }
             }
             .padding(.horizontal, 28)
-            .padding(.top, 8)
+            .padding(.top, 4)
 
             if let errorMessage {
                 Text(errorMessage)
-                    .font(.footnote)
+                    .font(.caption2)
                     .foregroundStyle(.red)
                     .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
                     .padding(.horizontal, 28)
-                    .padding(.top, 10)
+                    .padding(.top, 4)
                     .accessibilityLabel("Subscription error: \(errorMessage)")
             }
 
@@ -1400,17 +1407,17 @@ private struct PaywallContentBody: View {
             // last thing the user reads before tapping the CTA is a friendly reassurance, not
             // fine print. Single-line, small icon, primary text color so it doesn't blend with
             // the secondary legal copy below.
-            HStack(spacing: 6) {
+            HStack(spacing: 5) {
                 Image(systemName: "checkmark.shield.fill")
-                    .font(.footnote)
+                    .font(.caption2)
                     .foregroundStyle(Color.appPink)
                     .accessibilityHidden(true)
                 Text("Cancel anytime in Settings")
-                    .font(.footnote.weight(.medium))
+                    .font(.caption.weight(.medium))
                     .foregroundStyle(.primary)
             }
             .padding(.horizontal, 28)
-            .padding(.top, 14)
+            .padding(.top, 8)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("You can cancel anytime in Settings.")
 
@@ -1422,13 +1429,15 @@ private struct PaywallContentBody: View {
                 onRestorePurchases: onRestorePurchases
             )
             .padding(.horizontal, 28)
-            .padding(.top, 10)
+            .padding(.top, 6)
             .padding(.bottom, 0)
             .background(Color(.systemBackground))
+
+            Spacer(minLength: 0)
         }
-        .safeAreaPadding(.top, 12)
-        .padding(.top, 12)
-        .frame(maxWidth: .infinity, alignment: .top)
+        .safeAreaPadding(.top, 4)
+        .padding(.top, 4)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
     @ViewBuilder
@@ -1485,26 +1494,28 @@ private struct PaywallFeatureCarousel: View {
     private let autoAdvanceInterval: TimeInterval = 4.5
 
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 8) {
             TabView(selection: $page) {
                 ForEach(Array(interests.enumerated()), id: \.offset) { index, interest in
-                    VStack(spacing: 10) {
-                        PaywallFeatureMiniPreview(interest: interest, petName: petName)
+                    VStack(spacing: 6) {
+                        PaywallFeatureScreenshotPreview(interest: interest)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 168)
+                            .frame(height: 128)
 
                         Text(interest.paywallCarouselCaption(petName: petName, ownsMultiplePets: ownsMultiplePets))
-                            .font(AppTypography.secondaryLabel)
+                            .font(.caption)
                             .foregroundStyle(.primary)
                             .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.88)
                             .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 4)
+                            .padding(.horizontal, 2)
                     }
                     .tag(index)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 214)
+            .frame(height: 178)
 
             if interests.count > 1 {
                 PaywallCarouselPageIndicator(count: interests.count, page: page)
@@ -1520,236 +1531,18 @@ private struct PaywallFeatureCarousel: View {
     }
 }
 
-/// Stylized in-app UI snippet for each onboarding problem / feature area.
-private struct PaywallFeatureMiniPreview: View {
+/// Real in-app product screenshot for each paywall carousel page.
+private struct PaywallFeatureScreenshotPreview: View {
     let interest: OnboardingFeatureInterest
-    let petName: String
-
-    private var displayPetName: String {
-        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? "Max" : trimmed
-    }
 
     var body: some View {
-        previewCard {
-            switch interest {
-            case .medicationCompliance:
-                medicationPreview
-            case .petDetailsAndProfiles:
-                documentsPreview
-            case .weightLogging:
-                weightChartPreview
-            case .walksAndActivities:
-                walkSchedulePreview
-            case .feedingAndDailyCare:
-                feedingTimelinePreview
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func previewCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .padding(12)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Color(.separator).opacity(0.35), lineWidth: 0.5)
-            )
-    }
-
-    private var medicationPreview: some View {
-        VStack(spacing: 8) {
-            PaywallScheduleRowMock(
-                time: "8:00",
-                title: "Heartworm pill",
-                icon: "pills.fill",
-                trailing: "Due"
-            )
-            PaywallScheduleRowMock(
-                time: "6:30",
-                title: "Evening meds",
-                icon: "cross.vial.fill",
-                trailing: nil,
-                isCompleted: true
-            )
-        }
-    }
-
-    private var documentsPreview: some View {
-        VStack(spacing: 8) {
-            PaywallDocumentRowMock(title: "Vet letter", subtitle: "PDF · Added Mar 2")
-            PaywallDocumentRowMock(title: "Microchip", subtitle: "982 000 123456789")
-            HStack(spacing: 6) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.caption.weight(.semibold))
-                Text("Export profile")
-                    .font(AppTypography.compactControl)
-            }
-            .foregroundStyle(Color.appPink)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 2)
-        }
-    }
-
-    private var weightChartPreview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("\(displayPetName) — Weight")
-                    .font(AppTypography.compactControl.weight(.semibold))
-                Spacer()
-                Text("12.4 kg")
-                    .font(AppTypography.compactControl)
-                    .foregroundStyle(Color.appPink)
-            }
-            PaywallWeightChartMock()
-                .frame(height: 88)
-        }
-    }
-
-    private var walkSchedulePreview: some View {
-        VStack(spacing: 8) {
-            PaywallScheduleRowMock(time: "7:30", title: "Morning walk", icon: "figure.walk", trailing: "Today")
-            PaywallScheduleRowMock(time: "5:00", title: "Park play", icon: "tennisball.fill", trailing: nil)
-        }
-    }
-
-    private var feedingTimelinePreview: some View {
-        VStack(spacing: 8) {
-            PaywallScheduleRowMock(time: "7:00", title: "Breakfast", icon: "fork.knife", trailing: "Logged")
-            PaywallScheduleRowMock(time: "12:30", title: "Water refill", icon: "drop.fill", trailing: nil)
-            PaywallScheduleRowMock(time: "6:00", title: "Dinner", icon: "fork.knife", trailing: "Reminder")
-        }
-    }
-}
-
-private struct PaywallScheduleRowMock: View {
-    let time: String
-    let title: String
-    let icon: String
-    var trailing: String?
-    var isCompleted: Bool = false
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Circle()
-                .fill(Color.appPink.opacity(0.15))
-                .frame(width: 34, height: 34)
-                .overlay {
-                    Image(systemName: icon)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Color.appPink)
-                }
-
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(time)
-                        .font(AppTypography.compactControl.weight(.semibold))
-                        .monospacedDigit()
-                    Text(title)
-                        .font(AppTypography.compactControl)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if let trailing {
-                Text(trailing)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(isCompleted ? .secondary : Color.appPink)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(
-                        (isCompleted ? Color(.tertiarySystemFill) : Color.appPink.opacity(0.12)),
-                        in: Capsule()
-                    )
-            } else if isCompleted {
-                Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(Color.appPink)
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-}
-
-private struct PaywallDocumentRowMock: View {
-    let title: String
-    let subtitle: String
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "doc.fill")
-                .font(.body)
-                .foregroundStyle(Color.appPink)
-                .frame(width: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(AppTypography.compactControl.weight(.semibold))
-                    .lineLimit(1)
-                Text(subtitle)
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
-            Image(systemName: "chevron.right")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.tertiary)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-}
-
-private struct PaywallWeightChartMock: View {
-    var body: some View {
-        GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
-            let points: [CGPoint] = [
-                CGPoint(x: 0, y: h * 0.72),
-                CGPoint(x: w * 0.22, y: h * 0.58),
-                CGPoint(x: w * 0.45, y: h * 0.64),
-                CGPoint(x: w * 0.68, y: h * 0.42),
-                CGPoint(x: w, y: h * 0.35),
-            ]
-
-            ZStack {
-                Path { path in
-                    guard let first = points.first else { return }
-                    path.move(to: CGPoint(x: first.x, y: h))
-                    for p in points { path.addLine(to: p) }
-                    path.addLine(to: CGPoint(x: w, y: h))
-                    path.closeSubpath()
-                }
-                .fill(
-                    LinearGradient(
-                        colors: [Color.appPink.opacity(0.22), Color.appPink.opacity(0.02)],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-
-                Path { path in
-                    guard let first = points.first else { return }
-                    path.move(to: first)
-                    for p in points.dropFirst() { path.addLine(to: p) }
-                }
-                .stroke(Color.appPink, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
-
-                ForEach(Array(points.enumerated()), id: \.offset) { _, p in
-                    Circle()
-                        .fill(Color.appPink)
-                        .frame(width: 6, height: 6)
-                        .position(p)
-                }
-            }
-        }
+        Image(interest.paywallPreviewAssetName)
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .accessibilityHidden(true)
     }
 }
 
@@ -1810,9 +1603,9 @@ private struct PaywallYearlyCard: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 14)
-                .padding(.bottom, 14)
-                .padding(.top, savingsBadgeCaption != nil ? 22 : 14)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 12)
+                .padding(.top, savingsBadgeCaption != nil ? 20 : 12)
                 .background(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .fill(Color(.secondarySystemBackground))
@@ -1873,7 +1666,7 @@ private struct PaywallMonthlyCard: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(14)
+            .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color(.secondarySystemBackground))
@@ -1923,18 +1716,20 @@ private struct PaywallSubscriptionFooter: View {
     }
 
     var body: some View {
-        VStack(spacing: 14) {
-            VStack(spacing: 4) {
+        VStack(spacing: 10) {
+            VStack(spacing: 3) {
                 ForEach(Array(disclosureLines.enumerated()), id: \.offset) { _, line in
                     Text(line)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.9)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 HStack {
                     Spacer(minLength: 0)
                     restorePurchasesLink
@@ -2117,20 +1912,17 @@ struct PostOnboardingPaywallView: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VStack(spacing: 0) {
-                ScrollView(showsIndicators: false) {
-                    PaywallContentBody(
-                        headline: headline,
-                        featureInterest: featureInterest,
-                        petName: petName,
-                        ownsMultiplePets: ownsMultiplePets,
-                        products: products,
-                        selectedPlan: $selectedPlan,
-                        purchaseState: purchaseState,
-                        errorMessage: errorMessage,
-                        onRestorePurchases: { Task { await beginRestorePurchases() } }
-                    )
-                    .padding(.top, 12)
-                }
+                PaywallContentBody(
+                    headline: headline,
+                    featureInterest: featureInterest,
+                    petName: petName,
+                    ownsMultiplePets: ownsMultiplePets,
+                    products: products,
+                    selectedPlan: $selectedPlan,
+                    purchaseState: purchaseState,
+                    errorMessage: errorMessage,
+                    onRestorePurchases: { Task { await beginRestorePurchases() } }
+                )
 
                 VStack(spacing: 14) {
                     Button(action: { Task { await beginPurchase() } }) {
