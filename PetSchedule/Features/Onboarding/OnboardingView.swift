@@ -70,27 +70,14 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Feature-led paywall headline — matches the capability that solves the problem the user
-    /// picked in onboarding (not the problem wording itself).
-    func paywallHeadline(petName: String, ownsMultiplePets: Bool) -> String {
-        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let hasName = !trimmed.isEmpty && !ownsMultiplePets
-
+    /// Paywall headline — solution framing for the problem the user picked, plus “+ more!”.
+    var paywallHeadline: String {
         switch self {
-        case .medicationCompliance:
-            if ownsMultiplePets { return "Never miss a dose for any pet" }
-            return hasName ? "Never miss a dose for \(trimmed)" : "Never miss a dose"
-        case .petDetailsAndProfiles:
-            return "Never lose a document with PetLifeScheduler"
-        case .weightLogging:
-            if ownsMultiplePets { return "Never lose track of your pets' weight" }
-            return hasName ? "Never lose track of \(trimmed)'s weight" : "Never lose track of weight"
-        case .walksAndActivities:
-            if ownsMultiplePets { return "Never miss a walk or activity" }
-            return hasName ? "Never miss a walk for \(trimmed)" : "Never miss a walk"
-        case .feedingAndDailyCare:
-            if ownsMultiplePets { return "Never miss a meal for any pet" }
-            return hasName ? "Never miss a meal for \(trimmed)" : "Never miss a meal"
+        case .medicationCompliance: return "Never forget tasks & meds + more!"
+        case .petDetailsAndProfiles: return "Never lose documents & records + more!"
+        case .weightLogging: return "Never lose track of weight & health + more!"
+        case .walksAndActivities: return "Never forget walks & activities + more!"
+        case .feedingAndDailyCare: return "Never miss feeding & daily care + more!"
         }
     }
 
@@ -1294,16 +1281,16 @@ private struct Step5Paywall: View {
 
     private var paywallHeadline: String {
         if let featureInterest {
-            return featureInterest.paywallHeadline(petName: pet.name, ownsMultiplePets: ownsMultiplePets)
+            return featureInterest.paywallHeadline
         }
         let name = pet.name.trimmingCharacters(in: .whitespacesAndNewlines)
         if name.isEmpty {
-            return "Get started today!"
+            return "Get started today! + more!"
         }
         if ownsMultiplePets {
-            return "Keep \(name) and all your pets on schedule"
+            return "Keep \(name) and all your pets on schedule + more!"
         }
-        return "Keep \(name) on schedule"
+        return "Keep \(name) on schedule + more!"
     }
 
     var body: some View {
@@ -1868,16 +1855,16 @@ struct PostOnboardingPaywallView: View {
     /// fresh install with no pets yet).
     private var headline: String {
         if let featureInterest {
-            return featureInterest.paywallHeadline(petName: petName, ownsMultiplePets: ownsMultiplePets)
+            return featureInterest.paywallHeadline
         }
         let name = petName.trimmingCharacters(in: .whitespacesAndNewlines)
         if name.isEmpty {
-            return "Unlock PetLifeScheduler Premium"
+            return "Unlock PetLifeScheduler Premium + more!"
         }
         if ownsMultiplePets {
-            return "Keep \(name) and all your pets on schedule"
+            return "Keep \(name) and all your pets on schedule + more!"
         }
-        return "Keep \(name) on schedule"
+        return "Keep \(name) on schedule + more!"
     }
 
     private var selectedProduct: Product? {

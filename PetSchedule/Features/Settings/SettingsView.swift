@@ -53,6 +53,8 @@ struct SettingsView: View {
 
     @State private var showingResetConfirm = false
     @State private var showingPopulateDummyConfirm = false
+    @FocusState private var isEditingProfileName: Bool
+    @State private var profileNameWhenEditingBegan = ""
     @State private var testNotificationStatusMessage: String?
     @State private var showingTestNotificationStatus = false
     @State private var notificationPermissionDenied = false
@@ -89,6 +91,17 @@ struct SettingsView: View {
                 Section {
                     TextField("Your name", text: $userDisplayName)
                         .textContentType(.name)
+                        .focused($isEditingProfileName)
+                        .onChange(of: isEditingProfileName) { _, isFocused in
+                            if isFocused {
+                                profileNameWhenEditingBegan = userDisplayName
+                            } else {
+                                viewModel.applyUserProfileDisplayNameChange(
+                                    from: profileNameWhenEditingBegan,
+                                    to: userDisplayName
+                                )
+                            }
+                        }
                 } header: {
                     Text("Your profile")
                 } footer: {
@@ -389,6 +402,7 @@ struct SettingsView: View {
                     }
                 }
 
+                #if DEBUG
                 Section {
                     Button {
                         showingPopulateDummyConfirm = true
@@ -404,6 +418,7 @@ struct SettingsView: View {
                 } footer: {
                     Text("Loads Max (dog), Luna (cat), and Jill (fish) with schedules, logs, and history. Replaces your current pets and events.")
                 }
+                #endif
 
                 Section {
                     Button(role: .destructive) {
@@ -443,6 +458,7 @@ struct SettingsView: View {
             } message: {
                 Text("All pets and schedules will be deleted. This cannot be undone.")
             }
+            #if DEBUG
             .confirmationDialog(
                 "Load sample data?",
                 isPresented: $showingPopulateDummyConfirm,
@@ -455,6 +471,7 @@ struct SettingsView: View {
             } message: {
                 Text("Your current pets and schedule will be replaced with demo data for a dog, cat, and fish.")
             }
+            #endif
             .alert("Test notification", isPresented: $showingTestNotificationStatus, actions: {
                 Button("OK", role: .cancel) {}
             }, message: {

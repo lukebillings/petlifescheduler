@@ -403,6 +403,39 @@ final class HomeViewModel {
 
     // MARK: - Schedule actions
 
+    /// When the profile name changes in Settings, keep schedule rows in sync for created/assigned person fields.
+    func applyUserProfileDisplayNameChange(from previousName: String, to newName: String) {
+        let old = previousName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let new = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard old != new else { return }
+
+        var changed = false
+        for index in scheduleItems.indices {
+            if !old.isEmpty {
+                if scheduleItems[index].createdByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines) == old {
+                    scheduleItems[index].createdByDisplayName = new
+                    changed = true
+                }
+                if scheduleItems[index].assignedToDisplayName.trimmingCharacters(in: .whitespacesAndNewlines) == old {
+                    scheduleItems[index].assignedToDisplayName = new
+                    changed = true
+                }
+            } else if !new.isEmpty {
+                if scheduleItems[index].createdByDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    scheduleItems[index].createdByDisplayName = new
+                    changed = true
+                }
+                if scheduleItems[index].assignedToDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    scheduleItems[index].assignedToDisplayName = new
+                    changed = true
+                }
+            }
+        }
+        if changed {
+            syncWidgetSchedule()
+        }
+    }
+
     func toggleCompletion(for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         let wasCompleted = scheduleItems[index].isCompleted
