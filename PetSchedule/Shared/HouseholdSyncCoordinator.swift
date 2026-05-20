@@ -68,8 +68,24 @@ final class HouseholdSyncCoordinator: ObservableObject {
             viewModel.syncWidgetSchedule()
             lastErrorMessage = nil
         } catch {
-            lastErrorMessage = error.localizedDescription
+            lastErrorMessage = Self.friendlyMessage(for: error)
         }
+    }
+
+    /// Translates noisy CloudKit/Foundation errors into something a user can act on. The most common
+    /// preventable case is the developer forgetting to deploy the CloudKit schema to Production
+    /// after their first Development run.
+    private static func friendlyMessage(for error: Error) -> String {
+        let raw = error.localizedDescription
+        let lower = raw.lowercased()
+
+        if lower.contains("cannot create new type") && lower.contains("production schema") {
+            return "Household sharing isn't fully set up yet. Please reach out to support — we're rolling out an update on our side."
+        }
+        if lower.contains("not authenticated") || lower.contains("icloud") && lower.contains("sign in") {
+            return "Sign in to iCloud on this device to sync your household."
+        }
+        return raw
     }
 
     func clearModificationCache() {

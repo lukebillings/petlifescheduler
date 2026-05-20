@@ -84,8 +84,8 @@ struct FamilySharingSettingsView: View {
 
     private var sharingFooter: String {
         if canInviteAsOwner {
-            return "Each person needs iCloud turned on with their own Apple ID. After they accept, you all see the same pets and calendar. Tap Invite again anytime to see who is already in."
+            return "Each person needs iCloud turned on with their own Apple ID. After they accept, you all see the same pets and calendar. Tap Invite again anytime to see who is already in. To share your PetLifeScheduler Premium subscription with them, add them to your Apple Family in iOS Settings (Family Sharing must be on for the subscription)."
         }
-        return "Each person needs iCloud on. The person who invited you can add more people from their own phone."
+        return "Each person needs iCloud on. The person who invited you can add more people from their own phone. If they're in your Apple Family, their Premium subscription covers you too."
     }
 }

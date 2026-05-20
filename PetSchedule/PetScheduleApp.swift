@@ -7,8 +7,34 @@ struct PetScheduleApp: App {
     /// StoreKit entitlements refresh in `SubscriptionEntitlementStore` on launch; routing no longer
     /// blocks returning users behind a full-screen paywall.
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    /// Set by `PetScheduleAppDelegate` when the user accepts a CloudKit household invite. Drives
+    /// the alternate "joined a household" entry flow that skips onboarding & paywall (Apple Family
+    /// Sharing on the in-app subscription handles entitlement inheritance separately).
+    @AppStorage(UserDefaultsKeys.prefersSharedDatabase) private var prefersSharedDatabase = false
     /// One-shot tour of main tabs after the onboarding paywall (same session only).
     @State private var showPostPaywallFeatureTutorial = false
+
+    /// `true` when the user accepted a share invite but hasn't finished any entry flow yet. They
+    /// only need to set a display name — the owner's subscription covers premium via Family Sharing.
+    private var awaitingHouseholdJoinedWelcome: Bool {
+        prefersSharedDatabase && !hasCompletedOnboarding
+    }
+
+    @ViewBuilder
+    private var rootContent: some View {
+        if awaitingHouseholdJoinedWelcome {
+            HouseholdJoinedWelcomeView(viewModel: homeViewModel) {
+                hasCompletedOnboarding = true
+            }
+        } else if !hasCompletedOnboarding {
+            OnboardingView(viewModel: homeViewModel) {
+                showPostPaywallFeatureTutorial = true
+                hasCompletedOnboarding = true
+            }
+        } else {
+            HomeView(viewModel: homeViewModel, showFeatureTutorial: $showPostPaywallFeatureTutorial)
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -16,28 +42,10 @@ struct PetScheduleApp: App {
             if AppStoreScreenshotHarnessScene.isActive {
                 AppStoreScreenshotHarnessRoot(scene: AppStoreScreenshotHarnessScene.currentFromEnvironment())
             } else {
-                Group {
-                    if !hasCompletedOnboarding {
-                        OnboardingView(viewModel: homeViewModel) {
-                            showPostPaywallFeatureTutorial = true
-                            hasCompletedOnboarding = true
-                        }
-                    } else {
-                        HomeView(viewModel: homeViewModel, showFeatureTutorial: $showPostPaywallFeatureTutorial)
-                    }
-                }
+                rootContent
             }
             #else
-            Group {
-                if !hasCompletedOnboarding {
-                    OnboardingView(viewModel: homeViewModel) {
-                        showPostPaywallFeatureTutorial = true
-                        hasCompletedOnboarding = true
-                    }
-                } else {
-                    HomeView(viewModel: homeViewModel, showFeatureTutorial: $showPostPaywallFeatureTutorial)
-                }
-            }
+            rootContent
             #endif
         }
     }

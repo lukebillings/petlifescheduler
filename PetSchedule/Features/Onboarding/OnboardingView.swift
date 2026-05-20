@@ -1990,9 +1990,274 @@ struct PostOnboardingPaywallView: View {
     }
 }
 
+// MARK: - Household joined (invite acceptance) mini-onboarding
+
+/// Shown the first time the app opens after a user accepts a CloudKit share invite, instead of the
+/// full onboarding paywall flow. The invitee is joining someone else's household, so we skip pet
+/// setup, units, the feature interest question, and the paywall. The two steps we still need are:
+///   1. Their display name (used on Created by / Assigned to in shared task attribution).
+///   2. Notification permission (so they get reminders for the household's events).
+/// Premium entitlement comes from Apple's Family Sharing on the in-app subscription, not from
+/// anything we do here — `SubscriptionEntitlementStore` picks family-shared transactions up via
+/// `Transaction.currentEntitlements` automatically.
+struct HouseholdJoinedWelcomeView: View {
+    @Bindable var viewModel: HomeViewModel
+    let onComplete: () -> Void
+
+    @AppStorage(UserProfileStorage.displayNameKey) private var userDisplayName = ""
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @AppStorage("remindersEnabled") private var remindersEnabled = false
+
+    @State private var step = 0
+    @State private var nameDraft = ""
+    @State private var isRequestingNotificationPermission = false
+    @State private var isFinishing = false
+    @State private var notificationPermissionAlertMessage: String?
+    @State private var showNotificationPermissionAlert = false
+    @FocusState private var nameFieldFocused: Bool
+
+    private let totalSteps = 2
+
+    private var trimmedDraft: String {
+        nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var continueDisabled: Bool {
+        switch step {
+        case 0: return trimmedDraft.isEmpty || isFinishing
+        case 1: return isRequestingNotificationPermission || isFinishing
+        default: return false
+        }
+    }
+
+    private var buttonLabel: String {
+        switch step {
+        case 0: return "Continue"
+        case 1: return "Enable Notifications"
+        default: return "Continue"
+        }
+    }
+
+    private var slideTransition: AnyTransition {
+        .asymmetric(
+            insertion: .move(edge: .trailing).combined(with: .opacity),
+            removal: .move(edge: .leading).combined(with: .opacity)
+        )
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            ZStack {
+                switch step {
+                case 0:
+                    HouseholdJoinedNameStep(
+                        nameDraft: $nameDraft,
+                        nameFieldFocused: $nameFieldFocused
+                    )
+                    .transition(slideTransition)
+                case 1:
+                    Step4Notifications()
+                        .transition(slideTransition)
+                default:
+                    EmptyView()
+                }
+            }
+            .frame(maxHeight: .infinity)
+            .animation(.spring(duration: 0.4), value: step)
+
+            VStack(spacing: 14) {
+                Color.clear.frame(height: 20)
+
+                HStack(spacing: 8) {
+                    ForEach(0..<totalSteps, id: \.self) { i in
+                        Capsule()
+                            .fill(i == step ? Color.appPink : Color.gray.opacity(0.25))
+                            .frame(width: i == step ? 20 : 8, height: 8)
+                            .animation(.spring(duration: 0.3), value: step)
+                    }
+                }
+
+                Button(action: advance) {
+                    Group {
+                        if isFinishing || (step == 1 && isRequestingNotificationPermission) {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(.white)
+                        } else {
+                            Text(buttonLabel)
+                        }
+                    }
+                    .font(AppTypography.primaryLabel)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(continueDisabled ? Color.gray.opacity(0.3) : Color.appPink)
+                    )
+                    .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: continueDisabled))
+                }
+                .disabled(continueDisabled)
+            }
+            .padding(.horizontal, 28)
+            .padding(.bottom, 52)
+            .padding(.top, 8)
+        }
+        .background(Color(.systemBackground))
+        .onAppear {
+            nameDraft = userDisplayName
+            if step == 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    nameFieldFocused = true
+                }
+            }
+        }
+        .onChange(of: step) { _, newStep in
+            if newStep == 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    nameFieldFocused = true
+                }
+            } else {
+                nameFieldFocused = false
+            }
+        }
+        .alert("Notifications", isPresented: $showNotificationPermissionAlert) {
+            Button("OK", role: .cancel) {}
+            if notificationPermissionAlertMessage?.contains("Settings") == true {
+                Button("Open Settings") {
+                    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                    UIApplication.shared.open(url)
+                }
+            }
+        } message: {
+            Text(notificationPermissionAlertMessage ?? "")
+        }
+    }
+
+    private func advance() {
+        HapticManager.impact(.medium)
+        switch step {
+        case 0:
+            userDisplayName = trimmedDraft
+            withAnimation { step += 1 }
+        case 1:
+            requestNotificationPermissionThenFinish()
+        default:
+            break
+        }
+    }
+
+    /// Mirrors the main onboarding flow: ask for notification permission and only advance once the
+    /// system dialog has been dismissed, so the popup doesn't appear over the home screen.
+    private func requestNotificationPermissionThenFinish() {
+        guard !isRequestingNotificationPermission else { return }
+        isRequestingNotificationPermission = true
+        Task { @MainActor in
+            defer { isRequestingNotificationPermission = false }
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            let granted: Bool
+            switch settings.authorizationStatus {
+            case .authorized, .provisional, .ephemeral:
+                granted = true
+            case .notDetermined:
+                granted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
+            case .denied:
+                granted = false
+                notificationPermissionAlertMessage = "iOS notification permission was already denied, so Apple won't show the popup again. You can enable notifications in Settings."
+                showNotificationPermissionAlert = true
+            @unknown default:
+                granted = false
+            }
+            if settings.authorizationStatus == .notDetermined && !granted {
+                notificationPermissionAlertMessage = "Notifications are off right now. You can enable them in Settings at any time."
+                showNotificationPermissionAlert = true
+            }
+            remindersEnabled = granted
+            await finishAndComplete()
+        }
+    }
+
+    private func finishAndComplete() async {
+        isFinishing = true
+        defer { isFinishing = false }
+        // Pull the household pets/schedule first so Home lands populated.
+        await HouseholdSyncCoordinator.shared.syncNow(viewModel)
+        viewModel.syncWidgetSchedule()
+        hasCompletedOnboarding = true
+        onComplete()
+    }
+}
+
+/// Step 0 of the invitee mini-onboarding — name capture, designed to match the look of
+/// `StepYourName` while making clear they're joining an existing household.
+private struct HouseholdJoinedNameStep: View {
+    @Binding var nameDraft: String
+    var nameFieldFocused: FocusState<Bool>.Binding
+
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 28) {
+                Spacer().frame(minHeight: 56)
+
+                ZStack {
+                    Circle()
+                        .fill(Color.appPink.opacity(0.12))
+                        .frame(width: 120, height: 120)
+                    Image(systemName: "person.2.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundStyle(Color.appPink.gradient)
+                        .padding(34)
+                        .frame(width: 120, height: 120)
+                }
+
+                VStack(spacing: 10) {
+                    Text("You've joined the household!")
+                        .font(AppTypography.screenTitle)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Text("Pets and schedules will sync over iCloud. Your name appears next to tasks you log so the household knows who did what.")
+                        .font(AppTypography.secondaryLabel)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("What should we call you?")
+                        .font(AppTypography.secondaryEmphasis)
+                        .foregroundStyle(.primary)
+
+                    TextField("Your name", text: $nameDraft)
+                        .textContentType(.name)
+                        .focused(nameFieldFocused)
+                        .submitLabel(.done)
+                        .font(AppTypography.primaryLabel)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Color(.secondarySystemBackground))
+                        )
+                }
+                .padding(.top, 8)
+
+                Spacer(minLength: 120)
+            }
+            .padding(.horizontal, 28)
+        }
+    }
+}
+
 // The Xcode Canvas preview often does not connect the software keyboard; run the app in Simulator (▶) to type in text fields, or use an Interactive Live preview.
 #Preview {
     OnboardingView(viewModel: HomeViewModel()) {}
+}
+
+#Preview("Joined household welcome") {
+    HouseholdJoinedWelcomeView(viewModel: HomeViewModel()) {}
 }
 
 #Preview("Post-Onboarding Paywall") {
