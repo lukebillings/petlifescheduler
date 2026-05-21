@@ -11,7 +11,6 @@
 		11B47882BF4C76FA955FA604 /* PetPDFGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217BD314318A028856956D09 /* PetPDFGenerator.swift */; };
 		13B3F254B52D23745C8D53FF /* MeasurementSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */; };
 		173431B9CD75A007C1033DF0 /* PetDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D7C7CA23C1B382C04FEADEF /* PetDocument.swift */; };
-		B4C5D6E7F8091A2B3C4D5E6F /* PetDocument+SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* PetDocument+SampleData.swift */; };
 		1862AADE2B4859F822063446 /* Pet.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD3FD342A675248F7267C680 /* Pet.swift */; };
 		19E24556F3CD6335D9C8035A /* HomeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */; };
 		223A36163E699597848BCD3A /* ConfettiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B91838FB176EEFF031E2CD16 /* ConfettiView.swift */; };
@@ -19,63 +18,79 @@
 		2E00AC531EA5D3BC68C52653 /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 085D2996E216446E27F6CDA6 /* ScheduleView.swift */; };
 		3B7BE9095CD18A9921E2F7DD /* ScheduleItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = CED9087F17B21DC83D342723 /* ScheduleItem.swift */; };
 		4B02216A6044074925DA1D5F /* AnimalType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2109911DE712C5453FC5D026 /* AnimalType.swift */; };
+		5E1B5C7E000000000000A001 /* SubscriptionEntitlementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1B5C7E000000000000A002 /* SubscriptionEntitlementStore.swift */; };
 		627E09A7B68ABDE7369544FA /* PetScheduleApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65728BE60D7A10B782998709 /* PetScheduleApp.swift */; };
 		66067D350BD915B5E4A0CD8A /* EditEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AF10EE3C14C2123427C6898 /* EditEventSheet.swift */; };
+		6C4A2155472169018637F7C0 /* LegalPageURLs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500473BCE09190503B0385CF /* LegalPageURLs.swift */; };
 		6E04C1751D6C0A38AAA95B08 /* PetAvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */; };
 		7C6341ED2574F5ED3378E189 /* AddEventSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3327F274E84078B38862BEED /* AddEventSheet.swift */; };
-		A91C4E2B8D3F5012A7B89C01 /* AddLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B82D5F1E9C4A60318E7D2A90 /* AddLogSheet.swift */; };
 		845D0CF0CD93B673E7233654 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 004BEB5D563AD507764446BB /* Assets.xcassets */; };
 		855DDBBC929D3FF621EB9976 /* HeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */; };
 		85C6FCBBEFD03F516B9F94A4 /* AnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 870B6B2E15C92C0C03ADDEF6 /* AnalyticsView.swift */; };
 		8EFFE3E36BAC16ED3936B74B /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A5C7586D9735ADDB5C9842C /* HomeView.swift */; };
-		D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */; };
-		D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */; };
-		D72C7128A019801C00BF8732 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
-		F1A2B3C4D5E600000000AB1 /* AppTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E600000000AB0 /* AppTypography.swift */; };
-		F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */; };
-		AA11B22C3D4E5F60718293A1 /* AppStoreScreenshotHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11B22C3D4E5F60718293A0 /* AppStoreScreenshotHarness.swift */; };
-		B1E2E3F40506070809101112 /* SatisfactionCheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */; };
-		6C4A2155472169018637F7C0 /* LegalPageURLs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500473BCE09190503B0385CF /* LegalPageURLs.swift */; };
-		D0E1F203040506070809010A /* PostTutorialHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E1F203040506070809010B /* PostTutorialHints.swift */; };
-		E1E2E303040506070809020A /* PostTutorialHintPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */; };
-		C7D8E9F01234567890123457 /* ScheduleReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */; };
-		D7497F803AB294807D80630D /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */; };
-		E344CC248B2F9819D2ABAB82 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C629F5BF9352863F3F86CEF /* OnboardingView.swift */; };
-		E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C426C7BD93CA490A97C5D60E /* SettingsView.swift */; };
 		A1B8C9D01EF243561728394B /* FeatureTutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B8C9D01EF243561728394A /* FeatureTutorialOverlay.swift */; };
-		E92F4B81D406413472DFCEDF /* ScheduleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A63243C759BB8D063AF92A /* ScheduleListView.swift */; };
-		F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */; };
-		F86A00D102A14D00A2000001 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
-		F86A00D102A14D00A2000002 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
-		F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */; };
-		F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */; };
-		W1D9E8F706050403020100AA /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
-		W1D9E8F706050403020100BB /* AppTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E600000000AB0 /* AppTypography.swift */; };
+		A91C4E2B8D3F5012A7B89C01 /* AddLogSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B82D5F1E9C4A60318E7D2A90 /* AddLogSheet.swift */; };
 		A93AAA41111111111111102 /* UserProfileStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA41111111111111101 /* UserProfileStorage.swift */; };
-		5E1B5C7E000000000000A001 /* SubscriptionEntitlementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E1B5C7E000000000000A002 /* SubscriptionEntitlementStore.swift */; };
 		A93AAA42222222222222202 /* HouseholdLocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA42222222222222201 /* HouseholdLocalStore.swift */; };
 		A93AAA43333333333333302 /* HouseholdCloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA43333333333333301 /* HouseholdCloudKitService.swift */; };
 		A93AAA44444444444444402 /* HouseholdSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */; };
 		A93AAA45555555555555502 /* LoggedByPersonSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA45555555555555501 /* LoggedByPersonSection.swift */; };
-		D3T41L5H33T5TYL3F02 /* DetailEditorSheetStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3T41L5H33T5TYL3F01 /* DetailEditorSheetStyle.swift */; };
-		A93AAA46666666666666602 /* CloudSharingSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA46666666666666601 /* CloudSharingSheet.swift */; };
 		A93AAA47777777777777702 /* FamilySharingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA47777777777777701 /* FamilySharingSettingsView.swift */; };
 		A93AAA48888888888888802 /* PetScheduleAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */; };
-		P1NKW4V354R3H342DR /* PinkWaveScreenHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = P1NKW4V354R3H341DR /* PinkWaveScreenHeader.swift */; };
+		AA11B22C3D4E5F60718293A1 /* AppStoreScreenshotHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA11B22C3D4E5F60718293A0 /* AppStoreScreenshotHarness.swift */; };
+		B1E2E3F40506070809101112 /* SatisfactionCheckIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */; };
+		B4C5D6E7F8091A2B3C4D5E6F /* PetDocument+SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* PetDocument+SampleData.swift */; };
+		C7D8E9F01234567890123457 /* ScheduleReminderScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */; };
+		D0E1F203040506070809010A /* PostTutorialHints.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0E1F203040506070809010B /* PostTutorialHints.swift */; };
+		D35C4F3B5071ACBE006452EF /* HapticManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */; };
+		D3T41L5H33T5TYL3F02 /* DetailEditorSheetStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3T41L5H33T5TYL3F01 /* DetailEditorSheetStyle.swift */; };
+		D6AED2C638C3BFA58534F970 /* CalendarScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */; };
+		D72C7128A019801C00BF8732 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
+		D7497F803AB294807D80630D /* PetsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */; };
+		E1E2E303040506070809020A /* PostTutorialHintPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */; };
+		E344CC248B2F9819D2ABAB82 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C629F5BF9352863F3F86CEF /* OnboardingView.swift */; };
+		E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C426C7BD93CA490A97C5D60E /* SettingsView.swift */; };
+		E92F4B81D406413472DFCEDF /* ScheduleListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A63243C759BB8D063AF92A /* ScheduleListView.swift */; };
+		F1A2B3C4D5E600000000AB1 /* AppTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E600000000AB0 /* AppTypography.swift */; };
+		F86A00D102A14D00A2000001 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
+		F86A00D102A14D00A2000002 /* ScheduleWidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */; };
+		F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */; };
+		F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */; };
 		F86A00D102A14D00A2000005 /* PetScheduleWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */; };
+		F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */; };
+		P1NKW4V354R3H342DR /* PinkWaveScreenHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = P1NKW4V354R3H341DR /* PinkWaveScreenHeader.swift */; };
+		W1D9E8F706050403020100AA /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
+		W1D9E8F706050403020100BB /* AppTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E600000000AB0 /* AppTypography.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		F86A00D102A14D00A3000007 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5EB89DE4DC41388DEAC4BDF8 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F86A00D102A14D00A3000002;
+			remoteInfo = PetScheduleWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F86A00D102A14D00A3000006 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				F86A00D102A14D00A2000005 /* PetScheduleWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		004BEB5D563AD507764446BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppColors.swift; sourceTree = "<group>"; };
-		F1A2B3C4D5E600000000AB0 /* AppTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTypography.swift; sourceTree = "<group>"; };
-		F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPrompt.swift; sourceTree = "<group>"; };
-		AA11B22C3D4E5F60718293A0 /* AppStoreScreenshotHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotHarness.swift; sourceTree = "<group>"; };
-		B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SatisfactionCheckIn.swift; sourceTree = "<group>"; };
-		500473BCE09190503B0385CF /* LegalPageURLs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalPageURLs.swift; sourceTree = "<group>"; };
-		D0E1F203040506070809010B /* PostTutorialHints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHints.swift; sourceTree = "<group>"; };
-		E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHintPersistence.swift; sourceTree = "<group>"; };
-		C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleReminderScheduler.swift; sourceTree = "<group>"; };
 		085D2996E216446E27F6CDA6 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
 		12FC63DE029A91F798CA8AE6 /* PetDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDetailSheet.swift; sourceTree = "<group>"; };
 		1F24E1A18BC404F0F5C286B8 /* HapticManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HapticManager.swift; sourceTree = "<group>"; };
@@ -83,45 +98,52 @@
 		217BD314318A028856956D09 /* PetPDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetPDFGenerator.swift; sourceTree = "<group>"; };
 		21A63243C759BB8D063AF92A /* ScheduleListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleListView.swift; sourceTree = "<group>"; };
 		3327F274E84078B38862BEED /* AddEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEventSheet.swift; sourceTree = "<group>"; };
-		B82D5F1E9C4A60318E7D2A90 /* AddLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddLogSheet.swift; sourceTree = "<group>"; };
 		3CB85A2DD9C201E0ED62409D /* CalendarScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarScheduleView.swift; sourceTree = "<group>"; };
 		4A5C7586D9735ADDB5C9842C /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		4F444378ED5FA5D6324FEC7B /* MeasurementSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeasurementSettings.swift; sourceTree = "<group>"; };
+		500473BCE09190503B0385CF /* LegalPageURLs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LegalPageURLs.swift; sourceTree = "<group>"; };
+		5E1B5C7E000000000000A002 /* SubscriptionEntitlementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionEntitlementStore.swift; sourceTree = "<group>"; };
 		5E1CC6C596F1902520D2B0A3 /* PetAvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetAvatarView.swift; sourceTree = "<group>"; };
 		65728BE60D7A10B782998709 /* PetScheduleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleApp.swift; sourceTree = "<group>"; };
-		A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleAppDelegate.swift; sourceTree = "<group>"; };
 		6D7C7CA23C1B382C04FEADEF /* PetDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetDocument.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5C /* PetDocument+SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PetDocument+SampleData.swift"; sourceTree = "<group>"; };
 		870B6B2E15C92C0C03ADDEF6 /* AnalyticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsView.swift; sourceTree = "<group>"; };
 		8A60E88C0CDB791F6FF66EC6 /* PetsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetsView.swift; sourceTree = "<group>"; };
 		8C629F5BF9352863F3F86CEF /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		9AF10EE3C14C2123427C6898 /* EditEventSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditEventSheet.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* PetDocument+SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PetDocument+SampleData.swift"; sourceTree = "<group>"; };
+		A1B8C9D01EF243561728394A /* FeatureTutorialOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTutorialOverlay.swift; sourceTree = "<group>"; };
+		A93AAA41111111111111101 /* UserProfileStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileStorage.swift; sourceTree = "<group>"; };
+		A93AAA42222222222222201 /* HouseholdLocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdLocalStore.swift; sourceTree = "<group>"; };
+		A93AAA43333333333333301 /* HouseholdCloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdCloudKitService.swift; sourceTree = "<group>"; };
+		A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncCoordinator.swift; sourceTree = "<group>"; };
+		A93AAA45555555555555501 /* LoggedByPersonSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedByPersonSection.swift; sourceTree = "<group>"; };
+		A93AAA47777777777777701 /* FamilySharingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilySharingSettingsView.swift; sourceTree = "<group>"; };
+		A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleAppDelegate.swift; sourceTree = "<group>"; };
+		AA11B22C3D4E5F60718293A0 /* AppStoreScreenshotHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreScreenshotHarness.swift; sourceTree = "<group>"; };
 		ACC82E7F30A7B72288C6FAE3 /* HomeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeViewModel.swift; sourceTree = "<group>"; };
+		B1E2E3F40506070809101113 /* SatisfactionCheckIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SatisfactionCheckIn.swift; sourceTree = "<group>"; };
+		B82D5F1E9C4A60318E7D2A90 /* AddLogSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddLogSheet.swift; sourceTree = "<group>"; };
 		B91838FB176EEFF031E2CD16 /* ConfettiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfettiView.swift; sourceTree = "<group>"; };
 		C426C7BD93CA490A97C5D60E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C7D8E9F01234567890123456 /* ScheduleReminderScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleReminderScheduler.swift; sourceTree = "<group>"; };
 		CED9087F17B21DC83D342723 /* ScheduleItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleItem.swift; sourceTree = "<group>"; };
+		D0E1F203040506070809010B /* PostTutorialHints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHints.swift; sourceTree = "<group>"; };
+		D3T41L5H33T5TYL3F01 /* DetailEditorSheetStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailEditorSheetStyle.swift; sourceTree = "<group>"; };
 		DD3FD342A675248F7267C680 /* Pet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pet.swift; sourceTree = "<group>"; };
+		E1E2E303040506070809020B /* PostTutorialHintPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostTutorialHintPersistence.swift; sourceTree = "<group>"; };
 		E228C28C3910BD1ACD24EAD9 /* ScheduleRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleRowView.swift; sourceTree = "<group>"; };
-		A1B8C9D01EF243561728394A /* FeatureTutorialOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeatureTutorialOverlay.swift; sourceTree = "<group>"; };
 		E5AFE4CA8CEBBCFD018B7B71 /* HeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeightEntry.swift; sourceTree = "<group>"; };
 		EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightEntry.swift; sourceTree = "<group>"; };
-		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F1A2B3C4D5E600000000AB0 /* AppTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTypography.swift; sourceTree = "<group>"; };
 		F86A00D102A14D00A1000001 /* ScheduleWidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleWidgetShared.swift; sourceTree = "<group>"; };
 		F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleWidget.swift; sourceTree = "<group>"; };
 		F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayEventsWidget.swift; sourceTree = "<group>"; };
 		F86A00D102A14D00A1000005 /* PetSchedule.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetSchedule.entitlements; sourceTree = "<group>"; };
 		F86A00D102A14D00A1000006 /* PetScheduleWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PetScheduleWidget.entitlements; sourceTree = "<group>"; };
 		F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PetScheduleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		A93AAA41111111111111101 /* UserProfileStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserProfileStorage.swift; sourceTree = "<group>"; };
-		5E1B5C7E000000000000A002 /* SubscriptionEntitlementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubscriptionEntitlementStore.swift; sourceTree = "<group>"; };
-		A93AAA42222222222222201 /* HouseholdLocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdLocalStore.swift; sourceTree = "<group>"; };
-		A93AAA43333333333333301 /* HouseholdCloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdCloudKitService.swift; sourceTree = "<group>"; };
-		A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncCoordinator.swift; sourceTree = "<group>"; };
-		A93AAA45555555555555501 /* LoggedByPersonSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedByPersonSection.swift; sourceTree = "<group>"; };
-		D3T41L5H33T5TYL3F01 /* DetailEditorSheetStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailEditorSheetStyle.swift; sourceTree = "<group>"; };
-		A93AAA46666666666666601 /* CloudSharingSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSharingSheet.swift; sourceTree = "<group>"; };
+		F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPrompt.swift; sourceTree = "<group>"; };
+		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		P1NKW4V354R3H341DR /* PinkWaveScreenHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinkWaveScreenHeader.swift; sourceTree = "<group>"; };
-		A93AAA47777777777777701 /* FamilySharingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilySharingSettingsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -214,16 +236,6 @@
 			path = Shared;
 			sourceTree = "<group>";
 		};
-		F86A00D102A14D00A3000009 /* PetScheduleWidget */ = {
-			isa = PBXGroup;
-			children = (
-				F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */,
-				F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */,
-				F86A00D102A14D00A1000006 /* PetScheduleWidget.entitlements */,
-			);
-			path = PetScheduleWidget;
-			sourceTree = "<group>";
-		};
 		8540F915B73F12C9DB2CCCA7 = {
 			isa = PBXGroup;
 			children = (
@@ -261,7 +273,6 @@
 		C1809A53A5C37C66B48FAAFE /* Settings */ = {
 			isa = PBXGroup;
 			children = (
-				A93AAA46666666666666601 /* CloudSharingSheet.swift */,
 				A93AAA47777777777777701 /* FamilySharingSettingsView.swift */,
 				C426C7BD93CA490A97C5D60E /* SettingsView.swift */,
 			);
@@ -297,6 +308,16 @@
 				004BEB5D563AD507764446BB /* Assets.xcassets */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		F86A00D102A14D00A3000009 /* PetScheduleWidget */ = {
+			isa = PBXGroup;
+			children = (
+				F86A00D102A14D00A1000002 /* PetScheduleWidget.swift */,
+				F86A00D102A14D00A1000003 /* TodayEventsWidget.swift */,
+				F86A00D102A14D00A1000006 /* PetScheduleWidget.entitlements */,
+			);
+			path = PetScheduleWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -341,38 +362,6 @@
 		};
 /* End PBXNativeTarget section */
 
-/* Begin PBXContainerItemProxy section */
-		F86A00D102A14D00A3000007 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 5EB89DE4DC41388DEAC4BDF8 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F86A00D102A14D00A3000002;
-			remoteInfo = PetScheduleWidgetExtension;
-		};
-/* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		F86A00D102A14D00A3000006 /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				F86A00D102A14D00A2000005 /* PetScheduleWidgetExtension.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		F86A00D102A14D00A3000008 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F86A00D102A14D00A3000002 /* PetScheduleWidgetExtension */;
-			targetProxy = F86A00D102A14D00A3000007 /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
-
 /* Begin PBXProject section */
 		5EB89DE4DC41388DEAC4BDF8 /* Project object */ = {
 			isa = PBXProject;
@@ -411,18 +400,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		F86A00D102A14D00A3000001 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				W1D9E8F706050403020100AA /* AppColors.swift in Sources */,
-				W1D9E8F706050403020100BB /* AppTypography.swift in Sources */,
-				F86A00D102A14D00A2000002 /* ScheduleWidgetShared.swift in Sources */,
-				F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */,
-				F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		ED50AF7A1675914A8CF3A8BF /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -465,7 +442,6 @@
 				B1E2E3F40506070809101112 /* SatisfactionCheckIn.swift in Sources */,
 				6C4A2155472169018637F7C0 /* LegalPageURLs.swift in Sources */,
 				E566BE18CED408F618A3DD04 /* SettingsView.swift in Sources */,
-				A93AAA46666666666666602 /* CloudSharingSheet.swift in Sources */,
 				A93AAA47777777777777702 /* FamilySharingSettingsView.swift in Sources */,
 				A93AAA43333333333333302 /* HouseholdCloudKitService.swift in Sources */,
 				A93AAA42222222222222202 /* HouseholdLocalStore.swift in Sources */,
@@ -479,7 +455,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F86A00D102A14D00A3000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				W1D9E8F706050403020100AA /* AppColors.swift in Sources */,
+				W1D9E8F706050403020100BB /* AppTypography.swift in Sources */,
+				F86A00D102A14D00A2000002 /* ScheduleWidgetShared.swift in Sources */,
+				F86A00D102A14D00A2000003 /* PetScheduleWidget.swift in Sources */,
+				F86A00D102A14D00A2000004 /* TodayEventsWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F86A00D102A14D00A3000008 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F86A00D102A14D00A3000002 /* PetScheduleWidgetExtension */;
+			targetProxy = F86A00D102A14D00A3000007 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1AA09E554EA62C4740C7CF45 /* Debug */ = {
@@ -493,6 +489,7 @@
 				DEVELOPMENT_TEAM = 66VA8628J7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PetLifeScheduler;
+				INFOPLIST_KEY_LSApplicationQueriesSchemes = "App-Prefs prefs";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -640,6 +637,7 @@
 				DEVELOPMENT_TEAM = 66VA8628J7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = PetLifeScheduler;
+				INFOPLIST_KEY_LSApplicationQueriesSchemes = "App-Prefs prefs";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -662,7 +660,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = PetScheduleWidget/PetScheduleWidget.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.2;
 				DEVELOPMENT_TEAM = 66VA8628J7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PetScheduleWidget/Info.plist;
@@ -689,7 +687,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = PetScheduleWidget/PetScheduleWidget.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 1.2;
 				DEVELOPMENT_TEAM = 66VA8628J7;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PetScheduleWidget/Info.plist;
@@ -713,15 +711,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		F86A00D102A14D00A3000003 /* Build configuration list for PBXNativeTarget "PetScheduleWidgetExtension" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				F86A00D102A14D00A3000004 /* Debug */,
-				F86A00D102A14D00A3000005 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Debug;
-		};
 		0EDFF62B5F5CFB15C8C18BFD /* Build configuration list for PBXNativeTarget "PetSchedule" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -736,6 +725,15 @@
 			buildConfigurations = (
 				42FC6D32401AA93995C1CD52 /* Debug */,
 				476C2EB7D5914FCCD5F71989 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F86A00D102A14D00A3000003 /* Build configuration list for PBXNativeTarget "PetScheduleWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F86A00D102A14D00A3000004 /* Debug */,
+				F86A00D102A14D00A3000005 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

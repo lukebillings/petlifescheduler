@@ -5,9 +5,8 @@ struct FamilySharingSettingsView: View {
     @Bindable var viewModel: HomeViewModel
     @ObservedObject private var sync = HouseholdSyncCoordinator.shared
 
-    @State private var showInviteSheet = false
+    @State private var shareInviteURL: IdentifiableURL?
     @State private var isPreparingInviteLink = false
-    @State private var showLinkCopiedToast = false
     @State private var householdParticipants: [HouseholdShareParticipantRow] = []
     @State private var isLoadingParticipants = false
 
@@ -68,34 +67,11 @@ struct FamilySharingSettingsView: View {
         .navigationTitle("Share with family")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.visible, for: .navigationBar)
-        .sheet(isPresented: $showInviteSheet, onDismiss: {
+        .sheet(item: $shareInviteURL, onDismiss: {
             Task { await reloadParticipants() }
-        }) {
-            CloudSharingSheet(isPresented: $showInviteSheet, container: HouseholdCloudKitService.shared.container)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
+        }) { item in
+            ActivityShareSheet(activityItems: [item.url])
         }
-        .overlay(alignment: .bottom) {
-            if showLinkCopiedToast {
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.white)
-                    Text("Link copied — paste it in Messages or WhatsApp.")
-                        .font(AppTypography.secondaryEmphasis)
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(
-                    Capsule()
-                        .fill(Color.appPink)
-                        .shadow(color: .black.opacity(0.18), radius: 12, x: 0, y: 4)
-                )
-                .padding(.bottom, 32)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-        }
-        .animation(.spring(duration: 0.35), value: showLinkCopiedToast)
         .task {
             await reloadParticipants()
         }
@@ -115,7 +91,7 @@ struct FamilySharingSettingsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 householdInstructionStep(1, "Open **Settings** on your iPhone.")
                 householdInstructionStep(2, "Tap your **name** at the top.")
-                householdInstructionStep(3, "Tap **Family** → **Add Member**.")
+                householdInstructionStep(3, "Tap **Family** → **Invite Others**.")
                 householdInstructionStep(4, "Invite your partner or family member. When they join, they can use **Premium for free** in PetLifeScheduler.")
             }
             .padding(.vertical, 4)
@@ -137,34 +113,27 @@ struct FamilySharingSettingsView: View {
                 .foregroundStyle(.secondary)
 
             Button {
-                Task { await copyInviteLink() }
+                Task { await shareInviteLink() }
             } label: {
-                HStack {
-                    Spacer()
+                Group {
                     if isPreparingInviteLink {
                         ProgressView()
                             .tint(.white)
                     } else {
-                        Label("Share pets & schedule", systemImage: "link")
+                        Text("Share pets & schedule")
                             .font(.headline)
                     }
-                    Spacer()
                 }
+                .frame(maxWidth: .infinity, alignment: .center)
             }
             .buttonStyle(.borderedProminent)
             .tint(Color.appPink)
             .disabled(isPreparingInviteLink)
             .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-
-            Button {
-                showInviteSheet = true
-            } label: {
-                Label("Send another way (AirDrop, Mail…)", systemImage: "square.and.arrow.up")
-            }
         } header: {
             Label("Step 2 — Same pets & schedule", systemImage: "2.circle.fill")
         } footer: {
-            Text("Copy the link and paste it in Messages, WhatsApp, or email. They open it, accept the invite, then download or open PetLifeScheduler.")
+            Text("Send the link in Messages, Mail, AirDrop, or any app you like. They tap it, accept the invite, then download or open PetLifeScheduler.")
         }
 
         householdMembersSection
@@ -254,33 +223,49 @@ struct FamilySharingSettingsView: View {
     }
 
     private func openSystemSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        guard let url = URL(string: "App-Prefs:") else { return }
         UIApplication.shared.open(url)
     }
 
     @MainActor
-    private func copyInviteLink() async {
+    private func preparedInviteURL() async -> URL? {
+        do {
+            guard let url = try await HouseholdCloudKitService.shared.prepareInviteShareURL() else {
+                sync.lastErrorMessage = "Couldn't create a link. Please try again in a moment."
+                return nil
+            }
+            sync.lastErrorMessage = nil
+            return url
+        } catch {
+            sync.lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            return nil
+        }
+    }
+
+    @MainActor
+    private func shareInviteLink() async {
         guard !isPreparingInviteLink else { return }
         isPreparingInviteLink = true
         defer { isPreparingInviteLink = false }
 
-        do {
-            guard let url = try await HouseholdCloudKitService.shared.prepareInviteShareURL() else {
-                sync.lastErrorMessage = "Couldn't create a link. Please try again in a moment."
-                return
-            }
-            UIPasteboard.general.url = url
-            HapticManager.notification(.success)
-            sync.lastErrorMessage = nil
-
-            showLinkCopiedToast = true
-            try? await Task.sleep(nanoseconds: 2_400_000_000)
-            showLinkCopiedToast = false
-            await reloadParticipants()
-        } catch {
-            sync.lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-        }
+        guard let url = await preparedInviteURL() else { return }
+        shareInviteURL = IdentifiableURL(url: url)
     }
+}
+
+private struct IdentifiableURL: Identifiable {
+    let id = UUID()
+    let url: URL
+}
+
+private struct ActivityShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 @ViewBuilder

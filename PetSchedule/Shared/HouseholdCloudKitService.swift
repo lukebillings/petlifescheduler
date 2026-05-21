@@ -395,7 +395,7 @@ final class HouseholdCloudKitService {
 
     /// Returns the shareable iCloud URL for the household, creating the share if needed. Only
     /// owners can run this — participants don't own the share and can't generate invite links.
-    /// Used by the "Copy invite link" shortcut to skip Apple's full share sheet.
+    /// Used when sharing the household invite via the system share sheet.
     func prepareInviteShareURL() async throws -> URL? {
         guard await accountAvailable() else { throw HouseholdCloudError.iCloudUnavailable }
         let privateDB = container.privateCloudDatabase
