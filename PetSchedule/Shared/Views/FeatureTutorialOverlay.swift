@@ -29,7 +29,7 @@ enum FeatureTutorialStep: Int, CaseIterable, Hashable {
         case .settings:
             return "Turn on reminders, choose units and time format, and tweak how the app feels."
         case .inviteOthers:
-            return "Open Share with family in Settings: add them to your Apple Family for free Premium, then tap Share pets & schedule to send the link."
+            return "Open Share with family in Settings: add them to your Apple Family for free Premium, ask them to install the app, then tap Share pets & schedule to send the link."
         }
     }
 

@@ -108,6 +108,20 @@ struct SettingsView: View {
                     Text("Same name you chose when you joined PetLifeScheduler. You can change it anytime; it appears on logs so others know who did each task.")
                 }
 
+                Section {
+                    NavigationLink {
+                        FamilySharingSettingsView(viewModel: viewModel)
+                    } label: {
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "person.3.fill")
+                            Text("Share with family")
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                } header: {
+                    Text("Sharing")
+                }
+
                 Section("Notifications") {
                     Toggle(isOn: $remindersEnabled.animation()) {
                         HStack(spacing: 12) {
@@ -271,22 +285,6 @@ struct SettingsView: View {
                     Text("Feedback")
                 } footer: {
                     Text("Say how things are going, get focused tips for Schedule, Pets, Analytics, or Settings—or send a feature idea by email.")
-                }
-
-                Section {
-                    NavigationLink {
-                        FamilySharingSettingsView(viewModel: viewModel)
-                    } label: {
-                        HStack(spacing: 12) {
-                            SettingsTintedSymbol(systemName: "person.3.fill")
-                            Text("Share with family")
-                                .foregroundStyle(.primary)
-                        }
-                    }
-                } header: {
-                    Text("Sharing")
-                } footer: {
-                    Text("Step 1: add them to your Apple Family for free Premium. Step 2: share your pets & schedule link.")
                 }
 
                 Section {

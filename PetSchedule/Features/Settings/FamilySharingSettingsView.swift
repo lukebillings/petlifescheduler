@@ -82,17 +82,17 @@ struct FamilySharingSettingsView: View {
     @ViewBuilder
     private var ownerInstructionsContent: some View {
         Section {
-            Text("Share Premium and your pets with the people you live with. Do **Step 1** first, then **Step 2**.")
+            Text("Share Premium and your pets with the people you live with. Do **Step 1**, then **Step 2**, then **Step 3**.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
 
         Section {
             VStack(alignment: .leading, spacing: 10) {
-                householdInstructionStep(1, "Open **Settings** on your iPhone.")
-                householdInstructionStep(2, "Tap your **name** at the top.")
-                householdInstructionStep(3, "Tap **Family** → **Invite Others**.")
-                householdInstructionStep(4, "Invite your partner or family member. When they join, they can use **Premium for free** in PetLifeScheduler.")
+                householdInstructionStep(1, "On **your** iPhone: open **Settings** → your **name** → **Family** → **Invite Others**.")
+                householdInstructionStep(2, "Invite your partner or family member.")
+                householdInstructionStep(3, "On **their** iPhone: open **Settings** → their **name** → **Family** and tap **Accept** on your invitation.")
+                householdInstructionStep(4, "After they've accepted, they can use **Premium for free** in PetLifeScheduler.")
             }
             .padding(.vertical, 4)
 
@@ -104,14 +104,22 @@ struct FamilySharingSettingsView: View {
         } header: {
             Label("Step 1 — Free Premium", systemImage: "1.circle.fill")
         } footer: {
-            Text("Apple Family Sharing is set up in the Settings app. PetLifeScheduler can't show your Family list here — check Settings → your name → Family to see who's added.")
+            Text("Apple Family Sharing is set up in the Settings app — you invite from your phone; they must accept on theirs. PetLifeScheduler can't show your Family list here; check Settings → your name → Family to see who's joined.")
         }
 
         Section {
-            Text("Send them a link so you both see the same pets, schedule, and logs. They must tap the link and accept on their phone (same Apple ID they use for iCloud).")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 10) {
+                householdInstructionStep(1, "Ask them to install **PetLifeScheduler** from the App Store on their iPhone **before** they tap your link.")
+                householdInstructionStep(2, "They should be signed in to **iCloud** on that phone (Settings → their name).")
+            }
+            .padding(.vertical, 4)
+        } header: {
+            Label("Step 2 — Download the app", systemImage: "2.circle.fill")
+        } footer: {
+            Text("If they open the invite link before installing, they'll need to install the app and tap the link again to accept.")
+        }
 
+        Section {
             Button {
                 Task { await shareInviteLink() }
             } label: {
@@ -131,9 +139,9 @@ struct FamilySharingSettingsView: View {
             .disabled(isPreparingInviteLink)
             .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
         } header: {
-            Label("Step 2 — Same pets & schedule", systemImage: "2.circle.fill")
+            Label("Step 3 — Same pets & schedule", systemImage: "3.circle.fill")
         } footer: {
-            Text("Send the link in Messages, Mail, AirDrop, or any app you like. They tap it, accept the invite, then download or open PetLifeScheduler.")
+            Text("Send the link in Messages, Mail, AirDrop, or any app you like. After they install the app, they tap the link and accept the invite to sync pets, schedule, and logs.")
         }
 
         householdMembersSection
@@ -186,7 +194,7 @@ struct FamilySharingSettingsView: View {
                 }
             } else if householdParticipants.isEmpty {
                 Text(canInviteAsOwner
-                     ? "No one has joined your shared pets yet. After you send the Step 2 link and they accept, they'll appear here."
+                     ? "No one has joined your shared pets yet. After you send the Step 3 link and they accept, they'll appear here."
                      : "Ask the person who invited you to manage invites from their phone.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
