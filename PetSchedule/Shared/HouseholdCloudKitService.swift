@@ -192,6 +192,8 @@ final class HouseholdCloudKitService {
     private let payloadField = "payload"
     private let photoField = "photo"
     private let attachmentField = "attachment"
+    /// CloudKit rejects empty record types for production schema deploy; root must have at least one field.
+    private let householdMarkerField = "householdMarker"
 
     enum RecordType {
         static let root = "PetScheduleHouseholdRoot"
@@ -203,9 +205,14 @@ final class HouseholdCloudKitService {
         static let zoneName = "PetScheduleHouseholdZone"
         static let rootName = "household-root"
         static let shareRecordNameKey = "petschedule.shareRecordName"
+        static let householdMarkerValue = "v1"
     }
 
     private init() {}
+
+    private func applyHouseholdMarker(to root: CKRecord) {
+        root[householdMarkerField] = Constants.householdMarkerValue as CKRecordValue
+    }
 
     func accountAvailable() async -> Bool {
         let status = (try? await container.accountStatus()) ?? .couldNotDetermine
@@ -238,12 +245,18 @@ final class HouseholdCloudKitService {
     func ensureRoot(database: CKDatabase, zoneID: CKRecordZone.ID) async throws -> CKRecord {
         let rid = CKRecord.ID(recordName: Constants.rootName, zoneID: zoneID)
         do {
-            return try await database.record(for: rid)
+            let root = try await database.record(for: rid)
+            if database.databaseScope == .private, root[householdMarkerField] == nil {
+                applyHouseholdMarker(to: root)
+                return try await database.save(root)
+            }
+            return root
         } catch let error as CKError where error.code == .unknownItem {
             if database.databaseScope == .shared {
                 throw HouseholdCloudError.missingPayload
             }
             let root = CKRecord(recordType: RecordType.root, recordID: rid)
+            applyHouseholdMarker(to: root)
             return try await database.save(root)
         }
     }
