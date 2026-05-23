@@ -374,7 +374,15 @@ final class HouseholdCloudKitService {
             let sid = CKRecord.ID(recordName: existingName, zoneID: zoneID)
             do {
                 let existing = try await database.record(for: sid)
-                if let share = existing as? CKShare {
+                if var share = existing as? CKShare {
+                    if share.publicPermission != .readWrite {
+                        share.publicPermission = .readWrite
+                        let saved = try await database.save(share)
+                        guard let updated = saved as? CKShare else {
+                            throw HouseholdCloudError.decodeFailed
+                        }
+                        share = updated
+                    }
                     return share
                 }
                 // Stale name pointed at a non-share record; avoid handing a bad object to UICloudSharingController.
@@ -386,7 +394,7 @@ final class HouseholdCloudKitService {
 
         let share = CKShare(rootRecord: root)
         share[CKShare.SystemFieldKey.title] = "PetLifeScheduler household" as CKRecordValue
-        share.publicPermission = .none
+        share.publicPermission = .readWrite
 
         // CloudKit requires the share and its root to be saved together the first time; saving only the share can fail or destabilize on device.
         let (saveResults, _) = try await database.modifyRecords(saving: [root, share], deleting: [])
