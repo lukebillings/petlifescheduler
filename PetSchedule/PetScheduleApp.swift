@@ -38,15 +38,34 @@ struct PetScheduleApp: App {
 
     var body: some Scene {
         WindowGroup {
-            #if targetEnvironment(simulator)
-            if AppStoreScreenshotHarnessScene.isActive {
-                AppStoreScreenshotHarnessRoot(scene: AppStoreScreenshotHarnessScene.currentFromEnvironment())
-            } else {
-                rootContent
-            }
-            #else
+            cloudShareAwareRoot
+        }
+    }
+
+    @ViewBuilder
+    private var cloudShareAwareRoot: some View {
+        #if targetEnvironment(simulator)
+        if AppStoreScreenshotHarnessScene.isActive {
+            AppStoreScreenshotHarnessRoot(scene: AppStoreScreenshotHarnessScene.currentFromEnvironment())
+        } else {
             rootContent
-            #endif
+                .cloudShareLinkHandlers()
+        }
+        #else
+        rootContent
+            .cloudShareLinkHandlers()
+        #endif
+    }
+}
+
+private extension View {
+    /// Handles CloudKit household invite URLs when the system sheet fails (common on TestFlight).
+    func cloudShareLinkHandlers() -> some View {
+        onOpenURL { url in
+            guard HouseholdCloudKitService.isLikelyCloudKitShareURL(url) else { return }
+            Task {
+                try? await HouseholdCloudKitService.shared.acceptIncomingShare(url: url)
+            }
         }
     }
 }

@@ -9,6 +9,8 @@ struct FamilySharingSettingsView: View {
     @State private var isPreparingInviteLink = false
     @State private var householdParticipants: [HouseholdShareParticipantRow] = []
     @State private var isLoadingParticipants = false
+    @State private var pastedInviteURL = ""
+    @State private var isAcceptingInvite = false
 
     private var usesSharedDatabase: Bool {
         UserDefaults.standard.bool(forKey: UserDefaultsKeys.prefersSharedDatabase)
@@ -49,6 +51,10 @@ struct FamilySharingSettingsView: View {
                 } label: {
                     Label("Update now", systemImage: "arrow.triangle.2.circlepath")
                 }
+            }
+
+            if !usesSharedDatabase {
+                householdInvitePasteSection
             }
 
             if usesSharedDatabase {
@@ -145,6 +151,44 @@ struct FamilySharingSettingsView: View {
         }
 
         householdMembersSection
+    }
+
+    // MARK: - Accept invite link (TestFlight / paste fallback)
+
+    @ViewBuilder
+    private var householdInvitePasteSection: some View {
+        Section {
+            TextField("Paste invite link", text: $pastedInviteURL, axis: .vertical)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+                .lineLimit(3 ... 6)
+
+            Button {
+                Task { await acceptPastedInvite() }
+            } label: {
+                Group {
+                    if isAcceptingInvite {
+                        ProgressView()
+                    } else {
+                        Text("Accept household invite")
+                            .font(.headline)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Color.appPink)
+            .disabled(
+                pastedInviteURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    || isAcceptingInvite
+            )
+            .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+        } header: {
+            Text("Received an invite?")
+        } footer: {
+            Text("If **Open in PetLifeScheduler** shows an App Store error, copy the link from Messages, paste it above, then tap Accept.")
+        }
     }
 
     // MARK: - Participant (joined someone else's household)
@@ -258,6 +302,30 @@ struct FamilySharingSettingsView: View {
 
         guard let url = await preparedInviteURL() else { return }
         shareInviteURL = IdentifiableURL(url: url)
+    }
+
+    @MainActor
+    private func acceptPastedInvite() async {
+        let trimmed = pastedInviteURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https"
+        else {
+            sync.lastErrorMessage = "That doesn’t look like a valid invite link."
+            return
+        }
+
+        isAcceptingInvite = true
+        defer { isAcceptingInvite = false }
+
+        do {
+            try await HouseholdCloudKitService.shared.acceptIncomingShare(url: url)
+            sync.lastErrorMessage = nil
+            pastedInviteURL = ""
+            await sync.syncNow(viewModel)
+        } catch {
+            sync.lastErrorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
     }
 }
 

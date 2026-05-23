@@ -248,7 +248,7 @@ final class HouseholdCloudKitService {
             let root = try await database.record(for: rid)
             if database.databaseScope == .private, root[householdMarkerField] == nil {
                 applyHouseholdMarker(to: root)
-                return try await database.save(root)
+                return try await saveRecordResolvingConflicts(root, database: database)
             }
             return root
         } catch let error as CKError where error.code == .unknownItem {
@@ -257,16 +257,61 @@ final class HouseholdCloudKitService {
             }
             let root = CKRecord(recordType: RecordType.root, recordID: rid)
             applyHouseholdMarker(to: root)
-            return try await database.save(root)
+            return try await saveRecordResolvingConflicts(root, database: database)
+        }
+    }
+
+    /// Loads all records in a zone without CKQuery (Production requires query indexes for queries).
+    private func fetchRecordsInZone(
+        database: CKDatabase,
+        zoneID: CKRecordZone.ID,
+        recordTypes: Set<String>
+    ) async throws -> [CKRecord] {
+        try await withCheckedThrowingContinuation { continuation in
+            var collected: [CKRecord] = []
+            let configuration = CKFetchRecordZoneChangesOperation.ZoneConfiguration()
+            let operation = CKFetchRecordZoneChangesOperation(
+                recordZoneIDs: [zoneID],
+                configurationsByRecordZoneID: [zoneID: configuration]
+            )
+            operation.recordWasChangedBlock = { _, result in
+                guard case .success(let record) = result, recordTypes.contains(record.recordType) else { return }
+                collected.append(record)
+            }
+            operation.fetchRecordZoneChangesResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume(returning: collected)
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            database.add(operation)
+        }
+    }
+
+    private func saveRecordResolvingConflicts(_ record: CKRecord, database: CKDatabase) async throws -> CKRecord {
+        do {
+            return try await database.save(record)
+        } catch let error as CKError where error.code == .serverRecordChanged {
+            guard let server = error.userInfo[CKRecordChangedErrorServerRecordKey] as? CKRecord else {
+                throw error
+            }
+            for key in record.allKeys() {
+                server[key] = record[key]
+            }
+            return try await database.save(server)
         }
     }
 
     func fetchAllPets(database: CKDatabase, zoneID: CKRecordZone.ID) async throws -> [(pet: Pet, modified: Date)] {
-        let query = CKQuery(recordType: RecordType.pet, predicate: NSPredicate(value: true))
-        let result = try await database.records(matching: query, inZoneWith: zoneID)
+        let records = try await fetchRecordsInZone(
+            database: database,
+            zoneID: zoneID,
+            recordTypes: [RecordType.pet]
+        )
         var out: [(Pet, Date)] = []
-        for (_, match) in result.matchResults {
-            guard case .success(let record) = match else { continue }
+        for record in records {
             guard let pet = decodePet(record: record) else { continue }
             let mod = record.modificationDate ?? record.creationDate ?? .distantPast
             out.append((pet, mod))
@@ -275,11 +320,13 @@ final class HouseholdCloudKitService {
     }
 
     func fetchAllSchedules(database: CKDatabase, zoneID: CKRecordZone.ID) async throws -> [(payload: ScheduleItemSyncPayload, attachment: Data?, modified: Date)] {
-        let query = CKQuery(recordType: RecordType.schedule, predicate: NSPredicate(value: true))
-        let result = try await database.records(matching: query, inZoneWith: zoneID)
+        let records = try await fetchRecordsInZone(
+            database: database,
+            zoneID: zoneID,
+            recordTypes: [RecordType.schedule]
+        )
         var out: [(ScheduleItemSyncPayload, Data?, Date)] = []
-        for (_, match) in result.matchResults {
-            guard case .success(let record) = match else { continue }
+        for record in records {
             guard let asset = record[self.payloadField] as? CKAsset,
                   let url = asset.fileURL,
                   let data = try? Data(contentsOf: url),
@@ -323,7 +370,7 @@ final class HouseholdCloudKitService {
             record[self.photoField] = nil
         }
 
-        return try await database.save(record)
+        return try await saveRecordResolvingConflicts(record, database: database)
     }
 
     func upsertScheduleItem(_ item: ScheduleItem, database: CKDatabase, zoneID: CKRecordZone.ID, rootRecordID: CKRecord.ID) async throws -> CKRecord {
@@ -350,7 +397,7 @@ final class HouseholdCloudKitService {
             record[self.attachmentField] = nil
         }
 
-        return try await database.save(record)
+        return try await saveRecordResolvingConflicts(record, database: database)
     }
 
     func deletePetRecord(petId: UUID, database: CKDatabase, zoneID: CKRecordZone.ID) async throws {
@@ -377,7 +424,7 @@ final class HouseholdCloudKitService {
                 if var share = existing as? CKShare {
                     if share.publicPermission != .readWrite {
                         share.publicPermission = .readWrite
-                        let saved = try await database.save(share)
+                        let saved = try await saveRecordResolvingConflicts(share, database: database)
                         guard let updated = saved as? CKShare else {
                             throw HouseholdCloudError.decodeFailed
                         }
@@ -392,12 +439,16 @@ final class HouseholdCloudKitService {
             }
         }
 
-        let share = CKShare(rootRecord: root)
+        let freshRoot = try await database.record(for: root.recordID)
+        if freshRoot[householdMarkerField] == nil {
+            applyHouseholdMarker(to: freshRoot)
+        }
+        let share = CKShare(rootRecord: freshRoot)
         share[CKShare.SystemFieldKey.title] = "PetLifeScheduler household" as CKRecordValue
         share.publicPermission = .readWrite
 
         // CloudKit requires the share and its root to be saved together the first time; saving only the share can fail or destabilize on device.
-        let (saveResults, _) = try await database.modifyRecords(saving: [root, share], deleting: [])
+        let (saveResults, _) = try await database.modifyRecords(saving: [freshRoot, share], deleting: [])
         var savedShare: CKShare?
         for (_, result) in saveResults {
             switch result {
@@ -412,6 +463,56 @@ final class HouseholdCloudKitService {
         }
         UserDefaults.standard.set(ckShare.recordID.recordName, forKey: Constants.shareRecordNameKey)
         return ckShare
+    }
+
+    /// Accepts a household share delivered by the system or pasted from an invite link.
+    func acceptIncomingShare(metadata: CKShare.Metadata) async throws {
+        guard await accountAvailable() else { throw HouseholdCloudError.iCloudUnavailable }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let op = CKAcceptSharesOperation(shareMetadatas: [metadata])
+            op.acceptSharesResultBlock = { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        UserDefaults.standard.set(true, forKey: UserDefaultsKeys.prefersSharedDatabase)
+                        NotificationCenter.default.post(name: .householdCloudShareAccepted, object: nil)
+                        continuation.resume()
+                    case .failure(let error):
+                        continuation.resume(throwing: error)
+                    }
+                }
+            }
+            container.add(op)
+        }
+    }
+
+    /// Fetches share metadata for an invite URL, then accepts the share (works when the system sheet fails on TestFlight).
+    func acceptIncomingShare(url: URL) async throws {
+        guard await accountAvailable() else { throw HouseholdCloudError.iCloudUnavailable }
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let fetchOp = CKFetchShareMetadataOperation(shareURLs: [url])
+            fetchOp.perShareMetadataResultBlock = { _, result in
+                switch result {
+                case .success(let metadata):
+                    Task {
+                        do {
+                            try await self.acceptIncomingShare(metadata: metadata)
+                            continuation.resume()
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            container.add(fetchOp)
+        }
+    }
+
+    static func isLikelyCloudKitShareURL(_ url: URL) -> Bool {
+        let host = url.host?.lowercased() ?? ""
+        return host.contains("icloud.com") || host.contains("apple.com")
     }
 
     /// Returns the shareable iCloud URL for the household, creating the share if needed. Only
@@ -459,25 +560,31 @@ final class HouseholdCloudKitService {
     }
 
     private static func participantRows(from share: CKShare) -> [HouseholdShareParticipantRow] {
-        share.participants.compactMap { participant in
-            guard participant.role != .owner else { return nil }
-            let name = displayName(for: participant)
-            let status: String
-            switch participant.acceptanceStatus {
-            case .accepted:
-                status = "Joined"
-            case .pending:
-                status = "Waiting to accept"
-            case .unknown:
-                status = "Invite sent"
-            @unknown default:
-                status = "Invite sent"
+        share.participants
+            .filter { $0.role != .owner }
+            .map { participant in
+                let name = displayName(for: participant)
+                let status = participantStatusLabel(participant.acceptanceStatus)
+                return HouseholdShareParticipantRow(
+                    id: participant.userIdentity.lookupInfo?.userRecordID?.recordName ?? name,
+                    displayName: name,
+                    status: status
+                )
             }
-            return HouseholdShareParticipantRow(
-                id: participant.userIdentity.lookupInfo?.userRecordID?.recordName ?? name,
-                displayName: name,
-                status: status
-            )
+    }
+
+    private static func participantStatusLabel(_ acceptanceStatus: CKShare.ParticipantAcceptanceStatus) -> String {
+        switch acceptanceStatus {
+        case .accepted:
+            return "Joined"
+        case .pending:
+            return "Waiting to accept"
+        case .unknown:
+            return "Invite sent"
+        case .removed:
+            return "Removed"
+        @unknown default:
+            return "Invite sent"
         }
     }
 

@@ -85,6 +85,12 @@ final class HouseholdSyncCoordinator: ObservableObject {
         if lower.contains("not authenticated") || lower.contains("icloud") && lower.contains("sign in") {
             return "Sign in to iCloud on this device to sync your household."
         }
+        if lower.contains("not marked indexable") {
+            return "Household sync needs an app update. Install the latest TestFlight build, then tap Update now."
+        }
+        if lower.contains("oplock") {
+            return "Sync conflict with iCloud. Tap Update now to retry."
+        }
         return raw
     }
 
