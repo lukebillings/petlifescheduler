@@ -54,7 +54,9 @@ struct HomeView: View {
     var body: some View {
         mainTabView
             .tint(.appPink)
+            .householdSyncToast()
             .onAppear {
+                HouseholdSyncCoordinator.shared.bind(viewModel: viewModel)
                 viewModel.syncWidgetSchedule()
                 consumeForegroundActivationIfNeeded()
                 scheduleSatisfactionCheckInIfEligible()
@@ -63,19 +65,22 @@ struct HomeView: View {
                 Task { await HouseholdSyncCoordinator.shared.syncNow(viewModel) }
             }
             .task {
+                HouseholdSyncCoordinator.shared.registerForRemoteNotificationsIfNeeded()
+                HouseholdSyncCoordinator.shared.startAutomaticPolling(with: viewModel)
                 await HouseholdSyncCoordinator.shared.syncNow(viewModel)
             }
             .onChange(of: scenePhase) { _, phase in
                 if phase == .background {
                     countedActivationThisSlice = false
-                    viewModel.syncWidgetSchedule()
+                    viewModel.syncWidgetSchedule(scheduleCloudSync: false)
                 }
                 if phase == .inactive {
-                    viewModel.syncWidgetSchedule()
+                    viewModel.syncWidgetSchedule(scheduleCloudSync: false)
                 }
                 if phase == .active {
                     consumeForegroundActivationIfNeeded()
                     scheduleSatisfactionCheckInIfEligible()
+                    Task { await HouseholdSyncCoordinator.shared.syncNow(viewModel) }
                 }
             }
             .onChange(of: satisfactionPresentation) { _, newValue in

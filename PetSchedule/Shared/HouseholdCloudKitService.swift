@@ -206,6 +206,7 @@ final class HouseholdCloudKitService {
         static let rootName = "household-root"
         static let shareRecordNameKey = "petschedule.shareRecordName"
         static let householdMarkerValue = "v1"
+        static let databaseSubscriptionPrefix = "petschedule.household.db."
     }
 
     private init() {}
@@ -217,6 +218,26 @@ final class HouseholdCloudKitService {
     func accountAvailable() async -> Bool {
         let status = (try? await container.accountStatus()) ?? .couldNotDetermine
         return status == .available
+    }
+
+    /// Silent CloudKit pushes so other household members' edits sync without tapping Update now.
+    func ensureDatabaseSubscription(database: CKDatabase) async {
+        let subscriptionID = Constants.databaseSubscriptionPrefix + String(database.databaseScope.rawValue)
+        do {
+            _ = try await database.subscription(for: subscriptionID)
+        } catch let error as CKError where error.code == .unknownItem {
+            let subscription = CKDatabaseSubscription(subscriptionID: subscriptionID)
+            let info = CKSubscription.NotificationInfo()
+            info.shouldSendContentAvailable = true
+            subscription.notificationInfo = info
+            do {
+                _ = try await database.modifySubscriptions(saving: [subscription], deleting: [])
+            } catch {
+                // Subscription may already exist from a race; ignore duplicate errors.
+            }
+        } catch {
+            // Non-fatal — foreground sync still applies remote changes.
+        }
     }
 
     /// Shared DB first (participant); otherwise private DB zone for owner/solo.

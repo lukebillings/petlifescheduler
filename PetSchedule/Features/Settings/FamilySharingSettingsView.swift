@@ -32,7 +32,7 @@ struct FamilySharingSettingsView: View {
                 Section {
                     HStack {
                         ProgressView()
-                        Text("Updating household…")
+                        Text("Syncing household…")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -43,13 +43,11 @@ struct FamilySharingSettingsView: View {
                         .font(AppTypography.supportingText)
                         .foregroundStyle(.red)
                 }
-            }
-
-            Section {
-                Button {
-                    Task { await sync.syncNow(viewModel) }
-                } label: {
-                    Label("Update now", systemImage: "arrow.triangle.2.circlepath")
+            } else if usesSharedDatabase || canInviteAsOwner {
+                Section {
+                    Text("Pets and schedules sync automatically. You'll see a pink notice when your changes are saved or when someone else updates the household.")
+                        .font(AppTypography.supportingText)
+                        .foregroundStyle(.secondary)
                 }
             }
 

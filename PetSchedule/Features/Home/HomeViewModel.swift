@@ -303,7 +303,7 @@ final class HomeViewModel {
             HouseholdSyncCoordinator.shared.clearModificationCache()
         }
         resetPostTutorialHintUserDefaults()
-        syncWidgetSchedule()
+        syncAfterUserEdit()
     }
 
     /// Replaces pets and schedule with sample **dog**, **cat**, and **fish** profiles plus ~30 days of events (for demos and screenshots).
@@ -315,7 +315,7 @@ final class HomeViewModel {
         selectedView = .list
         selectedCalendarDate = .now
         HouseholdLocalStore.save(viewModel: self)
-        syncWidgetSchedule()
+        syncAfterUserEdit()
     }
 
     /// Clears post-tutorial hint flags. Keys must stay aligned with `PostTutorialHintPersistence`.
@@ -432,7 +432,7 @@ final class HomeViewModel {
             }
         }
         if changed {
-            syncWidgetSchedule()
+            syncAfterUserEdit()
         }
     }
 
@@ -454,7 +454,7 @@ final class HomeViewModel {
             scheduleItems[index].isCompleted = false
             scheduleItems[index].completedByDisplayName = ""
         }
-        syncWidgetSchedule()
+        syncAfterUserEdit()
     }
 
     /// Stores yes/no for medicine, feed, and water (`ScheduleItem.complianceKind`).
@@ -462,7 +462,7 @@ final class HomeViewModel {
     func setMedicineAccepted(_ accepted: Bool, for item: ScheduleItem) {
         guard let index = scheduleItems.firstIndex(where: { $0.id == item.id }) else { return }
         scheduleItems[index].medicineAccepted = accepted
-        syncWidgetSchedule()
+        syncAfterUserEdit()
     }
 
     // MARK: - Pet filter
@@ -475,7 +475,7 @@ final class HomeViewModel {
 
     func addPet(_ pet: Pet) {
         pets.append(pet)
-        syncWidgetSchedule()
+        syncAfterUserEdit()
     }
 
     func updatePet(_ pet: Pet) {
@@ -484,14 +484,14 @@ final class HomeViewModel {
         for i in scheduleItems.indices where scheduleItems[i].pet.id == pet.id {
             scheduleItems[i].pet = pet
         }
-        syncWidgetSchedule()
+        syncAfterUserEdit()
     }
 
     func deletePet(_ pet: Pet) {
         pets.removeAll { $0.id == pet.id }
         scheduleItems.removeAll { $0.pet.id == pet.id }
         if selectedPet?.id == pet.id { selectedPet = nil }
-        syncWidgetSchedule()
+        syncAfterUserEdit()
     }
 
     // MARK: - Home screen widget
@@ -545,7 +545,24 @@ final class HomeViewModel {
     }
 
     /// Writes today’s schedule into the App Group and asks WidgetKit to refresh.
-    func syncWidgetSchedule() {
+    func syncWidgetSchedule(scheduleCloudSync: Bool = true, acknowledgeWhenSynced: Bool = false) {
+        refreshWidgetsAndRemindersOnly()
+        guard scheduleCloudSync else { return }
+        Task { @MainActor in
+            HouseholdSyncCoordinator.shared.scheduleCloudSync(
+                from: self,
+                acknowledgeWhenSynced: acknowledgeWhenSynced
+            )
+        }
+    }
+
+    /// After the user edits pets or schedule — syncs to iCloud and shows the pink “synced” toast.
+    func syncAfterUserEdit() {
+        syncWidgetSchedule(acknowledgeWhenSynced: true)
+    }
+
+    /// Widget + local reminders only (avoids re-queueing CloudKit while a sync is finishing).
+    func refreshWidgetsAndRemindersOnly() {
         let ordered = widgetTodayScheduleItems()
         let totalToday = ordered.count
         let tf24 = TimeFormat.current == .twentyFourHour
@@ -560,9 +577,6 @@ final class HomeViewModel {
         )
         WidgetCenter.shared.reloadTimelines(ofKind: ScheduleWidgetShared.todayEventsWidgetKind)
         ScheduleReminderScheduler.reschedule(for: scheduleItems)
-        Task { @MainActor in
-            HouseholdSyncCoordinator.shared.scheduleCloudSync(from: self)
-        }
     }
 
     /// Initial launch restores saved pets and schedule before CloudKit merges run.

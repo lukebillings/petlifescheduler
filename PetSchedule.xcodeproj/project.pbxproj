@@ -34,6 +34,7 @@
 		A93AAA42222222222222202 /* HouseholdLocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA42222222222222201 /* HouseholdLocalStore.swift */; };
 		A93AAA43333333333333302 /* HouseholdCloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA43333333333333301 /* HouseholdCloudKitService.swift */; };
 		A93AAA44444444444444402 /* HouseholdSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */; };
+		HSYNCFBK0000000000000001 /* HouseholdSyncFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = HSYNCFREF000000000000001 /* HouseholdSyncFeedback.swift */; };
 		A93AAA45555555555555502 /* LoggedByPersonSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA45555555555555501 /* LoggedByPersonSection.swift */; };
 		A93AAA47777777777777702 /* FamilySharingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA47777777777777701 /* FamilySharingSettingsView.swift */; };
 		A93AAA48888888888888802 /* PetScheduleAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */; };
@@ -116,6 +117,7 @@
 		A93AAA42222222222222201 /* HouseholdLocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdLocalStore.swift; sourceTree = "<group>"; };
 		A93AAA43333333333333301 /* HouseholdCloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdCloudKitService.swift; sourceTree = "<group>"; };
 		A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncCoordinator.swift; sourceTree = "<group>"; };
+		HSYNCFREF000000000000001 /* HouseholdSyncFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncFeedback.swift; sourceTree = "<group>"; };
 		A93AAA45555555555555501 /* LoggedByPersonSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedByPersonSection.swift; sourceTree = "<group>"; };
 		A93AAA47777777777777701 /* FamilySharingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilySharingSettingsView.swift; sourceTree = "<group>"; };
 		A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleAppDelegate.swift; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 				A93AAA42222222222222201 /* HouseholdLocalStore.swift */,
 				A93AAA43333333333333301 /* HouseholdCloudKitService.swift */,
 				A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */,
+				HSYNCFREF000000000000001 /* HouseholdSyncFeedback.swift */,
 				46B5109A87B29D224A344EA1 /* Views */,
 			);
 			path = Shared;
@@ -446,6 +449,7 @@
 				A93AAA43333333333333302 /* HouseholdCloudKitService.swift in Sources */,
 				A93AAA42222222222222202 /* HouseholdLocalStore.swift in Sources */,
 				A93AAA44444444444444402 /* HouseholdSyncCoordinator.swift in Sources */,
+				HSYNCFBK0000000000000001 /* HouseholdSyncFeedback.swift in Sources */,
 				A93AAA45555555555555502 /* LoggedByPersonSection.swift in Sources */,
 				D3T41L5H33T5TYL3F02 /* DetailEditorSheetStyle.swift in Sources */,
 				A93AAA41111111111111102 /* UserProfileStorage.swift in Sources */,

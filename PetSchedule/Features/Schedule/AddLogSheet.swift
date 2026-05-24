@@ -197,7 +197,7 @@ struct AddLogSheet: View {
                                 assigneeAccent: assigneeAccent
                             )
                         )
-                        viewModel.syncWidgetSchedule()
+                        viewModel.syncAfterUserEdit()
                         dismiss()
                     }
                     .fontWeight(.semibold)
@@ -368,7 +368,7 @@ struct EditLogSheet: View {
                 Section {
                     Button(role: .destructive) {
                         viewModel.scheduleItems.removeAll { $0.id == item.id }
-                        viewModel.syncWidgetSchedule()
+                        viewModel.syncAfterUserEdit()
                         dismiss()
                     } label: {
                         Label("Delete Log", systemImage: "trash")
@@ -421,7 +421,7 @@ struct EditLogSheet: View {
                             viewModel.scheduleItems[idx].completedByDisplayName = resolvedCompletedBy
                             viewModel.scheduleItems[idx].assigneeAccent = assigneeAccent
                         }
-                        viewModel.syncWidgetSchedule()
+                        viewModel.syncAfterUserEdit()
                         dismiss()
                     }
                     .fontWeight(.semibold)

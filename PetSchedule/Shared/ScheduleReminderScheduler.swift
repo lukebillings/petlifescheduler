@@ -14,6 +14,13 @@ enum ScheduleReminderScheduler {
         UNUserNotificationCenter.current().delegate = NotificationPresentationDelegate.shared
     }()
 
+    /// Shared bootstrap for household push toasts and event reminders.
+    @discardableResult
+    static func ensureDelegate() -> Bool {
+        _ = delegateBootstrap
+        return true
+    }
+
     /// Removes previously scheduled PetLifeScheduler reminders and schedules up to the next occurrences for eligible items.
     static func reschedule(for items: [ScheduleItem]) {
         _ = delegateBootstrap

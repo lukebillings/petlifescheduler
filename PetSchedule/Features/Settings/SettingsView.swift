@@ -152,10 +152,10 @@ struct SettingsView: View {
                                         // Keep the UI honest: reminders cannot be enabled without OS permission.
                                         remindersEnabled = false
                                     }
-                                    viewModel.syncWidgetSchedule()
+                                    viewModel.syncAfterUserEdit()
                                 }
                             } else {
-                                viewModel.syncWidgetSchedule()
+                                viewModel.syncAfterUserEdit()
                             }
                         }
 
@@ -226,7 +226,7 @@ struct SettingsView: View {
                     }
                 }
                 .onChange(of: reminderMinutes) { _, _ in
-                    viewModel.syncWidgetSchedule()
+                    viewModel.syncAfterUserEdit()
                 }
                 .task {
                     await refreshNotificationPermissionState()
@@ -311,7 +311,7 @@ struct SettingsView: View {
                         }
                     }
                     .onChange(of: timeFormatRaw) { _, _ in
-                        viewModel.syncWidgetSchedule()
+                        viewModel.syncAfterUserEdit()
                     }
 
                     Picker(selection: $weightUnitRaw) {

@@ -210,7 +210,7 @@ struct AddEventSheet: View {
                                 assigneeAccent: assigneeAccent
                             )
                         )
-                        viewModel.syncWidgetSchedule()
+                        viewModel.syncAfterUserEdit()
                         dismiss()
                     }
                     .fontWeight(.semibold)
