@@ -3,7 +3,13 @@ import SwiftUI
 @main
 struct PetScheduleApp: App {
     @UIApplicationDelegateAdaptor(PetScheduleAppDelegate.self) private var appDelegate
-    @State private var homeViewModel = HomeViewModel.bootstrapFromPersistence()
+    @State private var homeViewModel: HomeViewModel
+
+    init() {
+        let viewModel = HomeViewModel.bootstrapFromPersistence()
+        _homeViewModel = State(initialValue: viewModel)
+        HouseholdSyncCoordinator.shared.bind(viewModel: viewModel)
+    }
     /// StoreKit entitlements refresh in `SubscriptionEntitlementStore` on launch; routing no longer
     /// blocks returning users behind a full-screen paywall.
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
@@ -39,6 +45,9 @@ struct PetScheduleApp: App {
     var body: some Scene {
         WindowGroup {
             cloudShareAwareRoot
+                .onAppear {
+                    HouseholdSyncCoordinator.shared.bind(viewModel: homeViewModel)
+                }
         }
     }
 

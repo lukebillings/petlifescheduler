@@ -38,9 +38,11 @@ final class HouseholdSyncCoordinator: ObservableObject {
         }
     }
 
-    func handleRemoteCloudKitChange() async {
-        guard let viewModel = boundViewModel else { return }
+    @discardableResult
+    func handleRemoteCloudKitChange() async -> UIBackgroundFetchResult {
+        guard let viewModel = boundViewModel else { return .noData }
         await syncNow(viewModel, uploadLocalChanges: pendingLocalSyncAcknowledgment)
+        return .newData
     }
 
     func bind(viewModel: HomeViewModel) {
@@ -113,7 +115,7 @@ final class HouseholdSyncCoordinator: ObservableObject {
             if !remoteChanges.isEmpty {
                 let summary = HouseholdChangeSummarizer.combinedMessage(for: remoteChanges)
                 presentToast(message: summary, systemImage: "arrow.triangle.2.circlepath")
-                HouseholdChangeNotifier.deliver(changes: remoteChanges)
+                await HouseholdChangeNotifier.deliver(changes: remoteChanges)
             } else if pendingLocalSyncAcknowledgment {
                 presentToast(message: "Synced with your household", systemImage: "checkmark.icloud.fill")
             }

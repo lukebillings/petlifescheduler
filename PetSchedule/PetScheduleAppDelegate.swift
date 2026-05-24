@@ -30,8 +30,10 @@ final class PetScheduleAppDelegate: NSObject, UIApplicationDelegate {
             completionHandler(.noData)
             return
         }
-        NotificationCenter.default.post(name: .householdCloudKitRemoteChange, object: nil)
-        completionHandler(.newData)
+        Task { @MainActor in
+            let result = await HouseholdSyncCoordinator.shared.handleRemoteCloudKitChange()
+            completionHandler(result)
+        }
     }
 
     func application(

@@ -101,9 +101,16 @@ enum HouseholdChangeSummarizer {
 enum HouseholdChangeNotifier {
     static let identifierPrefix = "petschedule.household-change."
 
-    static func deliver(changes: [HouseholdRemoteChange]) {
+    static var sharedUpdatesEnabled: Bool {
+        let defaults = UserDefaults.standard
+        let key = ScheduleReminderScheduler.storageSharedHouseholdUpdatesKey
+        if defaults.object(forKey: key) == nil { return true }
+        return defaults.bool(forKey: key)
+    }
+
+    static func deliver(changes: [HouseholdRemoteChange]) async {
         guard !changes.isEmpty else { return }
-        guard UserDefaults.standard.bool(forKey: ScheduleReminderScheduler.storageEnabledKey) else { return }
+        guard sharedUpdatesEnabled else { return }
 
         let body = HouseholdChangeSummarizer.combinedMessage(for: changes)
         let title = HouseholdChangeSummarizer.notificationTitle(for: changes)
@@ -111,9 +118,7 @@ enum HouseholdChangeNotifier {
         if state == .active {
             return
         }
-        Task {
-            await scheduleNotification(title: title, body: body)
-        }
+        await scheduleNotification(title: title, body: body)
     }
 
     private static func scheduleNotification(title: String, body: String) async {

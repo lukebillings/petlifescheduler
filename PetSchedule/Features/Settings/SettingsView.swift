@@ -38,6 +38,7 @@ struct SettingsView: View {
     @AppStorage(UserProfileStorage.displayNameKey) private var userDisplayName = ""
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
     @AppStorage("remindersEnabled") private var remindersEnabled = false
+    @AppStorage(ScheduleReminderScheduler.storageSharedHouseholdUpdatesKey) private var sharedHouseholdUpdatesEnabled = true
     @AppStorage("reminderMinutes") private var reminderMinutes = 10
     @AppStorage("hapticsEnabled") private var hapticsEnabled = true
     @AppStorage("soundEffectsEnabled") private var soundEffectsEnabled = true
@@ -133,23 +134,8 @@ struct SettingsView: View {
                         .onChange(of: remindersEnabled) { _, enabled in
                             if enabled {
                                 Task { @MainActor in
-                                    let center = UNUserNotificationCenter.current()
-                                    let settings = await center.notificationSettings()
-
-                                    let granted: Bool
-                                    switch settings.authorizationStatus {
-                                    case .authorized, .provisional, .ephemeral:
-                                        granted = true
-                                    case .notDetermined:
-                                        granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
-                                    case .denied:
-                                        granted = false
-                                    @unknown default:
-                                        granted = false
-                                    }
-
+                                    let granted = await requestNotificationPermissionIfNeeded()
                                     if !granted {
-                                        // Keep the UI honest: reminders cannot be enabled without OS permission.
                                         remindersEnabled = false
                                     }
                                     viewModel.syncAfterUserEdit()
@@ -215,6 +201,24 @@ struct SettingsView: View {
                         }
                     }
 
+                    Toggle(isOn: $sharedHouseholdUpdatesEnabled.animation()) {
+                        HStack(spacing: 12) {
+                            SettingsTintedSymbol(systemName: "person.2.wave.2.fill")
+                            Text("Shared household updates")
+                        }
+                    }
+                    .tint(Color.appPink)
+                    .onChange(of: sharedHouseholdUpdatesEnabled) { _, enabled in
+                        if enabled {
+                            Task { @MainActor in
+                                let granted = await requestNotificationPermissionIfNeeded()
+                                if !granted {
+                                    sharedHouseholdUpdatesEnabled = false
+                                }
+                            }
+                        }
+                    }
+
                     Button {
                         Task { await sendTestNotificationNow() }
                     } label: {
@@ -227,7 +231,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Notifications")
                 } footer: {
-                    Text("Includes reminders before scheduled events and alerts when someone else in your shared household adds or updates pets, logs, or the schedule.")
+                    Text("Event reminders notify you before scheduled activities. Shared household updates alert you when someone you share with adds or changes pets, logs, or the schedule (requires iOS notification permission).")
                 }
                 .onChange(of: reminderMinutes) { _, _ in
                     viewModel.syncAfterUserEdit()
@@ -483,6 +487,22 @@ struct SettingsView: View {
     }
 
     @MainActor
+    private func requestNotificationPermissionIfNeeded() async -> Bool {
+        let center = UNUserNotificationCenter.current()
+        let settings = await center.notificationSettings()
+        switch settings.authorizationStatus {
+        case .authorized, .provisional, .ephemeral:
+            return true
+        case .notDetermined:
+            return (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+        case .denied:
+            return false
+        @unknown default:
+            return false
+        }
+    }
+
+    @MainActor
     private func sendTestNotificationNow() async {
         let center = UNUserNotificationCenter.current()
         let settings = await center.notificationSettings()
@@ -519,6 +539,7 @@ struct SettingsView: View {
         case .denied:
             notificationPermissionDenied = true
             remindersEnabled = false
+            sharedHouseholdUpdatesEnabled = false
         case .notDetermined:
             notificationPermissionDenied = false
         @unknown default:

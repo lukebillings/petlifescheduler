@@ -5,6 +5,7 @@ import UserNotifications
 enum ScheduleReminderScheduler {
 
     static let storageEnabledKey = "remindersEnabled"
+    static let storageSharedHouseholdUpdatesKey = "sharedHouseholdUpdatesEnabled"
     private static let storageMinutesKey = "reminderMinutes"
     static let notificationIdentifierPrefix = "petschedule.event-reminder."
     static let testNotificationIdentifierPrefix = "petschedule.test-reminder."
