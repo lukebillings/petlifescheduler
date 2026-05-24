@@ -105,10 +105,13 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
     }
 
     /// Carousel order: the user's chosen problem first, then every other feature.
+    /// Meds reminders appear only when the user picked meds/tasks as their problem on step 9.
     static func paywallCarouselOrder(primary: OnboardingFeatureInterest?) -> [OnboardingFeatureInterest] {
-        let all = Array(allCases)
-        guard let primary else { return all }
-        return [primary] + all.filter { $0 != primary }
+        let eligible = allCases.filter { interest in
+            interest != .medicationCompliance || primary == .medicationCompliance
+        }
+        guard let primary, eligible.contains(primary) else { return eligible }
+        return [primary] + eligible.filter { $0 != primary }
     }
 
     /// Product screenshot shown in the paywall feature carousel for this interest.
@@ -317,21 +320,6 @@ struct OnboardingView: View {
             .padding(.horizontal, 28)
             .padding(.bottom, 52)
             .padding(.top, 8)
-        }
-        .overlay(alignment: .topTrailing) {
-            if step == 10 {
-                Button {
-                    completeOnboarding()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 28))
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.trailing, 20)
-                .safeAreaPadding(.top, 8)
-                .padding(.top, 12)
-                .accessibilityLabel("Skip paywall")
-            }
         }
         .background(Color(.systemBackground))
         .onChange(of: step) { _, newStep in
@@ -1303,8 +1291,7 @@ private struct Step5Paywall: View {
             selectedPlan: $selectedPlan,
             purchaseState: purchaseState,
             errorMessage: errorMessage,
-            onRestorePurchases: onRestorePurchases,
-            reservesCloseButtonInset: true
+            onRestorePurchases: onRestorePurchases
         )
     }
 }
@@ -1321,8 +1308,6 @@ private struct PaywallContentBody: View {
     let purchaseState: PaywallPurchaseState
     let errorMessage: String?
     let onRestorePurchases: () -> Void
-    /// Extra trailing inset so the title clears the skip control on the onboarding paywall.
-    var reservesCloseButtonInset: Bool = false
 
     var body: some View {
         VStack(alignment: .center, spacing: 10) {
@@ -1332,8 +1317,7 @@ private struct PaywallContentBody: View {
                 .minimumScaleFactor(0.82)
                 .lineLimit(3)
                 .fixedSize(horizontal: false, vertical: true)
-                .padding(.leading, 28)
-                .padding(.trailing, reservesCloseButtonInset ? 52 : 28)
+                .padding(.horizontal, 28)
                 .frame(maxWidth: .infinity)
 
             PaywallFeatureCarousel(
@@ -1887,59 +1871,45 @@ struct PostOnboardingPaywallView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            VStack(spacing: 0) {
-                PaywallContentBody(
-                    headline: headline,
-                    featureInterest: featureInterest,
-                    petName: petName,
-                    ownsMultiplePets: ownsMultiplePets,
-                    products: products,
-                    selectedPlan: $selectedPlan,
-                    purchaseState: purchaseState,
-                    errorMessage: errorMessage,
-                    onRestorePurchases: { Task { await beginRestorePurchases() } }
-                )
+        VStack(spacing: 0) {
+            PaywallContentBody(
+                headline: headline,
+                featureInterest: featureInterest,
+                petName: petName,
+                ownsMultiplePets: ownsMultiplePets,
+                products: products,
+                selectedPlan: $selectedPlan,
+                purchaseState: purchaseState,
+                errorMessage: errorMessage,
+                onRestorePurchases: { Task { await beginRestorePurchases() } }
+            )
 
-                VStack(spacing: 14) {
-                    Button(action: { Task { await beginPurchase() } }) {
-                        Group {
-                            if purchaseState == .purchasing {
-                                ProgressView()
-                                    .progressViewStyle(.circular)
-                                    .tint(.white)
-                            } else {
-                                Text(ctaLabel)
-                            }
+            VStack(spacing: 14) {
+                Button(action: { Task { await beginPurchase() } }) {
+                    Group {
+                        if purchaseState == .purchasing {
+                            ProgressView()
+                                .progressViewStyle(.circular)
+                                .tint(.white)
+                        } else {
+                            Text(ctaLabel)
                         }
-                        .font(AppTypography.primaryLabel)
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(
-                            RoundedRectangle(cornerRadius: 28)
-                                .fill(ctaDisabled ? Color.gray.opacity(0.3) : Color.appPink)
-                        )
-                        .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: ctaDisabled))
                     }
-                    .disabled(ctaDisabled)
+                    .font(AppTypography.primaryLabel)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(ctaDisabled ? Color.gray.opacity(0.3) : Color.appPink)
+                    )
+                    .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: ctaDisabled))
                 }
-                .padding(.horizontal, 28)
-                .padding(.bottom, 52)
-                .padding(.top, 8)
+                .disabled(ctaDisabled)
             }
-
-#if DEBUG
-            Button {
-                entitlementStore.grantDebugAccess()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.secondary)
-                    .padding(20)
-            }
-            .accessibilityLabel("Close paywall (debug only)")
-#endif
+            .padding(.horizontal, 28)
+            .padding(.bottom, 52)
+            .padding(.top, 8)
         }
         .background(Color(.systemBackground))
         .task {
