@@ -34,7 +34,6 @@
 		A93AAA42222222222222202 /* HouseholdLocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA42222222222222201 /* HouseholdLocalStore.swift */; };
 		A93AAA43333333333333302 /* HouseholdCloudKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA43333333333333301 /* HouseholdCloudKitService.swift */; };
 		A93AAA44444444444444402 /* HouseholdSyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */; };
-		HSYNCFBK0000000000000001 /* HouseholdSyncFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = HSYNCFREF000000000000001 /* HouseholdSyncFeedback.swift */; };
 		A93AAA45555555555555502 /* LoggedByPersonSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA45555555555555501 /* LoggedByPersonSection.swift */; };
 		A93AAA47777777777777702 /* FamilySharingSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA47777777777777701 /* FamilySharingSettingsView.swift */; };
 		A93AAA48888888888888802 /* PetScheduleAppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */; };
@@ -60,6 +59,7 @@
 		F86A00D102A14D00A2000005 /* PetScheduleWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		F924FCEA3AC87DC080DCEB1E /* WeightEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41B0CB2BAEBC32B1D23914 /* WeightEntry.swift */; };
 		F92BBB222E9F6742D950FC02 /* AppRatingPrompt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */; };
+		HSYNCFBK0000000000000001 /* HouseholdSyncFeedback.swift in Sources */ = {isa = PBXBuildFile; fileRef = HSYNCFREF000000000000001 /* HouseholdSyncFeedback.swift */; };
 		P1NKW4V354R3H342DR /* PinkWaveScreenHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = P1NKW4V354R3H341DR /* PinkWaveScreenHeader.swift */; };
 		W1D9E8F706050403020100AA /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082FB0FC6CA037D6F5F7DC4C /* AppColors.swift */; };
 		W1D9E8F706050403020100BB /* AppTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A2B3C4D5E600000000AB0 /* AppTypography.swift */; };
@@ -117,7 +117,6 @@
 		A93AAA42222222222222201 /* HouseholdLocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdLocalStore.swift; sourceTree = "<group>"; };
 		A93AAA43333333333333301 /* HouseholdCloudKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdCloudKitService.swift; sourceTree = "<group>"; };
 		A93AAA44444444444444401 /* HouseholdSyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncCoordinator.swift; sourceTree = "<group>"; };
-		HSYNCFREF000000000000001 /* HouseholdSyncFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncFeedback.swift; sourceTree = "<group>"; };
 		A93AAA45555555555555501 /* LoggedByPersonSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoggedByPersonSection.swift; sourceTree = "<group>"; };
 		A93AAA47777777777777701 /* FamilySharingSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilySharingSettingsView.swift; sourceTree = "<group>"; };
 		A93AAA48888888888888801 /* PetScheduleAppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PetScheduleAppDelegate.swift; sourceTree = "<group>"; };
@@ -145,6 +144,7 @@
 		F86A00D102A14D00A1000007 /* PetScheduleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PetScheduleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F92BBB222E9F6742D950FC01 /* AppRatingPrompt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppRatingPrompt.swift; sourceTree = "<group>"; };
 		FC2894989A3CB71EAFB3E03A /* PetSchedule.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PetSchedule.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		HSYNCFREF000000000000001 /* HouseholdSyncFeedback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HouseholdSyncFeedback.swift; sourceTree = "<group>"; };
 		P1NKW4V354R3H341DR /* PinkWaveScreenHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinkWaveScreenHeader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -489,7 +489,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PetSchedule/PetSchedule.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PetSchedule/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PetLifeScheduler;
@@ -644,7 +644,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = PetSchedule/PetSchedule.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PetSchedule/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = PetLifeScheduler;
@@ -672,7 +672,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = PetScheduleWidget/PetScheduleWidget.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PetScheduleWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Today;
@@ -698,7 +698,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				CODE_SIGN_ENTITLEMENTS = PetScheduleWidget/PetScheduleWidget.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 12;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = PetScheduleWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Today;
