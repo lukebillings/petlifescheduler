@@ -31,10 +31,16 @@ final class HouseholdSyncCoordinator: ObservableObject {
             forName: .householdCloudKitRemoteChange,
             object: nil,
             queue: .main
-        ) { [weak self] _ in
-            guard let self, let viewModel = self.boundViewModel else { return }
-            Task { await self.syncNow(viewModel, uploadLocalChanges: self.pendingLocalSyncAcknowledgment) }
+        ) { _ in
+            Task { @MainActor in
+                await HouseholdSyncCoordinator.shared.handleRemoteCloudKitChange()
+            }
         }
+    }
+
+    func handleRemoteCloudKitChange() async {
+        guard let viewModel = boundViewModel else { return }
+        await syncNow(viewModel, uploadLocalChanges: pendingLocalSyncAcknowledgment)
     }
 
     func bind(viewModel: HomeViewModel) {
