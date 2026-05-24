@@ -4,7 +4,7 @@ import UserNotifications
 /// Aligns with `SettingsView` `@AppStorage` keys — **local** notifications for upcoming events (no server / TestFlight required).
 enum ScheduleReminderScheduler {
 
-    private static let storageEnabledKey = "remindersEnabled"
+    static let storageEnabledKey = "remindersEnabled"
     private static let storageMinutesKey = "reminderMinutes"
     static let notificationIdentifierPrefix = "petschedule.event-reminder."
     static let testNotificationIdentifierPrefix = "petschedule.test-reminder."

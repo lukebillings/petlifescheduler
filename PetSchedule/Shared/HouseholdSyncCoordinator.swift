@@ -129,7 +129,7 @@ final class HouseholdSyncCoordinator: ObservableObject {
         periodicSyncTask?.cancel()
         periodicSyncTask = Task { @MainActor in
             while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 45_000_000_000)
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
                 guard !Task.isCancelled else { return }
                 await syncNow(viewModel, uploadLocalChanges: pendingLocalSyncAcknowledgment)
             }
@@ -266,7 +266,7 @@ final class HouseholdSyncCoordinator: ObservableObject {
                 if previous == nil {
                     changes.append(HouseholdChangeSummarizer.scheduleAdded(item))
                 } else if scheduleContentChanged(previous: previous, next: item) {
-                    changes.append(HouseholdChangeSummarizer.scheduleUpdated(item))
+                    changes.append(HouseholdChangeSummarizer.scheduleUpdated(item, previous: previous))
                 }
             }
 

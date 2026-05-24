@@ -20,6 +20,17 @@ struct FamilySharingSettingsView: View {
         !usesSharedDatabase
     }
 
+    private var householdMembersSectionFooter: String {
+        let membersNote = canInviteAsOwner
+            ? "This list is people who accepted your pets & schedule link — not your Apple Family list."
+            : ""
+        let syncNote = """
+        When someone else in your group changes pets or the schedule, this phone usually updates within about 15–45 seconds if the app is open or in the background. If the app was fully closed, it can take up to about a minute until iCloud wakes the app. Turning on notifications in Settings tells you right away; opening PetLifeScheduler always pulls the latest data immediately. We check for changes about every 30 seconds while the app is running — faster updates depend on iCloud’s background push, which we already use when possible.
+        """
+        if membersNote.isEmpty { return syncNote }
+        return "\(membersNote)\n\n\(syncNote)"
+    }
+
     var body: some View {
         Form {
             if canInviteAsOwner {
@@ -254,9 +265,7 @@ struct FamilySharingSettingsView: View {
         } header: {
             Text("Shared in PetLifeScheduler")
         } footer: {
-            if canInviteAsOwner {
-                Text("This list is people who accepted your pets & schedule link — not your Apple Family list.")
-            }
+            Text(householdMembersSectionFooter)
         }
     }
 

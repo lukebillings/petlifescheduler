@@ -103,7 +103,7 @@ struct SettingsView: View {
                             }
                         }
                 } header: {
-                    Text("Your profile")
+                    Text("Your Name")
                 } footer: {
                     Text("Same name you chose when you joined PetLifeScheduler. You can change it anytime; it appears on logs so others know who did each task.")
                 }
@@ -122,11 +122,11 @@ struct SettingsView: View {
                     Text("Sharing")
                 }
 
-                Section("Notifications") {
+                Section {
                     Toggle(isOn: $remindersEnabled.animation()) {
                         HStack(spacing: 12) {
                             SettingsTintedSymbol(systemName: "bell.badge.fill")
-                            Text("Enable event reminders")
+                            Text("Enable notifications")
                         }
                     }
                     .tint(Color.appPink)
@@ -224,6 +224,10 @@ struct SettingsView: View {
                                 .foregroundStyle(.primary)
                         }
                     }
+                } header: {
+                    Text("Notifications")
+                } footer: {
+                    Text("Includes reminders before scheduled events and alerts when someone else in your shared household adds or updates pets, logs, or the schedule.")
                 }
                 .onChange(of: reminderMinutes) { _, _ in
                     viewModel.syncAfterUserEdit()
@@ -337,7 +341,7 @@ struct SettingsView: View {
                     }
                 }
 
-                Section("Rate Us") {
+                Section("Rate PetLifeScheduler") {
                     Button {
                         AppRatingPrompt.presentReviewRequest()
                         AppRatingPrompt.markReviewSubmitted()

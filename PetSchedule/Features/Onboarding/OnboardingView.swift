@@ -929,7 +929,7 @@ private struct Step4Notifications: View {
                 Text("Never miss a moment")
                     .font(AppTypography.screenTitle)
                     .multilineTextAlignment(.center)
-                Text("Get timely reminders for walks, meals,\nand more.")
+                Text("Get timely reminders for walks, meals,\nand more — plus alerts when someone else\nin your shared household updates pets or the schedule.")
                     .font(AppTypography.secondaryLabel)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
