@@ -8,6 +8,13 @@ import UserNotifications
 enum PaywallPlan: Equatable {
     case monthly
     case yearly
+
+    var paywallCTALabel: String {
+        switch self {
+        case .monthly: return "Continue with Monthly"
+        case .yearly: return "Start 14 day free trial"
+        }
+    }
 }
 
 /// In-flight state for any paywall — drives spinners, button label, and disabled state.
@@ -364,10 +371,7 @@ struct OnboardingView: View {
         case 5: return "Enable Notifications"
         case 10:
             if products.isLoading { return "Loading…" }
-            switch paywallSelectedPlan {
-            case .monthly: return "Continue with Monthly"
-            case .yearly:  return "Continue with Yearly"
-            }
+            return paywallSelectedPlan.paywallCTALabel
         default: return "Continue"
         }
     }
@@ -1538,7 +1542,7 @@ private struct PaywallYearlyCard: View {
     }
 
     private var accessibilitySubtitle: String {
-        var parts: [String] = ["\(yearly.displayPrice) per year.", "\(pricingSubtitleText)."]
+        var parts: [String] = ["14 day free trial.", "\(yearly.displayPrice) per year.", "\(pricingSubtitleText)."]
         if let yearlySavingsPercent {
             parts.append("Save \(yearlySavingsPercent) percent versus twelve months billed monthly.")
         }
@@ -1548,19 +1552,26 @@ private struct PaywallYearlyCard: View {
     var body: some View {
         Button(action: onSelect) {
             ZStack(alignment: .top) {
-                HStack(alignment: .center, spacing: 8) {
-                    Text("Yearly")
-                        .font(AppTypography.secondaryEmphasis)
-                        .multilineTextAlignment(.leading)
-                    Spacer(minLength: 8)
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(yearly.displayPrice) per year")
-                            .font(.footnote)
-                            .fontWeight(.regular)
-                            .foregroundStyle(.primary)
-                        Text(pricingSubtitleText)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("14 day free trial")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(alignment: .center, spacing: 8) {
+                        Text("Yearly")
+                            .font(AppTypography.secondaryEmphasis)
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 8)
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("\(yearly.displayPrice) per year")
+                                .font(.footnote)
+                                .fontWeight(.regular)
+                                .foregroundStyle(.primary)
+                            Text(pricingSubtitleText)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1594,7 +1605,7 @@ private struct PaywallYearlyCard: View {
         .buttonStyle(.plain)
         .padding(.top, savingsBadgeCaption != nil ? 8 : 0)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Yearly. \(accessibilitySubtitle)")
+        .accessibilityLabel("14 day free trial. Yearly. \(accessibilitySubtitle)")
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
@@ -1859,10 +1870,7 @@ struct PostOnboardingPaywallView: View {
     }
 
     private var ctaLabel: String {
-        switch selectedPlan {
-        case .monthly: return "Continue with Monthly"
-        case .yearly:  return "Continue with Yearly"
-        }
+        selectedPlan.paywallCTALabel
     }
 
     private var ctaDisabled: Bool {
