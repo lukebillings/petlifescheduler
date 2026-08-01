@@ -9,12 +9,7 @@ enum PaywallPlan: Equatable {
     case monthly
     case yearly
 
-    var paywallCTALabel: String {
-        switch self {
-        case .monthly: return "Continue with Monthly"
-        case .yearly: return "Start 14 day free trial"
-        }
-    }
+    var paywallCTALabel: String { "Continue" }
 }
 
 /// In-flight state for any paywall — drives spinners, button label, and disabled state.
@@ -37,6 +32,7 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
     case weightLogging
     case walksAndActivities
     case feedingAndDailyCare
+    case other
 
     /// `UserDefaults` key for persisting the user's selection so post-onboarding paywalls
     /// (after the user has finished onboarding) can keep showing the same personalization.
@@ -59,6 +55,7 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
         case .weightLogging: return "I lose track of weight & health"
         case .walksAndActivities: return "I forget walks & activities"
         case .feedingAndDailyCare: return "I miss feeding & daily care"
+        case .other: return "Other"
         }
     }
 
@@ -74,6 +71,8 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
             return "Walks, play, grooming, or vet appointments"
         case .feedingAndDailyCare:
             return "Meals, water, treats, or handoffs between carers"
+        case .other:
+            return "Something else — tell us what matters most"
         }
     }
 
@@ -85,51 +84,39 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
         case .weightLogging: return "Never lose track of weight & health + more!"
         case .walksAndActivities: return "Never forget walks & activities + more!"
         case .feedingAndDailyCare: return "Never miss feeding & daily care + more!"
+        case .other: return "Everything you need for pet care + more!"
         }
     }
 
-    /// One-line caption under the paywall feature carousel preview for this interest.
-    func paywallCarouselCaption(petName: String, ownsMultiplePets: Bool) -> String {
-        let trimmed = petName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let useName = !trimmed.isEmpty && !ownsMultiplePets
-        let possessive = useName ? "\(trimmed)'s" : "your pets'"
-        let nominative = useName ? trimmed : "your pets"
-
+    /// SF Symbol used on the paywall feature icon grid (and problem-option accents).
+    var paywallSystemImage: String {
         switch self {
-        case .medicationCompliance:
-            return "Reminders when \(possessive) meds are due — log a dose in one tap."
-        case .petDetailsAndProfiles:
-            return "Vet contacts, microchip, allergies, and documents for \(nominative) in one profile."
-        case .weightLogging:
-            return useName
-                ? "Log \(trimmed)'s weight in seconds and spot trends on charts over time."
-                : "Log your pets' weights in seconds and spot trends on charts over time."
-        case .walksAndActivities:
-            return "Schedule walks and play for \(nominative) with reminders that won't slip."
-        case .feedingAndDailyCare:
-            return "Log meals, mood, and more for \(nominative) on one timeline your household shares."
+        case .medicationCompliance: return "pills.fill"
+        case .petDetailsAndProfiles: return "doc.text.fill"
+        case .weightLogging: return "chart.line.uptrend.xyaxis"
+        case .walksAndActivities: return "figure.walk"
+        case .feedingAndDailyCare: return "fork.knife"
+        case .other: return "ellipsis.circle.fill"
         }
     }
 
-    /// Carousel order: the user's chosen problem first, then every other feature.
-    /// Meds reminders appear only when the user picked meds/tasks as their problem on step 9.
-    static func paywallCarouselOrder(primary: OnboardingFeatureInterest?) -> [OnboardingFeatureInterest] {
-        let eligible = allCases.filter { interest in
-            interest != .medicationCompliance || primary == .medicationCompliance
+    /// Short label under each paywall feature icon.
+    var paywallIconLabel: String {
+        switch self {
+        case .medicationCompliance: return "Meds & tasks"
+        case .petDetailsAndProfiles: return "Documents"
+        case .weightLogging: return "Weight logs"
+        case .walksAndActivities: return "Walks"
+        case .feedingAndDailyCare: return "Daily care"
+        case .other: return "And more"
         }
-        guard let primary, eligible.contains(primary) else { return eligible }
+    }
+
+    /// Icon grid on the paywall: chosen problem first (if any), then the rest except `.other`.
+    static func paywallIconOrder(primary: OnboardingFeatureInterest?) -> [OnboardingFeatureInterest] {
+        let eligible = allCases.filter { $0 != .other }
+        guard let primary, primary != .other, eligible.contains(primary) else { return eligible }
         return [primary] + eligible.filter { $0 != primary }
-    }
-
-    /// Product screenshot shown in the paywall feature carousel for this interest.
-    var paywallPreviewAssetName: String {
-        switch self {
-        case .medicationCompliance: return "paywall_preview_logs"
-        case .petDetailsAndProfiles: return "paywall_preview_documents"
-        case .weightLogging: return "paywall_preview_weight"
-        case .walksAndActivities: return "paywall_preview_schedule"
-        case .feedingAndDailyCare: return "paywall_preview_schedule"
-        }
     }
 
 }
@@ -198,16 +185,17 @@ struct OnboardingView: View {
     @State private var weightUnitDraft = WeightUnit.kg.rawValue
     @State private var heightUnitDraft = HeightUnit.cm.rawValue
 
-    // Paywall (final onboarding step) state
+    // Paywall (step 1 — right after problem selection) state
     @State private var entitlementStore = SubscriptionEntitlementStore.shared
     @State private var products = SubscriptionProductLoader()
-    @State private var paywallSelectedPlan: PaywallPlan = .yearly
+    @State private var paywallSelectedPlan: PaywallPlan = .monthly
     @State private var paywallPurchaseState: PaywallPurchaseState = .idle
     @State private var paywallErrorMessage: String?
     @State private var notificationPermissionAlertMessage: String?
     @State private var showNotificationPermissionAlert = false
     @State private var isRequestingNotificationPermission = false
 
+    /// 0 problem → 1 paywall → 2…10 setup (pet count through height units).
     private let totalSteps = 11
 
     var body: some View {
@@ -215,49 +203,14 @@ struct OnboardingView: View {
             ZStack {
                 switch step {
                 case 0:
-                    Step0HouseholdPetCount(householdPetCount: $householdPetCount)
-                        .transition(slideTransition)
-                case 1:
-                    StepYourName(displayName: $displayNameDraft)
-                        .transition(slideTransition)
-                case 2:
-                    Step1AddPet(
-                        householdPetCount: householdPetCount,
-                        petName: $petName,
-                        animalType: $animalType,
-                        customAnimalType: $customAnimalType
-                    )
-                        .transition(slideTransition)
-                case 3:
-                    Step2AddPhoto(petName: petName, animalType: animalType, photoData: $petPhotoData, triggerPicker: $triggerPhotoPicker)
-                        .transition(slideTransition)
-                case 4:
-                    Step3AddSchedule(
-                        petName: petName,
-                        animalType: animalType,
-                        activityName: $activityName,
-                        activityTime: $activityTime
-                    )
+                    StepFeatureInterest(selection: $selectedFeatureInterest) { interest in
+                        selectProblemAndAdvance(interest)
+                    }
                     .transition(slideTransition)
-                case 5:
-                    Step4Notifications()
-                        .transition(slideTransition)
-                case 6:
-                    StepTimeFormat(timeFormatRaw: $timeFormatDraft)
-                        .transition(slideTransition)
-                case 7:
-                    StepWeightUnits(weightUnitRaw: $weightUnitDraft)
-                        .transition(slideTransition)
-                case 8:
-                    StepHeightUnits(heightUnitRaw: $heightUnitDraft)
-                        .transition(slideTransition)
-                case 9:
-                    StepFeatureInterest(selection: $selectedFeatureInterest)
-                        .transition(slideTransition)
-                case 10:
+                case 1:
                     Step5Paywall(
                         pet: previewPet,
-                        ownsMultiplePets: householdPetCount != .one,
+                        ownsMultiplePets: false,
                         featureInterest: selectedFeatureInterest,
                         products: products,
                         selectedPlan: $paywallSelectedPlan,
@@ -266,6 +219,43 @@ struct OnboardingView: View {
                         onRestorePurchases: { Task { await beginRestorePurchases() } }
                     )
                     .transition(slideTransition)
+                case 2:
+                    Step0HouseholdPetCount(householdPetCount: $householdPetCount)
+                        .transition(slideTransition)
+                case 3:
+                    StepYourName(displayName: $displayNameDraft)
+                        .transition(slideTransition)
+                case 4:
+                    Step1AddPet(
+                        householdPetCount: householdPetCount,
+                        petName: $petName,
+                        animalType: $animalType,
+                        customAnimalType: $customAnimalType
+                    )
+                        .transition(slideTransition)
+                case 5:
+                    Step2AddPhoto(petName: petName, animalType: animalType, photoData: $petPhotoData, triggerPicker: $triggerPhotoPicker)
+                        .transition(slideTransition)
+                case 6:
+                    Step3AddSchedule(
+                        petName: petName,
+                        animalType: animalType,
+                        activityName: $activityName,
+                        activityTime: $activityTime
+                    )
+                    .transition(slideTransition)
+                case 7:
+                    Step4Notifications()
+                        .transition(slideTransition)
+                case 8:
+                    StepTimeFormat(timeFormatRaw: $timeFormatDraft)
+                        .transition(slideTransition)
+                case 9:
+                    StepWeightUnits(weightUnitRaw: $weightUnitDraft)
+                        .transition(slideTransition)
+                case 10:
+                    StepHeightUnits(heightUnitRaw: $heightUnitDraft)
+                        .transition(slideTransition)
                 default:
                     EmptyView()
                 }
@@ -273,12 +263,12 @@ struct OnboardingView: View {
             .frame(maxHeight: .infinity)
             .animation(.spring(duration: 0.4), value: step)
 
-            // Fixed bottom bar — identical position on every screen
+            // Fixed bottom bar — identical position on every screen (problem step has no Continue).
             VStack(spacing: 14) {
                 // Skip — optional photo, schedule, or notifications.
-                if step == 3 || step == 4 || step == 5 {
+                if step == 5 || step == 6 || step == 7 {
                     Button {
-                        if step == 3 {
+                        if step == 5 {
                             addPetIfNeeded()
                         }
                         withAnimation { step += 1 }
@@ -301,10 +291,11 @@ struct OnboardingView: View {
                     }
                 }
 
-                Button(action: advance) {
+                if step != 0 {
+                    Button(action: advance) {
                         Group {
-                            if (step == 10 && paywallPurchaseState == .purchasing)
-                                || (step == 5 && isRequestingNotificationPermission) {
+                            if (step == 1 && paywallPurchaseState == .purchasing)
+                                || (step == 7 && isRequestingNotificationPermission) {
                                 ProgressView()
                                     .progressViewStyle(.circular)
                                     .tint(.white)
@@ -323,6 +314,7 @@ struct OnboardingView: View {
                             .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: continueDisabled))
                     }
                     .disabled(continueDisabled)
+                }
             }
             .padding(.horizontal, 28)
             .padding(.bottom, 52)
@@ -330,26 +322,33 @@ struct OnboardingView: View {
         }
         .background(Color(.systemBackground))
         .onChange(of: step) { _, newStep in
-            if newStep == 1 {
+            if newStep == 3 {
                 displayNameDraft = userDisplayName
             }
-            if newStep == 6 {
+            if newStep == 8 {
                 timeFormatDraft = timeFormatRaw
             }
-            if newStep == 7 {
+            if newStep == 9 {
                 weightUnitDraft = weightUnitRaw
             }
-            if newStep == 8 {
+            if newStep == 10 {
                 heightUnitDraft = heightUnitRaw
             }
-            if newStep == 10 {
-                Task { await products.refresh() }
-                Task { await entitlementStore.refreshFromCurrentEntitlements() }
+            if newStep == 1 {
+                Task {
+                    await products.refresh()
+                    await entitlementStore.refreshFromCurrentEntitlements()
+                    // Already subscribed (e.g. restore / Family Sharing) — skip paywall into setup.
+                    if entitlementStore.isSubscribed {
+                        withAnimation { step = 2 }
+                    }
+                }
             }
         }
         .onChange(of: entitlementStore.isSubscribed) { _, isSubscribed in
-            if isSubscribed && step == 10 {
-                completeOnboarding()
+            // After a successful purchase/restore on the paywall, continue into setup — do not exit yet.
+            if isSubscribed && step == 1 {
+                withAnimation { step = 2 }
             }
         }
         .alert("Notifications", isPresented: $showNotificationPermissionAlert) {
@@ -363,13 +362,18 @@ struct OnboardingView: View {
         } message: {
             Text(notificationPermissionAlertMessage ?? "")
         }
+        .task {
+            // Prefetch products so the paywall (step 1) is ready immediately after problem selection.
+            await products.refresh()
+            await entitlementStore.refreshFromCurrentEntitlements()
+        }
     }
 
     private var buttonLabel: String {
         switch step {
-        case 3: return petPhotoData == nil ? "Add Photo" : "Continue"
-        case 5: return "Enable Notifications"
-        case 10:
+        case 5: return petPhotoData == nil ? "Add Photo" : "Continue"
+        case 7: return "Enable Notifications"
+        case 1:
             if products.isLoading { return "Loading…" }
             return paywallSelectedPlan.paywallCTALabel
         default: return "Continue"
@@ -389,17 +393,15 @@ struct OnboardingView: View {
 
     private var continueDisabled: Bool {
         switch step {
-        case 0:
-            return householdPetCount == .unspecified
-        case 1:
-            return displayNameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         case 2:
+            return householdPetCount == .unspecified
+        case 3:
+            return displayNameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case 4:
             return petName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        case 9:
-            return selectedFeatureInterest == nil
-        case 5:
+        case 7:
             return isRequestingNotificationPermission
-        case 10:
+        case 1:
             return paywallPurchaseState != .idle
                 || (products.monthlyProduct == nil && products.yearlyProduct == nil)
         default:
@@ -414,8 +416,16 @@ struct OnboardingView: View {
         }
     }
 
+    /// Problem step: tap selects and advances immediately (no Continue button).
+    private func selectProblemAndAdvance(_ interest: OnboardingFeatureInterest) {
+        selectedFeatureInterest = interest
+        UserDefaults.standard.set(interest.rawValue, forKey: OnboardingFeatureInterest.persistenceKey)
+        HapticManager.impact(.medium)
+        withAnimation { step = 1 }
+    }
+
     private func advance() {
-        if step == 10 {
+        if step == 1 {
             Task { await beginPurchase() }
             return
         }
@@ -423,17 +433,17 @@ struct OnboardingView: View {
         HapticManager.impact(.medium)
 
         switch step {
-        case 0:
+        case 2:
             break // pet count chosen
-        case 1:
+        case 3:
             userDisplayName = displayNameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        case 3 where petPhotoData == nil:
+        case 5 where petPhotoData == nil:
             // "Add Photo" tapped with no photo yet — open the picker instead of advancing
             triggerPhotoPicker = true
             return
-        case 3:
+        case 5:
             addPetIfNeeded()
-        case 4:
+        case 6:
             if let pet = viewModel.pets.first {
                 viewModel.scheduleItems.append(
                     ScheduleItem(
@@ -446,22 +456,17 @@ struct OnboardingView: View {
                 )
                 viewModel.syncWidgetSchedule()
             }
-        case 5:
+        case 7:
             requestNotificationPermissionThenAdvance()
             return
-        case 6:
-            timeFormatRaw = timeFormatDraft
-        case 7:
-            weightUnitRaw = weightUnitDraft
         case 8:
-            heightUnitRaw = heightUnitDraft
+            timeFormatRaw = timeFormatDraft
         case 9:
-            // Persist the user's problem choice so the post-onboarding paywall can keep the
-            // same personalization after onboarding is done.
-            UserDefaults.standard.set(
-                selectedFeatureInterest?.rawValue ?? "",
-                forKey: OnboardingFeatureInterest.persistenceKey
-            )
+            weightUnitRaw = weightUnitDraft
+        case 10:
+            heightUnitRaw = heightUnitDraft
+            completeOnboarding()
+            return
         default:
             break
         }
@@ -531,7 +536,7 @@ struct OnboardingView: View {
             case .success:
                 HapticManager.impact(.medium)
                 if entitlementStore.isSubscribed {
-                    completeOnboarding()
+                    withAnimation { step = 2 }
                 }
             case .userCancelled:
                 break
@@ -1173,10 +1178,11 @@ private struct StepHeightUnits: View {
     }
 }
 
-// MARK: - Problem selection (before paywall)
+// MARK: - Problem selection (first screen — tap advances, no Continue)
 
 private struct StepFeatureInterest: View {
     @Binding var selection: OnboardingFeatureInterest?
+    var onSelect: (OnboardingFeatureInterest) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1215,7 +1221,7 @@ private struct StepFeatureInterest: View {
                             showsSelectionIndicator: false,
                             isSelected: selection == option
                         ) {
-                            selection = option
+                            onSelect(option)
                         }
                     }
                 }
@@ -1224,15 +1230,6 @@ private struct StepFeatureInterest: View {
                 .padding(.bottom, 8)
             }
             .frame(maxHeight: .infinity)
-
-            Text("You'll still have access to every feature. This just helps us focus on what matters most to you.")
-                .font(AppTypography.supportingText)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 28)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
         }
     }
 }
@@ -1300,7 +1297,7 @@ private struct Step5Paywall: View {
     }
 }
 
-/// Headline + feature carousel + plan cards + error + footer. Shared between the
+/// Headline + feature icons + plan cards + error + footer. Shared between the
 /// in-onboarding paywall and the post-onboarding hard paywall so both look and behave identically.
 private struct PaywallContentBody: View {
     let headline: String
@@ -1324,12 +1321,11 @@ private struct PaywallContentBody: View {
                 .padding(.horizontal, 28)
                 .frame(maxWidth: .infinity)
 
-            PaywallFeatureCarousel(
-                interests: OnboardingFeatureInterest.paywallCarouselOrder(primary: featureInterest),
-                petName: petName,
-                ownsMultiplePets: ownsMultiplePets
+            PaywallFeatureIconGrid(
+                interests: OnboardingFeatureInterest.paywallIconOrder(primary: featureInterest)
             )
             .padding(.horizontal, 24)
+            .padding(.top, 4)
 
             Group {
                 if products.isLoading {
@@ -1390,7 +1386,7 @@ private struct PaywallContentBody: View {
             PaywallSubscriptionFooter(
                 includeFreeTrialMention: products.isLoading
                     ? nil
-                    : (products.yearlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial),
+                    : (products.monthlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial),
                 isRestoring: purchaseState == .restoring,
                 onRestorePurchases: onRestorePurchases
             )
@@ -1409,18 +1405,18 @@ private struct PaywallContentBody: View {
     @ViewBuilder
     private var planCards: some View {
         VStack(spacing: 8) {
+            if let m = products.monthlyProduct {
+                PaywallMonthlyCard(
+                    monthly: m,
+                    isSelected: selectedPlan == .monthly
+                ) { selectedPlan = .monthly }
+            }
             if let y = products.yearlyProduct {
                 PaywallYearlyCard(
                     yearly: y,
                     monthly: products.monthlyProduct,
                     isSelected: selectedPlan == .yearly
                 ) { selectedPlan = .yearly }
-            }
-            if let m = products.monthlyProduct {
-                PaywallMonthlyCard(
-                    monthly: m,
-                    isSelected: selectedPlan == .monthly
-                ) { selectedPlan = .monthly }
             }
         }
         // Extra space so the selected plan’s stroke isn't clipped against the footer region.
@@ -1429,85 +1425,42 @@ private struct PaywallContentBody: View {
 
 }
 
-// MARK: - Paywall feature carousel
+// MARK: - Paywall feature icons
 
-private struct PaywallCarouselPageIndicator: View {
-    let count: Int
-    let page: Int
-
-    var body: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<count, id: \.self) { i in
-                Capsule()
-                    .fill(i == page ? Color.appPink : Color.gray.opacity(0.25))
-                    .frame(width: i == page ? 20 : 8, height: 8)
-            }
-        }
-        .animation(.spring(duration: 0.3), value: page)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Feature \(min(page + 1, count)) of \(count)")
-    }
-}
-
-private struct PaywallFeatureCarousel: View {
+private struct PaywallFeatureIconGrid: View {
     let interests: [OnboardingFeatureInterest]
-    let petName: String
-    let ownsMultiplePets: Bool
 
-    @State private var page = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private let autoAdvanceInterval: TimeInterval = 4.5
+    private let columns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12),
+    ]
 
     var body: some View {
-        VStack(spacing: 8) {
-            TabView(selection: $page) {
-                ForEach(Array(interests.enumerated()), id: \.offset) { index, interest in
-                    VStack(spacing: 6) {
-                        PaywallFeatureScreenshotPreview(interest: interest)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 128)
-
-                        Text(interest.paywallCarouselCaption(petName: petName, ownsMultiplePets: ownsMultiplePets))
-                            .font(.caption)
-                            .foregroundStyle(.primary)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.88)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.horizontal, 2)
+        LazyVGrid(columns: columns, spacing: 14) {
+            ForEach(interests) { interest in
+                VStack(spacing: 8) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .fill(Color.appPink.opacity(0.12))
+                            .frame(width: 52, height: 52)
+                        Image(systemName: interest.paywallSystemImage)
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(Color.appPink)
                     }
-                    .tag(index)
+                    Text(interest.paywallIconLabel)
+                        .font(.caption2.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.85)
                 }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .frame(height: 178)
-
-            if interests.count > 1 {
-                PaywallCarouselPageIndicator(count: interests.count, page: page)
+                .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(interest.paywallIconLabel)
             }
         }
-        .onReceive(Timer.publish(every: autoAdvanceInterval, on: .main, in: .common).autoconnect()) { _ in
-            guard !reduceMotion, interests.count > 1 else { return }
-            withAnimation(.easeInOut(duration: 0.35)) {
-                page = (page + 1) % interests.count
-            }
-        }
-        .accessibilityElement(children: .contain)
-    }
-}
-
-/// Real in-app product screenshot for each paywall carousel page.
-private struct PaywallFeatureScreenshotPreview: View {
-    let interest: OnboardingFeatureInterest
-
-    var body: some View {
-        Image(interest.paywallPreviewAssetName)
-            .resizable()
-            .interpolation(.high)
-            .scaledToFit()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .accessibilityHidden(true)
+        .padding(.vertical, 4)
     }
 }
 
@@ -1542,7 +1495,7 @@ private struct PaywallYearlyCard: View {
     }
 
     private var accessibilitySubtitle: String {
-        var parts: [String] = ["14 day free trial.", "\(yearly.displayPrice) per year.", "\(pricingSubtitleText)."]
+        var parts: [String] = ["Yearly.", "\(yearly.displayPrice) per year.", "\(pricingSubtitleText)."]
         if let yearlySavingsPercent {
             parts.append("Save \(yearlySavingsPercent) percent versus twelve months billed monthly.")
         }
@@ -1552,26 +1505,19 @@ private struct PaywallYearlyCard: View {
     var body: some View {
         Button(action: onSelect) {
             ZStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("14 day free trial")
-                        .font(.headline.weight(.bold))
-                        .foregroundStyle(.primary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    HStack(alignment: .center, spacing: 8) {
-                        Text("Yearly")
-                            .font(AppTypography.secondaryEmphasis)
-                            .multilineTextAlignment(.leading)
-                        Spacer(minLength: 8)
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("\(yearly.displayPrice) per year")
-                                .font(.footnote)
-                                .fontWeight(.regular)
-                                .foregroundStyle(.primary)
-                            Text(pricingSubtitleText)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
+                HStack(alignment: .center, spacing: 8) {
+                    Text("Yearly")
+                        .font(AppTypography.secondaryEmphasis)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 8)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("\(yearly.displayPrice) per year")
+                            .font(.footnote)
+                            .fontWeight(.regular)
+                            .foregroundStyle(.primary)
+                        Text(pricingSubtitleText)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -1605,12 +1551,12 @@ private struct PaywallYearlyCard: View {
         .buttonStyle(.plain)
         .padding(.top, savingsBadgeCaption != nil ? 8 : 0)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("14 day free trial. Yearly. \(accessibilitySubtitle)")
+        .accessibilityLabel(accessibilitySubtitle)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 
-/// Simple monthly row: label left, price right; subtle highlight when selected.
+/// Monthly option with 7-day free trial; pink border when selected.
 private struct PaywallMonthlyCard: View {
     let monthly: Product
     var isSelected: Bool
@@ -1620,21 +1566,32 @@ private struct PaywallMonthlyCard: View {
         PaywallPerDayPrice.subtitle(for: monthly, daysInPeriod: 30)
     }
 
+    private var accessibilitySubtitle: String {
+        "7 day free trial. Monthly. \(monthly.displayPrice) per month. \(pricingSubtitleText)."
+    }
+
     var body: some View {
         Button(action: onSelect) {
-            HStack(alignment: .center, spacing: 8) {
-                Text("Monthly")
-                    .font(AppTypography.secondaryEmphasis)
-                    .multilineTextAlignment(.leading)
-                Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text("\(monthly.displayPrice) per month")
-                        .font(.footnote)
-                        .fontWeight(.regular)
-                        .foregroundStyle(.primary)
-                    Text(pricingSubtitleText)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("7 day free trial")
+                    .font(.headline.weight(.bold))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack(alignment: .center, spacing: 8) {
+                    Text("Monthly")
+                        .font(AppTypography.secondaryEmphasis)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 8)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("\(monthly.displayPrice) per month")
+                            .font(.footnote)
+                            .fontWeight(.regular)
+                            .foregroundStyle(.primary)
+                        Text(pricingSubtitleText)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -1649,7 +1606,7 @@ private struct PaywallMonthlyCard: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Monthly. \(monthly.displayPrice) per month. \(pricingSubtitleText).")
+        .accessibilityLabel(accessibilitySubtitle)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
@@ -1832,11 +1789,11 @@ struct PostOnboardingPaywallView: View {
 
     @State private var products = SubscriptionProductLoader()
     @State private var entitlementStore = SubscriptionEntitlementStore.shared
-    @State private var selectedPlan: PaywallPlan = .yearly
+    @State private var selectedPlan: PaywallPlan = .monthly
     @State private var purchaseState: PaywallPurchaseState = .idle
     @State private var errorMessage: String?
-    /// The user's problem choice from onboarding step 9 (persisted to `UserDefaults`).
-    /// Drives the personalized headline and feature carousel after onboarding.
+    /// The user's problem choice from the first onboarding screen (persisted to `UserDefaults`).
+    /// Drives the personalized headline and feature icons after onboarding.
     @AppStorage(OnboardingFeatureInterest.persistenceKey) private var persistedFeatureInterestRaw: String = ""
 
     private var featureInterest: OnboardingFeatureInterest? {
