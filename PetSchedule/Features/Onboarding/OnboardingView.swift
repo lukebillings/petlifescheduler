@@ -29,10 +29,11 @@ private enum HouseholdPetCount: Equatable {
 private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
     case medicationCompliance
     case petDetailsAndProfiles
-    case weightLogging
+    case vetDetails
     case walksAndActivities
     case feedingAndDailyCare
-    case other
+    case weightLogging
+    case noneOfTheAbove
 
     /// `UserDefaults` key for persisting the user's selection so post-onboarding paywalls
     /// (after the user has finished onboarding) can keep showing the same personalization.
@@ -50,75 +51,83 @@ private enum OnboardingFeatureInterest: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .medicationCompliance: return "I forget tasks & meds"
-        case .petDetailsAndProfiles: return "I lose documents & records"
-        case .weightLogging: return "I lose track of weight & health"
-        case .walksAndActivities: return "I forget walks & activities"
-        case .feedingAndDailyCare: return "I miss feeding & daily care"
-        case .other: return "Other"
-        }
-    }
-
-    var caption: String {
-        switch self {
-        case .medicationCompliance:
-            return "Meds, treatments, or tasks that should happen on a schedule"
-        case .petDetailsAndProfiles:
-            return "Vet letters, insurance, microchip details, and notes"
-        case .weightLogging:
-            return "Hard to notice gradual changes without a log"
-        case .walksAndActivities:
-            return "Walks, play, grooming, or vet appointments"
-        case .feedingAndDailyCare:
-            return "Meals, water, treats, or handoffs between carers"
-        case .other:
-            return "Something else — tell us what matters most"
+        case .medicationCompliance: return "Forgetting when to give medicine"
+        case .petDetailsAndProfiles: return "Losing my pet's documents"
+        case .vetDetails: return "Losing my pet's vet details"
+        case .walksAndActivities: return "Forgetting to walk my pet"
+        case .feedingAndDailyCare: return "Feeding my pet when someone already did it"
+        case .weightLogging: return "Losing track of weight readings"
+        case .noneOfTheAbove: return "None of the above"
         }
     }
 
     /// Paywall headline — solution framing for the problem the user picked, plus “+ more!”.
     var paywallHeadline: String {
         switch self {
-        case .medicationCompliance: return "Never forget tasks & meds + more!"
-        case .petDetailsAndProfiles: return "Never lose documents & records + more!"
-        case .weightLogging: return "Never lose track of weight & health + more!"
-        case .walksAndActivities: return "Never forget walks & activities + more!"
-        case .feedingAndDailyCare: return "Never miss feeding & daily care + more!"
-        case .other: return "Everything you need for pet care + more!"
+        case .medicationCompliance: return "Never forget when to give medicine + more!"
+        case .petDetailsAndProfiles: return "Never lose your pet's documents + more!"
+        case .vetDetails: return "Never lose your pet's vet details + more!"
+        case .walksAndActivities: return "Never forget to walk your pet + more!"
+        case .feedingAndDailyCare: return "Know who's already fed your pet + more!"
+        case .weightLogging: return "Never lose track of weight readings + more!"
+        case .noneOfTheAbove: return "Everything you need for pet care + more!"
         }
     }
 
-    /// SF Symbol used on the paywall feature icon grid (and problem-option accents).
-    var paywallSystemImage: String {
+    /// Maps this problem choice to the matching paywall feature highlight, if any.
+    var paywallHighlight: PaywallFeatureHighlight? {
         switch self {
-        case .medicationCompliance: return "pills.fill"
-        case .petDetailsAndProfiles: return "doc.text.fill"
-        case .weightLogging: return "chart.line.uptrend.xyaxis"
-        case .walksAndActivities: return "figure.walk"
-        case .feedingAndDailyCare: return "fork.knife"
-        case .other: return "ellipsis.circle.fill"
+        case .medicationCompliance: return .medsReminders
+        case .petDetailsAndProfiles: return .storeDocuments
+        case .vetDetails: return .vetDetails
+        case .weightLogging: return .weightLogs
+        case .walksAndActivities: return .sharedSchedule
+        case .feedingAndDailyCare: return .foodReminders
+        case .noneOfTheAbove: return nil
         }
     }
 
-    /// Short label under each paywall feature icon.
-    var paywallIconLabel: String {
+}
+
+/// Always-six feature icons shown on the paywall.
+private enum PaywallFeatureHighlight: String, CaseIterable, Identifiable {
+    case storeDocuments
+    case medsReminders
+    case foodReminders
+    case weightLogs
+    case vetDetails
+    case sharedSchedule
+
+    var id: String { rawValue }
+
+    var systemImage: String {
         switch self {
-        case .medicationCompliance: return "Meds & tasks"
-        case .petDetailsAndProfiles: return "Documents"
-        case .weightLogging: return "Weight logs"
-        case .walksAndActivities: return "Walks"
-        case .feedingAndDailyCare: return "Daily care"
-        case .other: return "And more"
+        case .storeDocuments: return "doc.text.fill"
+        case .medsReminders: return "pills.fill"
+        case .foodReminders: return "fork.knife"
+        case .weightLogs: return "chart.line.uptrend.xyaxis"
+        case .vetDetails: return "stethoscope"
+        case .sharedSchedule: return "calendar"
         }
     }
 
-    /// Icon grid on the paywall: chosen problem first (if any), then the rest except `.other`.
-    static func paywallIconOrder(primary: OnboardingFeatureInterest?) -> [OnboardingFeatureInterest] {
-        let eligible = allCases.filter { $0 != .other }
-        guard let primary, primary != .other, eligible.contains(primary) else { return eligible }
-        return [primary] + eligible.filter { $0 != primary }
+    var label: String {
+        switch self {
+        case .storeDocuments: return "Store documents"
+        case .medsReminders: return "Meds reminders"
+        case .foodReminders: return "Food reminders"
+        case .weightLogs: return "Weight logs"
+        case .vetDetails: return "Vet details"
+        case .sharedSchedule: return "Shared schedule"
+        }
     }
 
+    /// Chosen problem’s highlight first, then the remaining five — always 6 boxes.
+    static func ordered(primary: OnboardingFeatureInterest?) -> [PaywallFeatureHighlight] {
+        let all = Array(allCases)
+        guard let highlight = primary?.paywallHighlight else { return all }
+        return [highlight] + all.filter { $0 != highlight }
+    }
 }
 
 /// Diagonal shimmer across the onboarding bottom CTA; `TimelineView` keeps animation reliable on every step (including paywall).
@@ -195,9 +204,6 @@ struct OnboardingView: View {
     @State private var showNotificationPermissionAlert = false
     @State private var isRequestingNotificationPermission = false
 
-    /// 0 problem → 1 paywall → 2…10 setup (pet count through height units).
-    private let totalSteps = 11
-
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
@@ -262,36 +268,69 @@ struct OnboardingView: View {
             }
             .frame(maxHeight: .infinity)
             .animation(.spring(duration: 0.4), value: step)
-
-            // Fixed bottom bar — identical position on every screen (problem step has no Continue).
-            VStack(spacing: 14) {
-                // Skip — optional photo, schedule, or notifications.
-                if step == 5 || step == 6 || step == 7 {
-                    Button {
-                        if step == 5 {
-                            addPetIfNeeded()
+            .overlay(alignment: .top) {
+                // Preview navigation: back on paywall + setup; forward on paywall to skip into setup.
+                if step >= 1 {
+                    HStack {
+                        Button {
+                            guard paywallPurchaseState == .idle else { return }
+                            HapticManager.impact(.light)
+                            withAnimation { step -= 1 }
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(.primary)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
                         }
-                        withAnimation { step += 1 }
-                    } label: {
-                        Text("Skip")
-                            .font(AppTypography.secondaryLabel)
-                            .foregroundStyle(Color.gray.opacity(0.5))
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Color.clear.frame(height: 20)
-                }
+                        .buttonStyle(.plain)
+                        .disabled(paywallPurchaseState != .idle)
+                        .accessibilityLabel("Back")
 
-                HStack(spacing: 8) {
-                    ForEach(0..<totalSteps, id: \.self) { i in
-                        Capsule()
-                            .fill(i == step ? Color.appPink : Color.gray.opacity(0.25))
-                            .frame(width: i == step ? 20 : 8, height: 8)
-                            .animation(.spring(duration: 0.3), value: step)
-                    }
-                }
+                        Spacer()
 
-                if step != 0 {
+                        if step == 1 {
+                            Button {
+                                guard paywallPurchaseState == .idle else { return }
+                                HapticManager.impact(.light)
+                                withAnimation { step = 2 }
+                            } label: {
+                                Image(systemName: "chevron.right")
+                                    .font(.body.weight(.semibold))
+                                    .foregroundStyle(.primary)
+                                    .frame(width: 44, height: 44)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(paywallPurchaseState != .idle)
+                            .accessibilityLabel("Skip paywall")
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 4)
+                }
+            }
+
+            // Bottom bar — hidden on the problem screen (tap advances). No step dots anywhere.
+            if step != 0 {
+                VStack(spacing: 14) {
+                    // Skip — optional photo, schedule, or notifications.
+                    if step == 5 || step == 6 || step == 7 {
+                        Button {
+                            if step == 5 {
+                                addPetIfNeeded()
+                            }
+                            withAnimation { step += 1 }
+                        } label: {
+                            Text("Skip")
+                                .font(AppTypography.secondaryLabel)
+                                .foregroundStyle(Color.gray.opacity(0.5))
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Color.clear.frame(height: 20)
+                    }
+
                     Button(action: advance) {
                         Group {
                             if (step == 1 && paywallPurchaseState == .purchasing)
@@ -303,22 +342,22 @@ struct OnboardingView: View {
                                 Text(buttonLabel)
                             }
                         }
-                            .font(AppTypography.primaryLabel)
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(
-                                RoundedRectangle(cornerRadius: 28)
-                                    .fill(continueDisabled ? Color.gray.opacity(0.3) : Color.appPink)
-                            )
-                            .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: continueDisabled))
+                        .font(AppTypography.primaryLabel)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(
+                            RoundedRectangle(cornerRadius: 28)
+                                .fill(continueDisabled ? Color.gray.opacity(0.3) : Color.appPink)
+                        )
+                        .overlay(OnboardingPrimaryCTAShimmerOverlay(disabled: continueDisabled))
                     }
                     .disabled(continueDisabled)
                 }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 52)
+                .padding(.top, 8)
             }
-            .padding(.horizontal, 28)
-            .padding(.bottom, 52)
-            .padding(.top, 8)
         }
         .background(Color(.systemBackground))
         .onChange(of: step) { _, newStep in
@@ -1201,7 +1240,7 @@ private struct StepFeatureInterest: View {
                 .padding(.top, 28)
 
                 VStack(spacing: 10) {
-                    Text("What's the biggest problem you face right now?")
+                    Text("Any of these happen to you?")
                         .font(AppTypography.panelTitle)
                         .multilineTextAlignment(.center)
                         .minimumScaleFactor(0.9)
@@ -1217,7 +1256,6 @@ private struct StepFeatureInterest: View {
                     ForEach(OnboardingFeatureInterest.allCases) { option in
                         OnboardingChoiceButton(
                             title: option.title,
-                            singleLineTitle: true,
                             showsSelectionIndicator: false,
                             isSelected: selection == option
                         ) {
@@ -1322,7 +1360,7 @@ private struct PaywallContentBody: View {
                 .frame(maxWidth: .infinity)
 
             PaywallFeatureIconGrid(
-                interests: OnboardingFeatureInterest.paywallIconOrder(primary: featureInterest)
+                features: PaywallFeatureHighlight.ordered(primary: featureInterest)
             )
             .padding(.horizontal, 24)
             .padding(.top, 4)
@@ -1428,7 +1466,7 @@ private struct PaywallContentBody: View {
 // MARK: - Paywall feature icons
 
 private struct PaywallFeatureIconGrid: View {
-    let interests: [OnboardingFeatureInterest]
+    let features: [PaywallFeatureHighlight]
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),
@@ -1438,17 +1476,17 @@ private struct PaywallFeatureIconGrid: View {
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 14) {
-            ForEach(interests) { interest in
+            ForEach(features) { feature in
                 VStack(spacing: 8) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 14, style: .continuous)
                             .fill(Color.appPink.opacity(0.12))
                             .frame(width: 52, height: 52)
-                        Image(systemName: interest.paywallSystemImage)
+                        Image(systemName: feature.systemImage)
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundStyle(Color.appPink)
                     }
-                    Text(interest.paywallIconLabel)
+                    Text(feature.label)
                         .font(.caption2.weight(.medium))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -1457,7 +1495,7 @@ private struct PaywallFeatureIconGrid: View {
                 }
                 .frame(maxWidth: .infinity)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(interest.paywallIconLabel)
+                .accessibilityLabel(feature.label)
             }
         }
         .padding(.vertical, 4)
@@ -1951,8 +1989,6 @@ struct HouseholdJoinedWelcomeView: View {
     @State private var showNotificationPermissionAlert = false
     @FocusState private var nameFieldFocused: Bool
 
-    private let totalSteps = 2
-
     private var trimmedDraft: String {
         nameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -2002,15 +2038,6 @@ struct HouseholdJoinedWelcomeView: View {
 
             VStack(spacing: 14) {
                 Color.clear.frame(height: 20)
-
-                HStack(spacing: 8) {
-                    ForEach(0..<totalSteps, id: \.self) { i in
-                        Capsule()
-                            .fill(i == step ? Color.appPink : Color.gray.opacity(0.25))
-                            .frame(width: i == step ? 20 : 8, height: 8)
-                            .animation(.spring(duration: 0.3), value: step)
-                    }
-                }
 
                 Button(action: advance) {
                     Group {
