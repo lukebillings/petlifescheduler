@@ -268,48 +268,6 @@ struct OnboardingView: View {
             }
             .frame(maxHeight: .infinity)
             .animation(.spring(duration: 0.4), value: step)
-            .overlay(alignment: .top) {
-                // Preview navigation: back on paywall + setup; forward on paywall to skip into setup.
-                if step >= 1 {
-                    HStack {
-                        Button {
-                            guard paywallPurchaseState == .idle else { return }
-                            HapticManager.impact(.light)
-                            withAnimation { step -= 1 }
-                        } label: {
-                            Image(systemName: "chevron.left")
-                                .font(.body.weight(.semibold))
-                                .foregroundStyle(.primary)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(paywallPurchaseState != .idle)
-                        .accessibilityLabel("Back")
-
-                        Spacer()
-
-                        if step == 1 {
-                            Button {
-                                guard paywallPurchaseState == .idle else { return }
-                                HapticManager.impact(.light)
-                                withAnimation { step = 2 }
-                            } label: {
-                                Image(systemName: "chevron.right")
-                                    .font(.body.weight(.semibold))
-                                    .foregroundStyle(.primary)
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .disabled(paywallPurchaseState != .idle)
-                            .accessibilityLabel("Skip paywall")
-                        }
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.top, 4)
-                }
-            }
 
             // Bottom bar — hidden on the problem screen (tap advances). No step dots anywhere.
             if step != 0 {
