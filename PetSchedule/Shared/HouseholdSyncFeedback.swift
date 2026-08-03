@@ -114,8 +114,8 @@ enum HouseholdChangeNotifier {
 
         let body = HouseholdChangeSummarizer.combinedMessage(for: changes)
         let title = HouseholdChangeSummarizer.notificationTitle(for: changes)
-        let state = UIApplication.shared.applicationState
-        if state == .active {
+        let isAppActive = await MainActor.run { UIApplication.shared.applicationState == .active }
+        if isAppActive {
             return
         }
         await scheduleNotification(title: title, body: body)
