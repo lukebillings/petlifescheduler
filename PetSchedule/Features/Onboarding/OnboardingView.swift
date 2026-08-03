@@ -1422,9 +1422,7 @@ private struct PaywallContentBody: View {
             .accessibilityLabel("You can cancel anytime in Settings.")
 
             PaywallSubscriptionFooter(
-                includeFreeTrialMention: products.isLoading
-                    ? nil
-                    : (products.monthlyProduct?.subscription?.introductoryOffer?.paymentMode == .freeTrial),
+                includeFreeTrialMention: false,
                 isRestoring: purchaseState == .restoring,
                 onRestorePurchases: onRestorePurchases
             )
@@ -1594,7 +1592,7 @@ private struct PaywallYearlyCard: View {
     }
 }
 
-/// Monthly option with 7-day free trial; pink border when selected.
+/// Monthly option; pink border when selected.
 private struct PaywallMonthlyCard: View {
     let monthly: Product
     var isSelected: Bool
@@ -1605,31 +1603,24 @@ private struct PaywallMonthlyCard: View {
     }
 
     private var accessibilitySubtitle: String {
-        "7 day free trial. Monthly. \(monthly.displayPrice) per month. \(pricingSubtitleText)."
+        "Monthly. \(monthly.displayPrice) per month. \(pricingSubtitleText)."
     }
 
     var body: some View {
         Button(action: onSelect) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("7 day free trial")
-                    .font(.headline.weight(.bold))
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                HStack(alignment: .center, spacing: 8) {
-                    Text("Monthly")
-                        .font(AppTypography.secondaryEmphasis)
-                        .multilineTextAlignment(.leading)
-                    Spacer(minLength: 8)
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text("\(monthly.displayPrice) per month")
-                            .font(.footnote)
-                            .fontWeight(.regular)
-                            .foregroundStyle(.primary)
-                        Text(pricingSubtitleText)
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
+            HStack(alignment: .center, spacing: 8) {
+                Text("Monthly")
+                    .font(AppTypography.secondaryEmphasis)
+                    .multilineTextAlignment(.leading)
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text("\(monthly.displayPrice) per month")
+                        .font(.footnote)
+                        .fontWeight(.regular)
+                        .foregroundStyle(.primary)
+                    Text(pricingSubtitleText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
